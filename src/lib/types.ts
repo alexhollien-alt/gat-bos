@@ -101,6 +101,16 @@ export interface Contact {
   rep_pulse: number | null;
   tier: ContactTier | null;
 
+  // Social & identity
+  type: string | null;
+  license_number: string | null;
+  instagram_handle: string | null;
+  linkedin_url: string | null;
+
+  // Status & next action
+  next_action_date: string | null;
+  internal_note: string | null;
+
   // Context
   preferred_channel: string | null;
   referred_by: string | null;
@@ -276,21 +286,48 @@ export type MaterialRequestPriority = "standard" | "rush";
 export type ProductType = "flyer" | "brochure" | "door_hanger" | "eddm" | "postcard" | "other";
 export type DesignAssetType = "flyer" | "brochure" | "door_hanger" | "eddm" | "postcard" | "social" | "presentation" | "other";
 
+export type MaterialRequestSource = "internal" | "intake";
+
+export interface ListingData {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  price: string;
+  bedrooms: string;
+  bathrooms: string;
+  sqft: string;
+  year_built: string;
+  lot_size: string;
+  garage: string;
+  description: string;
+  key_features: string[];
+  status: string;
+  hero_image: string;
+  gallery_images: string[];
+  special_instructions: string;
+}
+
 export interface MaterialRequest {
   id: string;
-  user_id: string;
-  contact_id: string;
+  user_id: string | null;
+  contact_id: string | null;
   title: string;
   request_type: MaterialRequestType;
   status: MaterialRequestStatus;
   priority: MaterialRequestPriority;
   notes: string | null;
+  source: MaterialRequestSource;
+  listing_data: ListingData | null;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  submitter_phone: string | null;
   submitted_at: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-  contacts?: Pick<Contact, "id" | "first_name" | "last_name" | "company">;
+  contacts?: Pick<Contact, "id" | "first_name" | "last_name" | "company"> | null;
   items?: MaterialRequestItem[];
 }
 
@@ -316,4 +353,46 @@ export interface DesignAsset {
   updated_at: string;
   deleted_at: string | null;
   contacts?: Pick<Contact, "id" | "first_name" | "last_name">;
+}
+
+// ---------------------
+// Action Queue
+// ---------------------
+
+export type ActionItemType = "overdue_followup" | "due_followup" | "overdue_task" | "stale_contact" | "due_task";
+
+export interface ActionItem {
+  id: string;
+  type: ActionItemType;
+  priority: number;
+  contactId: string;
+  contactName: string;
+  contactTier: ContactTier | null;
+  contactTemperature: number;
+  contactCompany: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  title: string;
+  subtitle: string;
+  dueDate: string | null;
+  daysOverdue: number;
+  sourceId: string;
+  sourceTable: "follow_ups" | "tasks" | "contacts";
+}
+
+// ---------------------
+// Resend Webhooks
+// ---------------------
+
+export interface ResendWebhookPayload {
+  type: "email.sent" | "email.delivered" | "email.opened" | "email.clicked" | "email.bounced" | "email.complained";
+  created_at: string;
+  data: {
+    email_id: string;
+    from: string;
+    to: string[];
+    subject: string;
+    created_at: string;
+    click?: { link: string };
+  };
 }

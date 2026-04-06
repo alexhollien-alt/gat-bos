@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Relationship CRM
 
-## Getting Started
+A relationship management tool built for title sales executives in Phoenix real estate. Track contacts, log interactions, manage follow-ups, and maintain relationship health across your network of agents and brokers.
 
-First, run the development server:
+## Stack
+
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Supabase (Auth + PostgreSQL)
+- Lucide React
+- React Hook Form + Zod
+
+## Setup
+
+### 1. Create a Supabase project
+
+Go to [supabase.com](https://supabase.com) and create a new project.
+
+### 2. Run the schema
+
+Open the SQL Editor in your Supabase dashboard and run the contents of `supabase/schema.sql`. This creates all tables, enums, RLS policies, and indexes.
+
+### 3. Configure environment
+
+Copy the example env file and fill in your Supabase credentials:
+
+```bash
+cp .env.local.example .env.local
+```
+
+Edit `.env.local` with your project URL and anon key (found in Supabase > Settings > API).
+
+### 4. Install dependencies
+
+```bash
+npm install
+```
+
+### 5. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). You will be redirected to the login page.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 6. Create an account
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Sign up with email and password. If your Supabase project has email confirmation enabled, either:
+- Confirm via the email link, or
+- Disable email confirmation in Supabase > Authentication > Providers > Email
 
-## Learn More
+### 7. Seed data (optional)
 
-To learn more about Next.js, take a look at the following resources:
+After signing up, get your user ID from the Supabase Auth dashboard (Authentication > Users). Then run this in the SQL Editor:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sql
+select seed_data('your-user-id-here');
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This inserts 10 realistic contacts (Phoenix-area real estate agents), tags, interactions, notes, tasks, and follow-ups.
 
-## Deploy on Vercel
+## Features (Phase 1)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Auth**: Email/password login and signup with protected routes
+- **Dashboard**: Follow-ups due today, overdue tasks, recent contacts, recent interactions, relationship breakdown stats, quick-add actions
+- **Contacts**: Searchable list with filters by relationship strength and tag. Detail page with timeline, notes, and tasks tabs
+- **Interactions**: Fast-add modal for logging calls, texts, emails, meetings, broker opens, lunches, and notes
+- **Notes**: Freeform notes per contact, reverse chronological, inline editable
+- **Tasks**: Due date, priority, status with inline completion toggle
+- **Follow-ups**: Due date tracking with overdue highlighting, mark complete/skip
+- **Tags**: Color-coded chips on contacts, filter contacts by tag
+- **Relationship Strength**: New / Warm / Active Partner / Advocate / Dormant with color-coded badges
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Schema
+
+The contact model includes `source` and `lead_status` fields to support future lead generation system integration. See `supabase/schema.sql` for the full schema.
+
+## Project Structure
+
+```
+src/
+  app/
+    (auth)/          Login and signup pages
+    (app)/           Protected app pages (dashboard, contacts, tasks, follow-ups)
+  components/
+    ui/              shadcn/ui primitives
+    dashboard/       Dashboard widget components
+    contacts/        Contact list, card, filters, form
+    interactions/    Interaction logging modal
+    notes/           Note editor and display
+    tasks/           Task list and form
+    follow-ups/      Follow-up list and form
+    tags/            Tag chips and picker
+  lib/
+    supabase/        Supabase client (browser + server)
+    types.ts         TypeScript types
+    constants.ts     Relationship, interaction, priority configs
+    validations.ts   Zod schemas
+```

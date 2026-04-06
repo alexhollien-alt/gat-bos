@@ -33,10 +33,12 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup");
 
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+  const isPublicRoute =
+    request.nextUrl.pathname.startsWith("/api/") ||
+    request.nextUrl.pathname.startsWith("/intake");
 
-  // API routes use their own auth (service-role key) -- skip middleware auth
-  if (isApiRoute) {
+  // Public routes skip auth (API uses service-role key, intake is shareable)
+  if (isPublicRoute) {
     return supabaseResponse;
   }
 
