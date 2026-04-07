@@ -33,20 +33,21 @@ interface IntakePayload {
   honeypot?: string;
 }
 
-/**
- * Resolve the CRM owner user_id (single-user system).
- * Queries auth.users once and caches for the process lifetime.
- */
-let cachedOwnerId: string | null = null;
-async function getOwnerId(): Promise<string | null> {
-  if (cachedOwnerId) return cachedOwnerId;
-  const { data } = await adminClient.auth.admin.listUsers({ perPage: 1 });
-  cachedOwnerId = data?.users?.[0]?.id ?? null;
-  return cachedOwnerId;
-}
-
 export async function POST(request: Request) {
   try {
+    // Hard-pinned CRM owner. Set OWNER_USER_ID in .env.local to Alex's
+    // auth.users id (b735d691-4d86-4e31-9fd3-c2257822dca3). Replaces the
+    // previous listUsers({perPage: 1}) lookup which was non-deterministic
+    // when auth.users had more than one row.
+    const ownerId = process.env.OWNER_USER_ID;
+    if (!ownerId) {
+      console.error("Intake API: OWNER_USER_ID env var not set");
+      return NextResponse.json(
+        { error: "Server misconfigured" },
+        { status: 500 }
+      );
+    }
+
     const body: IntakePayload = await request.json();
 
     // Honeypot spam check
@@ -70,41 +71,38 @@ export async function POST(request: Request) {
 
     if (!contactId) {
       // New agent -- create contact, tier P (sphere/prospect)
-      const ownerId = await getOwnerId();
-      if (ownerId) {
-        const nameParts = body.agent.agent_name.trim().split(/\s+/);
-        const firstName = nameParts[0] || body.agent.agent_name;
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+      const nameParts = body.agent.agent_name.trim().split(/\s+/);
+      const firstName = nameParts[0] || body.agent.agent_name;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
 
-        const { data: newContact, error: contactError } = await adminClient
-          .from("contacts")
-          .insert({
-            user_id: ownerId,
-            first_name: firstName,
-            last_name: lastName,
-            email: body.agent.agent_email,
-            phone: body.agent.agent_phone || null,
-            brokerage: body.agent.brokerage || null,
-            type: "realtor",
-            tier: "P",
-            relationship: "new",
-            lead_status: "prospect",
-            source: "website",
-            source_detail: `Intake form -- ${body.situation || "general"}`,
-            health_score: 30,
-            notes: body.agent.brokerage
-              ? `Signed up via intake form. Brokerage: ${body.agent.brokerage}`
-              : "Signed up via intake form.",
-          })
-          .select("id")
-          .single();
+      const { data: newContact, error: contactError } = await adminClient
+        .from("contacts")
+        .insert({
+          user_id: ownerId,
+          first_name: firstName,
+          last_name: lastName,
+          email: body.agent.agent_email,
+          phone: body.agent.agent_phone || null,
+          brokerage: body.agent.brokerage || null,
+          type: "realtor",
+          tier: "P",
+          relationship: "new",
+          lead_status: "prospect",
+          source: "website",
+          source_detail: `Intake form -- ${body.situation || "general"}`,
+          health_score: 30,
+          notes: body.agent.brokerage
+            ? `Signed up via intake form. Brokerage: ${body.agent.brokerage}`
+            : "Signed up via intake form.",
+        })
+        .select("id")
+        .single();
 
-        if (contactError) {
-          console.error("Auto-create contact error:", contactError);
-        } else if (newContact) {
-          contactId = newContact.id;
-          isNewContact = true;
-        }
+      if (contactError) {
+        console.error("Auto-create contact error:", contactError);
+      } else if (newContact) {
+        contactId = newContact.id;
+        isNewContact = true;
       }
     }
 
@@ -182,16 +180,13 @@ export async function POST(request: Request) {
 
     // ── Log first touch interaction for new contacts ──
     if (isNewContact && contactId) {
-      const ownerId = await getOwnerId();
-      if (ownerId) {
-        await adminClient.from("interactions").insert({
-          user_id: ownerId,
-          contact_id: contactId,
-          type: "note",
-          direction: "inbound",
-          summary: `Submitted intake form (${body.situation || "general"}). Products requested: ${body.products.join(", ")}.`,
-        });
-      }
+      await adminClient.from("interactions").insert({
+        user_id: ownerId,
+        contact_id: contactId,
+        type: "note",
+        direction: "inbound",
+        summary: `Submitted intake form (${body.situation || "general"}). Products requested: ${body.products.join(", ")}.`,
+      });
     }
 
     return NextResponse.json(
