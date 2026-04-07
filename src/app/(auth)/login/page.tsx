@@ -10,7 +10,6 @@ import { loginSchema, type LoginFormData } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,61 +42,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold text-slate-800">
-            Relationship CRM
-          </CardTitle>
-          <p className="text-sm text-slate-500 mt-1">
-            Sign in to your account
-          </p>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center showcase-mesh relative overflow-hidden">
+      <div className="showcase-noise absolute inset-0" />
+      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
+        <div className="showcase-card p-8 sm:p-10">
+          <div className="text-center mb-8">
+            <h1
+              className="text-2xl font-bold text-foreground"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              GAT-BOS
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Sign in to your account
+            </p>
+          </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
+                className="bg-[#1a1a1f] border-white/[0.06] text-foreground placeholder:text-[#3f3f46] focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10"
                 {...register("email")}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
+                className="bg-[#1a1a1f] border-white/[0.06] text-foreground placeholder:text-[#3f3f46] focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10"
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {errors.password.message}
                 </p>
               )}
             </div>
             {error && (
-              <p className="text-sm text-red-500 text-center">{error}</p>
+              <p className="text-sm text-destructive text-center">{error}</p>
             )}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-[#e63550] hover:bg-[#f04060] text-white transition-all hover:-translate-y-px"
+              style={{ boxShadow: "0 4px 14px rgba(230,53,80,0.25)" }}
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
-          <p className="text-sm text-center text-slate-500 mt-4">
+          <p className="text-sm text-center text-muted-foreground mt-6">
             No account?{" "}
             <Link
               href="/signup"
-              className="text-slate-700 underline hover:text-slate-900"
+              className="text-foreground underline hover:text-[#e63550] transition-colors"
             >
               Sign up
             </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
