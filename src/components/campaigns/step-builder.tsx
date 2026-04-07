@@ -37,7 +37,7 @@ const stepTypeColors: Record<StepType, string> = {
   text: "bg-purple-50 text-purple-600",
   mail: "bg-amber-50 text-amber-600",
   social: "bg-pink-50 text-pink-600",
-  task: "bg-slate-100 text-slate-600",
+  task: "bg-secondary text-muted-foreground",
 };
 
 export function StepBuilder({
@@ -93,8 +93,8 @@ export function StepBuilder({
   return (
     <div className="space-y-3">
       {steps.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center">
-          <p className="text-sm text-slate-400">
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
             No steps yet. Add your first step to build the sequence.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function StepBuilder({
             return (
               <div
                 key={step.id}
-                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
               >
                 <div
                   className={cn(
@@ -118,19 +118,19 @@ export function StepBuilder({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-400">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {step.step_number}.
                     </span>
-                    <span className="text-sm font-medium text-slate-800 truncate">
+                    <span className="text-sm font-medium text-foreground truncate">
                       {step.title}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs text-slate-400 capitalize">
+                    <span className="text-xs text-muted-foreground capitalize">
                       {step.step_type}
                     </span>
                     {step.delay_days > 0 && (
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted-foreground">
                         +{step.delay_days}d delay
                       </span>
                     )}

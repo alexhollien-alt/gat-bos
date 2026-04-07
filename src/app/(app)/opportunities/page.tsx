@@ -80,8 +80,8 @@ export default function OpportunitiesPage() {
     <div className="max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">Pipeline</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-xl font-semibold text-foreground font-display">Pipeline</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {opportunities.length} opportunities
           </p>
         </div>
@@ -104,16 +104,16 @@ export default function OpportunitiesPage() {
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: g.config.color }}
                     />
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {g.config.label}
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold text-slate-800">
+                    <span className="text-2xl font-semibold text-foreground">
                       {g.items.length}
                     </span>
                     {g.total > 0 && (
-                      <span className="text-sm text-slate-400">
+                      <span className="text-sm text-muted-foreground">
                         {formatPrice(g.total)}
                       </span>
                     )}
@@ -134,17 +134,17 @@ export default function OpportunitiesPage() {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: config.color }}
               />
-              <h2 className="text-sm font-semibold text-slate-700">
+              <h2 className="text-sm font-semibold text-foreground">
                 {config.label}
               </h2>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted-foreground">
                 {items.length}
                 {total > 0 && ` -- ${formatPrice(total)}`}
               </span>
             </div>
 
             {items.length === 0 ? (
-              <p className="text-sm text-slate-400 py-4 pl-5">
+              <p className="text-sm text-muted-foreground py-4 pl-5">
                 No opportunities in this stage
               </p>
             ) : (
@@ -152,25 +152,25 @@ export default function OpportunitiesPage() {
                 {items.map((opp) => (
                   <div
                     key={opp.id}
-                    className="bg-white border border-slate-200 rounded-lg p-4 flex items-center gap-4"
+                    className="bg-card border border-border rounded-lg p-4 flex items-center gap-4"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Building className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-sm font-medium text-slate-800 truncate">
+                        <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground truncate">
                           {opp.property_address}
                         </span>
                         {opp.property_city && (
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-muted-foreground">
                             {opp.property_city}, {opp.property_state}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         {opp.contacts && (
                           <Link
                             href={`/contacts/${opp.contact_id}`}
-                            className="hover:text-slate-700 hover:underline"
+                            className="hover:text-foreground hover:underline"
                           >
                             {opp.contacts.first_name} {opp.contacts.last_name}
                           </Link>
@@ -193,8 +193,8 @@ export default function OpportunitiesPage() {
 
                     {opp.sale_price && (
                       <div className="flex items-center gap-1 shrink-0">
-                        <DollarSign className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-sm font-semibold text-slate-700">
+                        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-semibold text-foreground">
                           {formatPrice(opp.sale_price)}
                         </span>
                       </div>

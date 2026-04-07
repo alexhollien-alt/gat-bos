@@ -69,10 +69,10 @@ export default function MaterialsPage() {
     <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-foreground font-display">
             Material Requests
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {openCount} open request{openCount !== 1 ? "s" : ""}
           </p>
         </div>
@@ -93,8 +93,8 @@ export default function MaterialsPage() {
             className={cn(
               "px-3 py-1 rounded-full text-xs font-medium transition-colors",
               statusFilter === filter.value
-                ? "bg-slate-800 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-foreground text-background"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
             )}
           >
             {filter.label}
@@ -114,7 +114,7 @@ export default function MaterialsPage() {
         ))}
         {requests.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {statusFilter === "all"
                 ? "No material requests yet. Create one from a contact's page."
                 : `No ${REQUEST_STATUS_CONFIG[statusFilter as MaterialRequestStatus]?.label.toLowerCase()} requests.`}

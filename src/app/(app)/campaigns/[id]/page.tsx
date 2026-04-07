@@ -16,10 +16,10 @@ const typeColors: Record<CampaignType, string> = {
 };
 
 const statusColors: Record<CampaignStatus, string> = {
-  draft: "bg-slate-100 text-slate-600",
+  draft: "bg-secondary text-muted-foreground",
   active: "bg-green-100 text-green-700",
   paused: "bg-amber-100 text-amber-700",
-  archived: "bg-slate-100 text-slate-500",
+  archived: "bg-secondary text-muted-foreground",
 };
 
 export default async function CampaignDetailPage({
@@ -76,7 +76,7 @@ export default async function CampaignDetailPage({
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-slate-800">
+            <h1 className="text-xl font-semibold text-foreground font-display">
               {typedCampaign.name}
             </h1>
             <Badge
@@ -93,11 +93,11 @@ export default async function CampaignDetailPage({
             </Badge>
           </div>
           {typedCampaign.description && (
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               {typedCampaign.description}
             </p>
           )}
-          <div className="mt-2 flex gap-4 text-xs text-slate-400">
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
             <span>{typedCampaign.step_count} steps</span>
             <span>{typedCampaign.enrolled_count} enrolled</span>
           </div>

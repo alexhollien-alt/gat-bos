@@ -191,8 +191,8 @@ export default function AnalyticsPage() {
     return (
       <div className="max-w-6xl">
         <div className="mb-6">
-          <h1 className="text-xl font-semibold text-slate-800">Analytics</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Loading data...</p>
+          <h1 className="text-xl font-semibold text-foreground font-display">Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Loading data...</p>
         </div>
       </div>
     );
@@ -201,15 +201,15 @@ export default function AnalyticsPage() {
   return (
     <div className="max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-slate-800">Analytics</h1>
-        <p className="text-sm text-slate-400 mt-0.5">
+        <h1 className="text-xl font-semibold text-foreground font-display">Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Pipeline, relationships, and production at a glance
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Widget 1: Agent Acquisition Funnel */}
-        <div className="bg-white rounded-xl border border-[#e8e8e8] p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-[#b31a35] font-semibold mb-1">
             Lead Pipeline
           </p>
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Widget 2: Pipeline Health */}
-        <div className="bg-white rounded-xl border border-[#e8e8e8] p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-[#003087] font-semibold mb-1">
             Revenue
           </p>
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Widget 3: Relationship Breakdown */}
-        <div className="bg-white rounded-xl border border-[#e8e8e8] p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-[#b31a35] font-semibold mb-1">
             Contacts
           </p>
@@ -325,7 +325,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Widget 4: Production Throughput */}
-        <div className="bg-white rounded-xl border border-[#e8e8e8] p-6 shadow-sm">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
           <p className="text-[11px] uppercase tracking-wider text-[#003087] font-semibold mb-1">
             Materials
           </p>

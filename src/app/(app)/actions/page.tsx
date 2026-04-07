@@ -15,7 +15,7 @@ const TIER_COLORS: Record<string, string> = {
   A: "bg-[#b31a35] text-white",
   B: "bg-[#003087] text-white",
   C: "bg-[#666666] text-white",
-  P: "bg-[#e8e8e8] text-slate-600",
+  P: "bg-[#222228] text-[#a1a1aa]",
 };
 
 export default function ActionsPage() {
@@ -174,11 +174,11 @@ export default function ActionsPage() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-slate-400" />
-            <h1 className="text-xl font-semibold text-slate-800">Actions</h1>
+            <Zap className="h-5 w-5 text-muted-foreground" />
+            <h1 className="text-xl font-semibold text-foreground font-display">Actions</h1>
           </div>
         </div>
-        <p className="text-sm text-slate-400 py-8 text-center">Loading...</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
       </div>
     );
   }
@@ -188,15 +188,15 @@ export default function ActionsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-[#b31a35]" />
-          <h1 className="text-xl font-semibold text-slate-800">Actions</h1>
+          <h1 className="text-xl font-semibold text-foreground font-display">Actions</h1>
         </div>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-muted-foreground">
           {actions.length} remaining
         </span>
       </div>
 
       {actions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <CheckCircle2 className="h-10 w-10 mb-3" />
           <p className="text-sm">Nothing to do right now. Nice work.</p>
         </div>
@@ -205,7 +205,7 @@ export default function ActionsPage() {
           {actions.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-xl border border-[#e8e8e8] p-4 shadow-sm"
+              className="bg-card rounded-xl border border-border p-4 shadow-sm"
             >
               <div className="flex items-start gap-3">
                 {/* Tier badge */}
@@ -213,7 +213,7 @@ export default function ActionsPage() {
                   className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                     item.contactTier
                       ? TIER_COLORS[item.contactTier]
-                      : "bg-[#e8e8e8] text-slate-600"
+                      : "bg-[#222228] text-[#a1a1aa]"
                   }`}
                 >
                   {item.contactTier ?? "-"}
@@ -222,7 +222,7 @@ export default function ActionsPage() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-slate-800 truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {item.contactName}
                     </span>
                     {item.contactCompany && (
@@ -231,7 +231,7 @@ export default function ActionsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-600 mt-0.5">{item.title}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{item.title}</p>
                   <p className="text-xs text-[#999999] mt-0.5">
                     {item.subtitle}
                   </p>
@@ -241,21 +241,21 @@ export default function ActionsPage() {
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => handleComplete(item, "call")}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-green-600 hover:bg-green-900/20 transition-colors"
                     title="Log call"
                   >
                     <Phone className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleComplete(item, "email")}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-blue-400 hover:bg-blue-900/20 transition-colors"
                     title="Log email"
                   >
                     <Mail className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleSkip(item)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-amber-400 hover:bg-amber-900/20 transition-colors"
                     title="Skip to tomorrow"
                   >
                     <Clock className="h-4 w-4" />

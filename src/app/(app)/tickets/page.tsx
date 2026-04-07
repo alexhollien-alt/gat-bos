@@ -148,7 +148,7 @@ function TicketCard({
 
   return (
     <div
-      className="bg-white rounded-lg border border-[#e8e8e8] p-3 mb-2 cursor-pointer shadow-sm hover:shadow transition-shadow"
+      className="bg-card rounded-lg border border-border p-3 mb-2 cursor-pointer shadow-sm hover:shadow transition-shadow"
       onClick={() => setExpanded(!expanded)}
     >
       {/* Rush badge */}
@@ -373,7 +373,7 @@ export default function TicketsPage() {
     <div>
       {/* Header + metrics bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-semibold text-[#0a0a0a]">
+        <h1 className="text-xl font-semibold text-foreground font-display">
           Ticket Workbench
         </h1>
         <div className="flex items-center gap-4 text-[12px]">
@@ -418,7 +418,7 @@ export default function TicketsPage() {
                 <span className="text-[11px] uppercase tracking-wider text-[#999] font-medium">
                   {col.label}
                 </span>
-                <span className="text-[11px] font-semibold text-[#666] bg-white px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold text-muted-foreground bg-card px-2 py-0.5 rounded-full border border-border">
                   {colTickets.length}
                 </span>
               </div>

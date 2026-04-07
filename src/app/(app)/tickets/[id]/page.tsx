@@ -92,7 +92,7 @@ export default function TicketDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -100,7 +100,7 @@ export default function TicketDetailPage() {
   if (!ticket) {
     return (
       <div className="text-center py-20">
-        <p className="text-sm text-slate-500">Ticket not found.</p>
+        <p className="text-sm text-muted-foreground">Ticket not found.</p>
         <Link href="/tickets" className="text-sm text-blue-600 hover:underline mt-2 inline-block">
           Back to tickets
         </Link>
@@ -119,7 +119,7 @@ export default function TicketDetailPage() {
       {/* Back nav */}
       <button
         onClick={() => router.push("/tickets")}
-        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-6"
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to tickets
@@ -129,7 +129,7 @@ export default function TicketDetailPage() {
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-xl font-semibold text-slate-900">{ticket.title}</h1>
+            <h1 className="text-xl font-semibold text-foreground font-display">{ticket.title}</h1>
             {isIntake && (
               <span className="text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
                 Intake
@@ -142,7 +142,7 @@ export default function TicketDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Created {new Date(ticket.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             {ticket.submitted_at && ` \u00B7 Submitted ${new Date(ticket.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
           </p>
@@ -165,8 +165,8 @@ export default function TicketDetailPage() {
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Items requested */}
-          <section className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3">Items Requested</h2>
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Items Requested</h2>
             {ticket.items && ticket.items.length > 0 ? (
               <div className="space-y-2">
                 {ticket.items.map((item) => {
@@ -174,18 +174,18 @@ export default function TicketDetailPage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between bg-slate-50 rounded-md px-4 py-3"
+                      className="flex items-center justify-between bg-muted rounded-md px-4 py-3"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-sm font-medium text-foreground">
                           {pConfig?.label || item.product_type}
                         </span>
                         {item.description && (
-                          <span className="text-xs text-slate-400">{item.description}</span>
+                          <span className="text-xs text-muted-foreground">{item.description}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400">Qty: {item.quantity}</span>
+                        <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
                         {item.design_url && (
                           <a
                             href={item.design_url}
@@ -202,15 +202,15 @@ export default function TicketDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-slate-400">No items specified.</p>
+              <p className="text-sm text-muted-foreground">No items specified.</p>
             )}
           </section>
 
           {/* Listing details */}
           {listing && (listing.address || listing.price) && (
-            <section className="bg-white border border-slate-200 rounded-lg p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-slate-400" />
+            <section className="bg-card border border-border rounded-lg p-5">
+              <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
                 Listing Details
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -227,14 +227,14 @@ export default function TicketDetailPage() {
                 {listing.status && <Detail label="Status" value={listing.status} />}
               </div>
               {listing.description && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 leading-relaxed">{listing.description}</p>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-xs text-muted-foreground leading-relaxed">{listing.description}</p>
                 </div>
               )}
               {listing.key_features && listing.key_features.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {listing.key_features.map((f, i) => (
-                    <span key={i} className="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                    <span key={i} className="text-[11px] bg-secondary text-muted-foreground px-2 py-1 rounded">
                       {f}
                     </span>
                   ))}
@@ -250,8 +250,8 @@ export default function TicketDetailPage() {
           )}
 
           {/* Notes */}
-          <section className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3">Notes</h2>
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Notes</h2>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -274,17 +274,17 @@ export default function TicketDetailPage() {
         {/* Sidebar */}
         <div className="space-y-5">
           {/* Agent / Submitter info */}
-          <section className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <User className="h-4 w-4 text-slate-400" />
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
               {isIntake ? "Submitter" : "Contact"}
             </h2>
             <div className="space-y-2.5">
               {agentName && (
-                <div className="text-sm font-medium text-slate-800">{agentName}</div>
+                <div className="text-sm font-medium text-foreground">{agentName}</div>
               )}
               {ticket.contacts?.company && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Building className="h-3.5 w-3.5" />
                   {ticket.contacts.company}
                 </div>
@@ -310,7 +310,7 @@ export default function TicketDetailPage() {
               {ticket.contacts && (
                 <Link
                   href={`/contacts/${ticket.contacts.id}`}
-                  className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-600 transition-colors mt-1"
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-blue-600 transition-colors mt-1"
                 >
                   View in CRM <ExternalLink className="h-3 w-3" />
                 </Link>
@@ -319,8 +319,8 @@ export default function TicketDetailPage() {
           </section>
 
           {/* Ticket metadata */}
-          <section className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3">Details</h2>
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Details</h2>
             <div className="space-y-3">
               <MetaRow label="Source" value={isIntake ? "Intake Form" : "Internal"} />
               <MetaRow label="Type" value={ticket.request_type.replace("_", " ")} />
@@ -336,8 +336,8 @@ export default function TicketDetailPage() {
           </section>
 
           {/* Quick actions */}
-          <section className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-3">Actions</h2>
+          <section className="bg-card border border-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-foreground mb-3">Actions</h2>
             <div className="space-y-2">
               {ticket.status === "submitted" && (
                 <Button
@@ -398,8 +398,8 @@ export default function TicketDetailPage() {
 function Detail({ label, value, span }: { label: string; value: string; span?: number }) {
   return (
     <div className={span ? `col-span-${span}` : ""}>
-      <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
-      <p className="text-sm text-slate-700">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p>
+      <p className="text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -407,8 +407,8 @@ function Detail({ label, value, span }: { label: string; value: string; span?: n
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs text-slate-400">{label}</span>
-      <span className="text-xs text-slate-700 capitalize">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs text-foreground capitalize">{value}</span>
     </div>
   );
 }

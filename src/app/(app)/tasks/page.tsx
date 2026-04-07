@@ -44,7 +44,7 @@ export default function TasksPage() {
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-slate-800">Tasks</h1>
+        <h1 className="text-xl font-semibold text-foreground font-display">Tasks</h1>
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-36">
@@ -65,7 +65,7 @@ export default function TasksPage() {
 
       <div className="space-y-2">
         {tasks.length === 0 ? (
-          <p className="text-sm text-slate-400 py-8 text-center">No tasks</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">No tasks</p>
         ) : (
           tasks.map((task) => (
             <TaskRow key={task.id} task={task} onUpdate={fetchTasks} />
