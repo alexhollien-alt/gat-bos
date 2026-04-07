@@ -27,25 +27,25 @@ export function TemperatureLeadersWidget({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Thermometer className="h-4 w-4" />
           Hottest Contacts
         </CardTitle>
       </CardHeader>
       <CardContent>
         {contacts.length === 0 ? (
-          <p className="text-sm text-slate-400 py-2">No temperature data yet</p>
+          <p className="text-sm text-muted-foreground py-2">No temperature data yet</p>
         ) : (
           <div className="space-y-3">
             {contacts.map((c) => (
               <Link
                 key={c.id}
                 href={`/contacts/${c.id}`}
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-secondary transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-slate-700 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {c.first_name} {c.last_name}
                     </p>
                     {c.tier && (
@@ -60,14 +60,14 @@ export function TemperatureLeadersWidget({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {c.company || "Independent"}
                     <span className="mx-1">·</span>
                     {touchLabel(c.last_touch_date)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-16 bg-slate-100 rounded-full h-1.5">
+                  <div className="w-16 bg-secondary rounded-full h-1.5">
                     <div
                       className="h-1.5 rounded-full transition-all"
                       style={{
@@ -77,7 +77,7 @@ export function TemperatureLeadersWidget({
                     />
                   </div>
                   <span
-                    className="text-xs font-semibold w-7 text-right"
+                    className="text-xs font-mono font-semibold w-7 text-right"
                     style={{ color: tempColor(c.temperature) }}
                   >
                     {c.temperature}

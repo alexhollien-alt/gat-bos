@@ -55,11 +55,11 @@ export function PipelineSnapshotWidget({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <TrendingUp className="h-4 w-4" />
           Pipeline
           {totalActive > 0 && (
-            <span className="text-xs text-slate-400 font-normal">
+            <span className="text-xs text-muted-foreground font-normal">
               {totalActive} active
             </span>
           )}
@@ -67,7 +67,7 @@ export function PipelineSnapshotWidget({
       </CardHeader>
       <CardContent>
         {opportunities.length === 0 ? (
-          <p className="text-sm text-slate-400 py-2">No opportunities yet</p>
+          <p className="text-sm text-muted-foreground py-2">No opportunities yet</p>
         ) : (
           <div className="space-y-3">
             {summaries.map(({ stage, count, totalValue }) => {
@@ -79,16 +79,16 @@ export function PipelineSnapshotWidget({
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: config.color }}
                     />
-                    <span className="text-sm text-slate-700">
+                    <span className="text-sm text-foreground">
                       {config.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400">{count}</span>
+                    <span className="text-xs font-mono text-muted-foreground">{count}</span>
                     {totalValue > 0 && (
                       <span
                         className={cn(
-                          "text-xs font-medium px-1.5 py-0.5 rounded",
+                          "text-xs font-mono font-medium px-1.5 py-0.5 rounded",
                           config.bgColor,
                           config.textColor
                         )}
@@ -103,16 +103,16 @@ export function PipelineSnapshotWidget({
 
             {closedThisMonth.length > 0 && (
               <>
-                <div className="border-t border-slate-100 pt-2">
+                <div className="border-t border-border pt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Closed this month
                     </span>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs font-mono text-muted-foreground">
                         {closedThisMonth.length}
                       </span>
-                      <span className="text-xs font-semibold text-green-700">
+                      <span className="text-xs font-mono font-semibold text-green-400">
                         {formatCurrency(closedValue)}
                       </span>
                     </div>

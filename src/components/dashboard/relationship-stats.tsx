@@ -14,11 +14,11 @@ export function RelationshipStatsWidget({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
           Relationships
-          <span className="text-xs text-slate-400 font-normal">
-            {total} contacts
+          <span className="text-xs text-muted-foreground font-normal">
+            <span className="font-mono">{total}</span> contacts
           </span>
         </CardTitle>
       </CardHeader>
@@ -38,7 +38,7 @@ export function RelationshipStatsWidget({
                   >
                     {config.label}
                   </span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2">
+                  <div className="flex-1 bg-secondary rounded-full h-2">
                     <div
                       className="h-2 rounded-full transition-all"
                       style={{
@@ -47,7 +47,7 @@ export function RelationshipStatsWidget({
                       }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 w-6 text-right">
+                  <span className="text-xs font-mono text-muted-foreground w-6 text-right">
                     {count}
                   </span>
                 </div>

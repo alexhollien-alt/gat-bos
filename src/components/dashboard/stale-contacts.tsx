@@ -56,17 +56,17 @@ function staleLabel(days: number): string {
 const SEVERITY_CONFIG = {
   critical: {
     label: "Critical",
-    badge: "bg-red-100 text-red-700",
+    badge: "bg-red-500/15 text-red-400",
     dot: "bg-red-500",
   },
   warning: {
     label: "Warning",
-    badge: "bg-orange-100 text-orange-700",
+    badge: "bg-orange-500/15 text-orange-400",
     dot: "bg-orange-400",
   },
   notice: {
     label: "Notice",
-    badge: "bg-yellow-100 text-yellow-700",
+    badge: "bg-yellow-500/15 text-yellow-400",
     dot: "bg-yellow-400",
   },
 };
@@ -100,12 +100,12 @@ export function StaleContactsWidget({
       <div>
         <div className="flex items-center gap-2 mb-1.5 mt-2 first:mt-0">
           <div className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {config.label}
           </span>
           <span
             className={cn(
-              "text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
+              "text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full",
               config.badge
             )}
           >
@@ -118,14 +118,14 @@ export function StaleContactsWidget({
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-2 p-2 rounded-md hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary transition-colors"
               >
                 <Link
                   href={`/contacts/${c.id}`}
                   className="flex-1 min-w-0"
                 >
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-medium text-slate-700 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {c.first_name} {c.last_name}
                     </p>
                     {c.tier && (
@@ -140,18 +140,18 @@ export function StaleContactsWidget({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {c.company || "Independent"}
                   </p>
                 </Link>
                 <span
                   className={cn(
-                    "text-xs font-medium shrink-0",
+                    "text-xs font-mono font-medium shrink-0",
                     severity === "critical"
-                      ? "text-red-600"
+                      ? "text-red-400"
                       : severity === "warning"
-                        ? "text-orange-500"
-                        : "text-yellow-600"
+                        ? "text-orange-400"
+                        : "text-yellow-400"
                   )}
                 >
                   {staleLabel(days)}
@@ -179,11 +179,11 @@ export function StaleContactsWidget({
     <>
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             Needs Attention
             {totalCount > 0 && (
-              <span className="bg-orange-100 text-orange-700 text-xs px-1.5 py-0.5 rounded-full">
+              <span className="bg-orange-500/15 text-orange-400 text-xs font-mono px-1.5 py-0.5 rounded-full">
                 {totalCount}
               </span>
             )}
@@ -191,7 +191,7 @@ export function StaleContactsWidget({
         </CardHeader>
         <CardContent>
           {totalCount === 0 ? (
-            <p className="text-sm text-slate-400 py-2">
+            <p className="text-sm text-muted-foreground py-2">
               All contacts are fresh
             </p>
           ) : (
@@ -204,7 +204,7 @@ export function StaleContactsWidget({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full mt-2 text-xs text-slate-500"
+                  className="w-full mt-2 text-xs text-muted-foreground"
                   onClick={() => setExpanded(!expanded)}
                 >
                   {expanded ? (

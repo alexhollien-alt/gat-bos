@@ -28,9 +28,9 @@ export function TemperatureSummaryBanner({
       label: "Hot",
       range: "80+",
       count: contacts.filter((c) => c.temperature >= 80).length,
-      color: "text-red-600",
-      bgColor: "bg-red-50 border-red-100",
-      icon: <Flame className="h-4 w-4 text-red-500" />,
+      color: "text-red-400",
+      bgColor: "bg-red-500/10 border-red-500/20",
+      icon: <Flame className="h-4 w-4 text-red-400" />,
     },
     {
       label: "Warm",
@@ -38,9 +38,9 @@ export function TemperatureSummaryBanner({
       count: contacts.filter(
         (c) => c.temperature >= 60 && c.temperature < 80
       ).length,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50 border-orange-100",
-      icon: <Thermometer className="h-4 w-4 text-orange-500" />,
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/10 border-orange-500/20",
+      icon: <Thermometer className="h-4 w-4 text-orange-400" />,
     },
     {
       label: "Cool",
@@ -48,17 +48,17 @@ export function TemperatureSummaryBanner({
       count: contacts.filter(
         (c) => c.temperature >= 20 && c.temperature < 60
       ).length,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50 border-blue-100",
-      icon: <Wind className="h-4 w-4 text-blue-500" />,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10 border-blue-500/20",
+      icon: <Wind className="h-4 w-4 text-blue-400" />,
     },
     {
       label: "Cold",
       range: "0-19",
       count: contacts.filter((c) => c.temperature < 20).length,
-      color: "text-slate-600",
-      bgColor: "bg-slate-50 border-slate-200",
-      icon: <Snowflake className="h-4 w-4 text-slate-400" />,
+      color: "text-zinc-400",
+      bgColor: "bg-zinc-500/10 border-zinc-500/20",
+      icon: <Snowflake className="h-4 w-4 text-zinc-500" />,
     },
   ];
 
@@ -71,22 +71,22 @@ export function TemperatureSummaryBanner({
         >
           {b.icon}
           <div>
-            <p className={`text-lg font-semibold leading-none ${b.color}`}>
+            <p className={`text-lg font-mono font-semibold leading-none ${b.color}`}>
               {b.count}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {b.label} ({b.range})
             </p>
           </div>
         </div>
       ))}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-white border-slate-200">
-        <Thermometer className="h-4 w-4 text-slate-400" />
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-card border-border">
+        <Thermometer className="h-4 w-4 text-muted-foreground" />
         <div>
-          <p className="text-lg font-semibold leading-none text-slate-700">
+          <p className="text-lg font-mono font-semibold leading-none text-foreground">
             {avg}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">Avg temp</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Avg temp</p>
         </div>
       </div>
     </div>

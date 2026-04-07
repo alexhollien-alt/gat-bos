@@ -13,36 +13,36 @@ export function RecentInteractionsWidget({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <MessageSquare className="h-4 w-4" />
           Recent Activity
         </CardTitle>
       </CardHeader>
       <CardContent>
         {interactions.length === 0 ? (
-          <p className="text-sm text-slate-400 py-2">No recent activity</p>
+          <p className="text-sm text-muted-foreground py-2">No recent activity</p>
         ) : (
           <div className="space-y-2">
             {interactions.map((i) => (
               <Link
                 key={i.id}
                 href={`/contacts/${i.contact_id}`}
-                className="block p-2 rounded-md hover:bg-slate-50 transition-colors"
+                className="block p-2 rounded-md hover:bg-secondary transition-colors"
               >
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-medium text-slate-500">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {INTERACTION_CONFIG[i.type]?.label}
                   </span>
                   {i.contacts && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       {i.contacts.first_name} {i.contacts.last_name}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-700 line-clamp-1">
+                <p className="text-sm text-foreground line-clamp-1">
                   {i.summary}
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs font-mono text-muted-foreground mt-0.5">
                   {format(new Date(i.occurred_at), "MMM d")}
                 </p>
               </Link>
