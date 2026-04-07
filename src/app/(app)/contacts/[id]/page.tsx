@@ -197,31 +197,31 @@ export default function ContactDetailPage() {
     <div className="max-w-4xl">
       <Link
         href="/contacts"
-        className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to contacts
       </Link>
 
       {/* Header */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 mb-4">
+      <div className="bg-card border border-border rounded-lg p-6 mb-4">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start gap-4">
             {contact.headshot_url ? (
               <img
                 src={contact.headshot_url}
                 alt={`${contact.first_name} ${contact.last_name}`}
-                className="w-14 h-14 rounded-full object-cover border border-slate-200"
+                className="w-14 h-14 object-cover headshot-mask"
               />
             ) : (
-              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg font-semibold">
+              <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-muted-foreground text-lg font-semibold">
                 {contact.first_name.charAt(0)}
                 {contact.last_name.charAt(0)}
               </div>
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-slate-800">
+                <h1 className="text-xl font-semibold text-foreground font-display">
                   {contact.first_name} {contact.last_name}
                 </h1>
                 {contact.type && CONTACT_TYPE_CONFIG[contact.type] && (

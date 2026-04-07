@@ -169,8 +169,8 @@ export default function DashboardPage() {
     <div className="max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">Today</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-xl font-semibold text-foreground font-display">Today</h1>
+          <p className="text-sm text-muted-foreground mt-0.5 font-mono tracking-wide">
             {format(new Date(), "EEEE, MMMM d, yyyy")}
           </p>
         </div>

@@ -13,16 +13,16 @@ export function ContactCard({
 }) {
   return (
     <Link href={`/contacts/${contact.id}`}>
-      <div className="border border-slate-200 rounded-lg p-4 bg-white hover:border-slate-300 hover:shadow-sm transition-all">
+      <div className="border border-border rounded-lg p-4 bg-card hover:border-white/[0.12] transition-all">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-medium text-slate-800">
+            <h3 className="font-medium text-foreground">
               {contact.first_name} {contact.last_name}
             </h3>
             {contact.company && (
               <div className="flex items-center gap-1.5 mt-0.5">
-                <Building className="h-3 w-3 text-slate-400" />
-                <span className="text-sm text-slate-500">
+                <Building className="h-3 w-3 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
                   {contact.title ? `${contact.title}, ` : ""}
                   {contact.company}
                 </span>
@@ -31,7 +31,7 @@ export function ContactCard({
           </div>
           <RelationshipBadge relationship={contact.relationship} />
         </div>
-        <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
           {contact.email && (
             <span className="flex items-center gap-1">
               <Mail className="h-3 w-3" />

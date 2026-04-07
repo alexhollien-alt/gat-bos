@@ -11,12 +11,12 @@ export default function IntakeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen relative bg-[#faf9f7]">
+    <div className="min-h-screen relative" style={{ backgroundColor: "#09090b" }}>
       {/* Google Fonts */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=Space+Mono&display=swap"
       />
 
       {/* Self Deception font for signature */}
@@ -33,7 +33,7 @@ export default function IntakeLayout({
       {/* Header */}
       <header
         className="relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #0c0c0c 0%, #141414 40%, #0e0e0e 100%)" }}
+        style={{ background: "linear-gradient(160deg, #09090b 0%, #131316 40%, #09090b 100%)" }}
       >
         {/* Arizona sunset mid-layer */}
         <div
@@ -51,8 +51,8 @@ export default function IntakeLayout({
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: `
-              radial-gradient(ellipse at 90% 10%, rgba(179,26,53,0.16) 0%, transparent 50%),
-              radial-gradient(ellipse at 5% 95%, rgba(0,48,135,0.14) 0%, transparent 50%),
+              radial-gradient(ellipse at 90% 10%, rgba(230,53,80,0.16) 0%, transparent 50%),
+              radial-gradient(ellipse at 5% 95%, rgba(37,99,235,0.10) 0%, transparent 50%),
               radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.012) 0%, transparent 70%)
             `,
           }}
@@ -83,12 +83,12 @@ export default function IntakeLayout({
           <div className="flex flex-col sm:flex-row items-stretch gap-0 py-6 sm:py-8">
             {/* Left: Hero headshot */}
             <div className="flex-shrink-0 w-full sm:w-[200px] relative">
-              <div className="h-[240px] sm:h-full rounded-2xl overflow-hidden ring-1 ring-white/[0.06]">
+              <div className="h-[240px] sm:h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/alex-hero.jpg"
                   alt="Alex Hollien"
-                  className="h-full w-full object-cover object-top"
+                  className="h-full w-full object-cover object-top headshot-mask-hero"
                 />
               </div>
             </div>
@@ -96,14 +96,14 @@ export default function IntakeLayout({
             {/* Right: positioning text -- fills to match image height */}
             <div className="flex-1 flex flex-col justify-center sm:pl-8 pt-6 sm:pt-0">
               <p
-                className="text-[10px] uppercase tracking-[0.3em] text-[#b31a35] font-semibold mb-4 opacity-80"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
+                className="text-[10px] uppercase tracking-[0.3em] text-[#e63550] font-semibold mb-4 opacity-80"
+                style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
               >
                 Built For Agents
               </p>
               <h1
                 className="text-[28px] sm:text-[38px] text-white leading-[1.08] mb-4 tracking-[-0.02em]"
-                style={{ fontFamily: "'Playfair Display', serif" }}
+                style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
               >
                 Behind every great agent
                 <br className="hidden sm:block" />
@@ -111,7 +111,7 @@ export default function IntakeLayout({
               </h1>
               <p
                 className="text-[13px] sm:text-[14px] text-white/25 leading-[1.8] max-w-md mb-6"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
+                style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
               >
                 Full-service design, print production, data tools, and
                 hands-on transaction support -- all included when you
@@ -123,13 +123,13 @@ export default function IntakeLayout({
                 <div>
                   <h2
                     className="text-[18px] sm:text-[20px] text-white leading-tight tracking-[-0.01em]"
-                    style={{ fontFamily: "'Playfair Display', serif" }}
+                    style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
                   >
                     Alex Hollien
                   </h2>
                   <p
-                    className="text-[8px] uppercase tracking-[0.2em] text-[#b31a35]/50 font-semibold mt-0.5"
-                    style={{ fontFamily: "'Montserrat', sans-serif" }}
+                    className="text-[8px] uppercase tracking-[0.2em] text-[#e63550]/50 font-semibold mt-0.5"
+                    style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
                   >
                     Title Sales Executive &nbsp;&bull;&nbsp; Phoenix Valley
                   </p>
@@ -138,7 +138,7 @@ export default function IntakeLayout({
                   <a
                     href="tel:+14802042983"
                     className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
-                    style={{ fontFamily: "'Montserrat', sans-serif" }}
+                    style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
                   >
                     (480) 204-2983
                   </a>
@@ -146,7 +146,7 @@ export default function IntakeLayout({
                   <a
                     href="mailto:alex@alexhollienco.com"
                     className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
-                    style={{ fontFamily: "'Montserrat', sans-serif" }}
+                    style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
                   >
                     alex@alexhollienco.com
                   </a>
@@ -166,13 +166,13 @@ export default function IntakeLayout({
               <div key={item.label} className="flex items-baseline gap-1.5 text-center">
                 <span
                   className="text-[20px] sm:text-[24px] text-white/80 leading-none tracking-[-0.02em]"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
+                  style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
                 >
                   {item.stat}
                 </span>
                 <span
                   className="text-[8px] sm:text-[9px] text-white/30 uppercase tracking-[0.12em] font-medium"
-                  style={{ fontFamily: "'Montserrat', sans-serif" }}
+                  style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
                 >
                   {item.label}
                 </span>
@@ -184,22 +184,22 @@ export default function IntakeLayout({
         {/* Bottom accent bar */}
         <div
           className="h-[3px]"
-          style={{ background: "linear-gradient(90deg, #b31a35 0%, #b31a35 30%, #003087 100%)" }}
+          style={{ background: "linear-gradient(90deg, #e63550 0%, #e63550 30%, #2563eb 100%)" }}
         />
       </header>
 
       {/* Content */}
-      <main className="relative max-w-5xl mx-auto px-6 sm:px-8 py-10 sm:py-14">
+      <main className="relative max-w-5xl mx-auto px-6 sm:px-8 py-10 sm:py-14" style={{ color: "#f4f4f5" }}>
         {children}
       </main>
 
       {/* Footer */}
       <footer className="relative pb-10 text-center">
         <div className="max-w-5xl mx-auto px-6 sm:px-8">
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-[#ddd8d0] to-transparent mb-6" />
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-[#27272a] to-transparent mb-6" />
           <p
-            className="text-[10px] text-[#999] tracking-[0.15em] uppercase"
-            style={{ fontFamily: "'Montserrat', sans-serif" }}
+            className="text-[10px] text-[#71717a] tracking-[0.15em] uppercase"
+            style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
           >
             Title & Escrow Services Provided by Great American Title Agency
           </p>
@@ -215,6 +215,12 @@ export default function IntakeLayout({
         }
         .intake-animate-in {
           animation: intake-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .intake-animate-in {
+            animation: none;
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
