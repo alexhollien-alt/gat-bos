@@ -1,5 +1,9 @@
 -- Phase 4 Migration: Marketing Fields + Opportunities
--- CORRECTED to match live DB schema (no user_id on contacts)
+-- HISTORY: This file originally documented contacts as having no user_id.
+--   That assumption was reversed in dashboard-piece2-add-infrastructure.sql
+--   (re-added contacts.user_id as nullable) and finalized in
+--   dashboard-piece5-contacts-user-id-lockdown.sql (backfill + DEFAULT auth.uid()
+--   + NOT NULL). Read those two pieces for the current state of contacts.user_id.
 -- Run in Supabase SQL Editor -- Idempotent
 
 -- ============================================================
