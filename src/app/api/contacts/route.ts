@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
+import { requireApiToken } from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
+  const unauth = requireApiToken(request);
+  if (unauth) return unauth;
+
   const params = request.nextUrl.searchParams;
 
   let query = adminClient
@@ -64,6 +68,20 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauth = requireApiToken(request);
+  if (unauth) return unauth;
+
+  // Hard-pinned owner. Same env var as /api/intake. Must be a valid
+  // auth.users.id. Single-user system today; replace with session-derived
+  // ownership when multi-user is added.
+  const ownerId = process.env.OWNER_USER_ID;
+  if (!ownerId) {
+    return NextResponse.json(
+      { error: "Server misconfigured: OWNER_USER_ID not set" },
+      { status: 500 }
+    );
+  }
+
   const body = await request.json();
 
   // Require at minimum a first_name
@@ -74,9 +92,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Owner-stamp: ignore any user_id supplied in the body, always use the
+  // canonical owner. Phase 2.1 is single-user; this prevents a future
+  // multi-user mistake from leaking writes across owners.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { user_id: _ignored, ...sanitized } = body;
+  const insertPayload = { ...sanitized, user_id: ownerId };
+
   const { data, error } = await adminClient
     .from("contacts")
-    .insert(body)
+    .insert(insertPayload)
     .select()
     .single();
 
