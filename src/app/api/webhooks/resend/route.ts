@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-const TEMP_BUMPS: Record<string, number> = {
+const SCORE_BUMPS: Record<string, number> = {
   "email.delivered": 1,
   "email.opened": 3,
   "email.clicked": 5,
@@ -26,18 +26,18 @@ export async function POST(req: NextRequest) {
 
     const { data: contact } = await supabase
       .from("contacts")
-      .select("id, temperature, first_name, last_name, user_id")
+      .select("id, health_score, first_name, last_name, user_id")
       .eq("email", recipientEmail)
       .is("deleted_at", null)
       .single();
 
     if (!contact) return NextResponse.json({ ok: true, skipped: true, reason: "no matching contact" });
 
-    const bump = TEMP_BUMPS[type] || 0;
+    const bump = SCORE_BUMPS[type] || 0;
     if (bump > 0) {
       await supabase
         .from("contacts")
-        .update({ temperature: Math.min((contact.temperature || 0) + bump, 100) })
+        .update({ health_score: Math.min((contact.health_score || 0) + bump, 100) })
         .eq("id", contact.id);
     }
 

@@ -19,7 +19,7 @@ function touchLabel(date: string | null): string {
   return formatDistanceToNowStrict(parseISO(date), { addSuffix: true });
 }
 
-export function TemperatureLeadersWidget({
+export function HealthLeadersWidget({
   contacts,
 }: {
   contacts: Contact[];
@@ -39,7 +39,7 @@ export function TemperatureLeadersWidget({
       </CardHeader>
       <CardContent>
         {contacts.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">No temperature data yet</p>
+          <p className="text-sm text-muted-foreground py-2">No health data yet</p>
         ) : (
           <div className="space-y-1">
             {contacts.map((c) => (
@@ -68,18 +68,18 @@ export function TemperatureLeadersWidget({
                   <p className="text-xs text-muted-foreground truncate">
                     {c.company || "Independent"}
                     <span className="mx-1">·</span>
-                    {touchLabel(c.last_touch_date)}
+                    <span className="font-mono">{touchLabel(c.last_touch_date)}</span>
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end">
                   <span
                     className="text-2xl font-mono font-semibold leading-none"
-                    style={{ color: tempColor(c.temperature) }}
+                    style={{ color: tempColor(c.health_score) }}
                   >
-                    {c.temperature}
+                    {c.health_score}
                   </span>
                   <span className="text-[9px] font-mono uppercase tracking-wide text-muted-foreground mt-0.5">
-                    TEMP
+                    SCORE
                   </span>
                 </div>
               </Link>

@@ -57,7 +57,7 @@ interface TempContact {
   id: string;
   first_name: string;
   last_name: string;
-  temperature: number;
+  health_score: number;
   recent_interactions: number;
   prior_interactions: number;
 }
@@ -121,20 +121,20 @@ function EmptyState({ message }: { message: string }) {
 }
 
 // ---------------------
-// View 1: Agent Temperature Trends
+// View 1: Agent Health Score Trends
 // ---------------------
 function TempTrendsView({ contacts }: { contacts: TempContact[] }) {
   if (contacts.length === 0) {
     return <EmptyState message="No contact data yet." />;
   }
 
-  const sorted = [...contacts].sort((a, b) => b.temperature - a.temperature);
+  const sorted = [...contacts].sort((a, b) => b.health_score - a.health_score);
   const top5 = sorted.slice(0, 5);
   const bottom5 = sorted.slice(-5).reverse();
 
   const toChartRow = (c: TempContact) => ({
     name: `${c.first_name} ${c.last_name.charAt(0)}.`,
-    temperature: c.temperature,
+    health_score: c.health_score,
   });
 
   return (
@@ -176,9 +176,9 @@ function TempTrendsView({ contacts }: { contacts: TempContact[] }) {
                     fontSize: 12,
                   }}
                   cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                  formatter={(v) => [`${v}`, "Temperature"]}
+                  formatter={(v) => [`${v}`, "Health Score"]}
                 />
-                <Bar dataKey="temperature" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="health_score" radius={[0, 4, 4, 0]} barSize={16}>
                   {top5.map((_, i) => (
                     <Cell key={i} fill={SUCCESS} />
                   ))}
@@ -228,9 +228,9 @@ function TempTrendsView({ contacts }: { contacts: TempContact[] }) {
                     fontSize: 12,
                   }}
                   cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                  formatter={(v) => [`${v}`, "Temperature"]}
+                  formatter={(v) => [`${v}`, "Health Score"]}
                 />
-                <Bar dataKey="temperature" radius={[0, 4, 4, 0]} barSize={16}>
+                <Bar dataKey="health_score" radius={[0, 4, 4, 0]} barSize={16}>
                   {bottom5.map((_, i) => (
                     <Cell key={i} fill={CRIMSON} />
                   ))}
@@ -555,7 +555,7 @@ function CampaignTableView({ campaigns }: { campaigns: CampaignRow[] }) {
 export default function AnalyticsPage() {
   const supabase = createClient();
 
-  // Q1: Temperature
+  // Q1: Health Score
   const [tempContacts, setTempContacts] = useState<TempContact[]>([]);
 
   // Q2: Pipeline
@@ -587,7 +587,7 @@ export default function AnalyticsPage() {
     ] = await Promise.all([
       supabase
         .from("contacts")
-        .select("id, first_name, last_name, temperature")
+        .select("id, first_name, last_name, health_score")
         .is("deleted_at", null),
 
       // Interactions in last 30 days (recent)
@@ -626,7 +626,7 @@ export default function AnalyticsPage() {
         .is("deleted_at", null),
     ]);
 
-    // ------ Q1: Temperature contacts ------
+    // ------ Q1: Health Score contacts ------
     const contacts = contactsRes.data || [];
     const recentByContact = new Map<string, number>();
     const priorByContact = new Map<string, number>();
@@ -645,12 +645,12 @@ export default function AnalyticsPage() {
     });
 
     const enriched: TempContact[] = contacts
-      .filter((c) => typeof c.temperature === "number")
+      .filter((c) => typeof c.health_score === "number")
       .map((c) => ({
         id: c.id,
         first_name: c.first_name,
         last_name: c.last_name,
-        temperature: c.temperature as number,
+        health_score: c.health_score as number,
         recent_interactions: recentByContact.get(c.id) || 0,
         prior_interactions: priorByContact.get(c.id) || 0,
       }));
@@ -861,7 +861,7 @@ export default function AnalyticsPage() {
       {/* 2x2 grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Q1: Temperature Trends */}
+        {/* Q1: Health Score Trends */}
         <div className={cardClass}>
           <div className="mb-4">
             <QuestionLabel n="01" />

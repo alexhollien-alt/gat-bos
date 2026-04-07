@@ -8,13 +8,13 @@ import {
   Opportunity,
   RelationshipStrength,
 } from "@/lib/types";
-import { TemperatureLeadersWidget } from "@/components/dashboard/temperature-leaders";
-import { TemperatureSummaryBanner } from "@/components/dashboard/temperature-summary";
+import { HealthLeadersWidget } from "@/components/dashboard/health-leaders";
+import { HealthSummaryBanner } from "@/components/dashboard/health-summary";
 import { PipelineSnapshotWidget } from "@/components/dashboard/pipeline-snapshot";
 import { RecentInteractionsWidget } from "@/components/dashboard/recent-interactions";
 import { RelationshipStatsWidget } from "@/components/dashboard/relationship-stats";
 import { QuickActionsWidget } from "@/components/dashboard/quick-actions";
-import { ActionQueueWidget } from "@/components/dashboard/action-queue";
+import { TaskListWidget } from "@/components/dashboard/task-list";
 import { PrintTicketsPanel } from "@/components/dashboard/print-tickets-panel";
 import { CampaignTimelineWidget } from "@/components/dashboard/campaign-timeline";
 import { format } from "date-fns";
@@ -42,12 +42,12 @@ export default function DashboardPage() {
       .from("contacts")
       .select("*")
       .is("deleted_at", null)
-      .gt("temperature", 0)
-      .order("temperature", { ascending: false })
+      .gt("health_score", 0)
+      .order("health_score", { ascending: false })
       .limit(8);
     if (tempData) setHotContacts(tempData);
 
-    // All contacts (for temperature banner + relationship stats)
+    // All contacts (for health banner + relationship stats)
     const { data: contactsData } = await supabase
       .from("contacts")
       .select("*")
@@ -108,20 +108,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <TemperatureSummaryBanner contacts={allContacts} />
+      <HealthSummaryBanner contacts={allContacts} />
 
       {/* Main grid: Action queue (wider) + intelligence column */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left column (2/3) -- the operational hub */}
         <div className="lg:col-span-2 space-y-4">
-          <ActionQueueWidget />
+          <TaskListWidget />
           <CampaignTimelineWidget />
           <PipelineSnapshotWidget opportunities={opportunities} />
         </div>
 
         {/* Right column (1/3) -- intelligence + quick actions */}
         <div className="space-y-4">
-          <TemperatureLeadersWidget contacts={hotContacts} />
+          <HealthLeadersWidget contacts={hotContacts} />
           <QuickActionsWidget onRefresh={fetchAll} />
           <RelationshipStatsWidget stats={stats} />
           <RecentInteractionsWidget interactions={recentInteractions} />

@@ -11,8 +11,8 @@ export function RelationshipBadge({
 }) {
   const config = RELATIONSHIP_CONFIG[relationship] ?? {
     label: relationship,
-    bgColor: "bg-gray-100",
-    textColor: "text-gray-700",
+    bgColor: "bg-zinc-500/10",
+    textColor: "text-zinc-400",
   };
   return (
     <span

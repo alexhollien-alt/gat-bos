@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
     query = query.eq("stage", stage);
   }
 
-  // Filter by temperature below threshold
-  const tempBelow = params.get("temperature_below");
-  if (tempBelow) {
-    query = query.lt("temperature", parseInt(tempBelow, 10));
+  // Filter by health score below threshold
+  const scoreBelow = params.get("health_score_below");
+  if (scoreBelow) {
+    query = query.lt("health_score", parseInt(scoreBelow, 10));
   }
 
   // Filter by stale contacts (last_touch_date older than N days)

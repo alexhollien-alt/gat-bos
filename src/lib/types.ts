@@ -97,8 +97,9 @@ export interface Contact {
   farm_zips: string[] | null;
 
   // Relationship scoring
-  temperature: number;
+  health_score: number;
   rep_pulse: number | null;
+  rep_pulse_updated_at: string | null;
   tier: ContactTier | null;
 
   // Social & identity
@@ -368,7 +369,7 @@ export interface ActionItem {
   contactId: string;
   contactName: string;
   contactTier: ContactTier | null;
-  contactTemperature: number;
+  contactHealthScore: number;
   contactCompany: string | null;
   contactPhone: string | null;
   contactEmail: string | null;

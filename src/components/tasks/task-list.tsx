@@ -44,12 +44,12 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border bg-white transition-colors",
+        "flex items-center gap-3 p-3 rounded-lg border bg-card transition-colors",
         isOverdue
-          ? "border-red-200 bg-red-50/50"
+          ? "border-red-500/30 bg-red-500/5"
           : isDueToday
-          ? "border-yellow-200 bg-yellow-50/50"
-          : "border-slate-200",
+          ? "border-yellow-500/30 bg-yellow-500/5"
+          : "border-border",
         task.status === "completed" && "opacity-60"
       )}
     >
@@ -60,8 +60,8 @@ export function TaskRow({
       <div className="flex-1 min-w-0">
         <p
           className={cn(
-            "text-sm font-medium text-slate-800",
-            task.status === "completed" && "line-through text-slate-400"
+            "text-sm font-medium text-foreground",
+            task.status === "completed" && "line-through text-muted-foreground"
           )}
         >
           {task.title}
@@ -70,7 +70,7 @@ export function TaskRow({
           {task.contacts && (
             <Link
               href={`/contacts/${task.contacts.id}`}
-              className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
             >
               {task.contacts.first_name} {task.contacts.last_name}
             </Link>
@@ -80,17 +80,17 @@ export function TaskRow({
               className={cn(
                 "text-xs",
                 isOverdue
-                  ? "text-red-500 font-medium"
+                  ? "text-red-400 font-medium"
                   : isDueToday
-                  ? "text-yellow-600 font-medium"
-                  : "text-slate-400"
+                  ? "text-yellow-400 font-medium"
+                  : "text-muted-foreground"
               )}
             >
               {isOverdue ? "Overdue: " : ""}
               {format(new Date(task.due_date), "MMM d")}
             </span>
           )}
-          <span className={cn("text-xs", PRIORITY_CONFIG[task.priority]?.color ?? "text-slate-400")}>
+          <span className={cn("text-xs", PRIORITY_CONFIG[task.priority]?.color ?? "text-muted-foreground")}>
             {PRIORITY_CONFIG[task.priority]?.label ?? task.priority}
           </span>
         </div>

@@ -91,7 +91,7 @@ export async function POST(request: Request) {
             lead_status: "prospect",
             source: "website",
             source_detail: `Intake form -- ${body.situation || "general"}`,
-            temperature: 30,
+            health_score: 30,
             notes: body.agent.brokerage
               ? `Signed up via intake form. Brokerage: ${body.agent.brokerage}`
               : "Signed up via intake form.",

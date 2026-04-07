@@ -45,7 +45,7 @@ export function CommandPalette() {
     const supabase = createClient();
     const { data } = await supabase
       .from("contacts")
-      .select("id, first_name, last_name, company, email, phone, temperature, tier")
+      .select("id, first_name, last_name, company, email, phone, health_score, tier")
       .order("first_name", { ascending: true })
       .limit(200);
     if (data) setContacts(data as Contact[]);
@@ -105,9 +105,9 @@ export function CommandPalette() {
                   </span>
                 )}
               </div>
-              {c.temperature > 0 && (
+              {c.health_score > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {c.temperature}°
+                  {c.health_score}
                 </span>
               )}
             </CommandItem>

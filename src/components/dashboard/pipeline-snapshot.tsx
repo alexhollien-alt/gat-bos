@@ -60,7 +60,7 @@ export function PipelineSnapshotWidget({
           Pipeline
           {totalActive > 0 && (
             <span className="text-xs text-muted-foreground font-normal">
-              {totalActive} active
+              <span className="font-mono">{totalActive}</span> active
             </span>
           )}
         </CardTitle>

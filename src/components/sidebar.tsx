@@ -45,10 +45,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-56 border-r border-slate-200 bg-white flex flex-col">
-      <div className="p-5 border-b border-slate-200">
-        <h1 className="text-lg font-semibold text-slate-800 tracking-tight">
-          Relationship CRM
+    <aside className="fixed left-0 top-0 z-40 h-screen w-56 border-r border-border bg-background flex flex-col">
+      <div className="p-5 border-b border-border">
+        <h1 className="text-lg font-semibold text-foreground tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+          GAT-BOS
         </h1>
       </div>
       <nav className="flex-1 p-3 space-y-1">
@@ -62,8 +62,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-slate-100 text-slate-900"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -72,25 +72,25 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-3 border-t border-slate-200 space-y-1">
+      <div className="p-3 border-t border-border space-y-1">
         <button
           onClick={() => {
             document.dispatchEvent(
               new KeyboardEvent("keydown", { key: "k", metaKey: true })
             );
           }}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         >
           <Search className="h-4 w-4" />
           Search
-          <kbd className="ml-auto text-[10px] font-mono bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">
+          <kbd className="ml-auto text-[10px] font-mono bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">
             {"\u2318"}K
           </kbd>
         </button>
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-slate-500 hover:text-slate-700"
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
           onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4 mr-2" />

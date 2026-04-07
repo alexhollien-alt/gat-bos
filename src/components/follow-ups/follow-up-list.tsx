@@ -41,22 +41,22 @@ export function FollowUpRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border bg-white transition-colors",
+        "flex items-center gap-3 p-3 rounded-lg border bg-card transition-colors",
         isOverdue
-          ? "border-red-200 bg-red-50/50"
+          ? "border-red-500/30 bg-red-500/5"
           : isDueToday
-          ? "border-yellow-200 bg-yellow-50/50"
-          : "border-slate-200",
+          ? "border-yellow-500/30 bg-yellow-500/5"
+          : "border-border",
         followUp.status !== "pending" && "opacity-60"
       )}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-800">{followUp.reason}</p>
+        <p className="text-sm text-foreground">{followUp.reason}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {followUp.contacts && (
             <Link
               href={`/contacts/${followUp.contacts.id}`}
-              className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
             >
               {followUp.contacts.first_name} {followUp.contacts.last_name}
             </Link>
@@ -65,10 +65,10 @@ export function FollowUpRow({
             className={cn(
               "text-xs",
               isOverdue
-                ? "text-red-500 font-medium"
+                ? "text-red-400 font-medium"
                 : isDueToday
-                ? "text-yellow-600 font-medium"
-                : "text-slate-400"
+                ? "text-yellow-400 font-medium"
+                : "text-muted-foreground"
             )}
           >
             {isOverdue ? "Overdue: " : ""}
@@ -81,7 +81,7 @@ export function FollowUpRow({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+            className="h-7 w-7 p-0 text-green-400 hover:text-green-300"
             onClick={() => markStatus("completed")}
             title="Mark complete"
           >
@@ -90,7 +90,7 @@ export function FollowUpRow({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => markStatus("skipped")}
             title="Skip"
           >

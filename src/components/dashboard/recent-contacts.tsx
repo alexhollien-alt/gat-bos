@@ -12,27 +12,27 @@ export function RecentContactsWidget({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Users className="h-4 w-4" />
           Recently Added
         </CardTitle>
       </CardHeader>
       <CardContent>
         {contacts.length === 0 ? (
-          <p className="text-sm text-slate-400 py-2">No contacts yet</p>
+          <p className="text-sm text-muted-foreground py-2">No contacts yet</p>
         ) : (
           <div className="space-y-2">
             {contacts.map((c) => (
               <Link
                 key={c.id}
                 href={`/contacts/${c.id}`}
-                className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-2 rounded-md hover:bg-secondary transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-slate-700">
+                  <p className="text-sm font-medium text-foreground">
                     {c.first_name} {c.last_name}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     {c.company || "No company"}
                   </p>
                 </div>

@@ -40,7 +40,7 @@ export default function ActionsPage() {
         supabase
           .from("follow_ups")
           .select(
-            "*, contacts(id, first_name, last_name, tier, temperature, company, phone, email)"
+            "*, contacts(id, first_name, last_name, tier, health_score, company, phone, email)"
           )
           .eq("status", "pending")
           .lte("due_date", horizon)
@@ -48,7 +48,7 @@ export default function ActionsPage() {
         supabase
           .from("tasks")
           .select(
-            "*, contacts(id, first_name, last_name, tier, temperature, company, phone, email)"
+            "*, contacts(id, first_name, last_name, tier, health_score, company, phone, email)"
           )
           .in("status", ["pending", "in_progress"])
           .not("contact_id", "is", null)
@@ -129,11 +129,11 @@ export default function ActionsPage() {
         .eq("id", item.sourceId);
     }
 
-    // Bump temperature
+    // Bump health score
     await supabase
       .from("contacts")
       .update({
-        temperature: Math.min(item.contactTemperature + 5, 100),
+        health_score: Math.min(item.contactHealthScore + 5, 100),
       })
       .eq("id", item.contactId);
 

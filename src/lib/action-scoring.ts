@@ -32,20 +32,20 @@ const STALE_THRESHOLD_DAYS: Record<NonNullable<ContactTier>, number> = {
 // Core scorer
 // ---------------------
 
-export function scoreAction(item: Pick<ActionItem, "type" | "contactTier" | "contactTemperature" | "daysOverdue">): number {
+export function scoreAction(item: Pick<ActionItem, "type" | "contactTier" | "contactHealthScore" | "daysOverdue">): number {
   const typeScore = TYPE_WEIGHT[item.type];
   const tierScore = item.contactTier ? TIER_WEIGHT[item.contactTier] : 0;
   const overdueBonus = Math.min(item.daysOverdue * 2, 20);
-  const temperatureBonus = Math.min(item.contactTemperature / 10, 10);
+  const healthScoreBonus = Math.min(item.contactHealthScore / 10, 10);
 
-  return Math.min(Math.round(typeScore + tierScore + overdueBonus + temperatureBonus), 100);
+  return Math.min(Math.round(typeScore + tierScore + overdueBonus + healthScoreBonus), 100);
 }
 
 // ---------------------
 // Contact name helper
 // ---------------------
 
-type ContactSummary = Pick<Contact, "id" | "first_name" | "last_name" | "tier" | "temperature" | "company" | "phone" | "email">;
+type ContactSummary = Pick<Contact, "id" | "first_name" | "last_name" | "tier" | "health_score" | "company" | "phone" | "email">;
 
 function contactName(c: Pick<Contact, "first_name" | "last_name">): string {
   return `${c.first_name} ${c.last_name}`.trim();
@@ -81,7 +81,7 @@ export function buildFollowUpActions(followUps: FollowUpWithContact[]): ActionIt
       contactId: contact.id,
       contactName: contactName(contact),
       contactTier: contact.tier,
-      contactTemperature: contact.temperature ?? 0,
+      contactHealthScore: contact.health_score ?? 0,
       contactCompany: contact.company,
       contactPhone: contact.phone,
       contactEmail: contact.email,
@@ -132,7 +132,7 @@ export function buildTaskActions(tasks: TaskWithContact[]): ActionItem[] {
       contactId: contact?.id ?? "",
       contactName: contact ? contactName(contact) : "No contact",
       contactTier: contact?.tier ?? null,
-      contactTemperature: contact?.temperature ?? 0,
+      contactHealthScore: contact?.health_score ?? 0,
       contactCompany: contact?.company ?? null,
       contactPhone: contact?.phone ?? null,
       contactEmail: contact?.email ?? null,
@@ -186,7 +186,7 @@ export function buildStaleActions(
       contactId: contact.id,
       contactName: contactName(contact),
       contactTier: contact.tier,
-      contactTemperature: contact.temperature ?? 0,
+      contactHealthScore: contact.health_score ?? 0,
       contactCompany: contact.company,
       contactPhone: contact.phone,
       contactEmail: contact.email,
