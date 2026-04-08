@@ -72,6 +72,110 @@
 
 ---
 
+## Schema Reality (added 2026-04-08 — addendum, supersedes any task-level schema assumptions below)
+
+> **For all subagents implementing tasks below:** The plan was originally written against an assumed schema that does not exactly match production. This section is the authoritative reference for the four "DO NOT TOUCH" tables that the spine layer reads from. **When a task body below contradicts this section, this section wins.**
+
+### `public.contacts` (106 rows, 1 soft-deleted as of 2026-04-08)
+
+Columns the spine work cares about:
+
+- `id` uuid PK
+- `first_name`, `last_name` text NOT NULL
+- `email`, `phone` text nullable
+- `type` text NOT NULL, default `'realtor'`. CHECK in: `realtor, lender, builder, vendor, buyer, seller, past_client, warm_lead, referral_partner, sphere, other`
+- `tier` text **nullable**, **CHECK in: `'A', 'B', 'C', 'P'` only — no numeric tiers, no `'tier1'` strings**
+- `stage` text NOT NULL, default `'new'`. CHECK in: `new, warm, active_partner, advocate, dormant`
+- `health_score` integer 0..100 (this is the dashboard "temperature")
+- `rep_pulse` integer 1..10 nullable
+- `last_touch_date` timestamptz nullable (manually maintained, separate from `cycle_state.last_touched_at` which the spine trigger maintains automatically)
+- `next_action`, `next_action_date` (manual reminders, separate from `focus_queue`)
+- `farm_area` text, `farm_zips` text[]
+- `notes` text (added 2026-04-08 in commit `7ae7577`)
+- `internal_note` text (long-standing, separate from `notes`)
+- `headshot_url`, `brokerage_logo_url`, `agent_logo_url`, `brand_colors` jsonb, `palette`, `font_kit`
+- `preferred_channel`, `referred_by`, `escrow_officer`
+- `user_id` uuid NOT NULL default `auth.uid()`
+- `created_at`, `updated_at`, `deleted_at` timestamptz
+
+**Tier distribution as of 2026-04-08:** A=26, B=26, C=16, P=22, NULL=15. P most likely means "Prospect" -- confirm with Alex before treating differently from A/B/C.
+
+### `public.interactions`
+
+- `id` uuid PK
+- `user_id` uuid NOT NULL
+- `contact_id` uuid NOT NULL
+- `type` `interaction_type` Postgres enum, NOT NULL. **Enum values: `call, text, email, meeting, broker_open, lunch, note`**
+- `summary` text NOT NULL ← **NOT `note`**. Plan body's smoke test SQL uses `note`; that column does not exist.
+- `occurred_at` timestamptz default `now()` (when the interaction happened)
+- `created_at` timestamptz default `now()` (when the row was inserted; this is what the spine trigger reads as `last_touched_at`)
+- `direction` text nullable, CHECK in `inbound, outbound`
+- `duration_minutes` integer nullable
+- **NO `deleted_at`**, **NO `updated_at`** (this is why the Task 2 smoke-test cleanup required a hard delete)
+
+The spine trigger `interactions_update_cycle` (committed in `eef1132` as part of Task 2) fires AFTER INSERT and reads `new.contact_id`, `new.user_id`, `new.created_at`. It does not read `new.type` or `new.summary`.
+
+### `public.opportunities`
+
+- `id` uuid PK
+- `contact_id` uuid NOT NULL
+- `property_address` text NOT NULL
+- `property_city`, `property_state` (default `'AZ'`), `property_zip`
+- `sale_price` numeric nullable
+- `stage` `opportunity_stage` Postgres enum, default `'prospect'`. **Enum values: `prospect, under_contract, in_escrow, closed, fell_through`**
+- `escrow_number` text
+- `opened_at`, `expected_close_date`, `closed_at` date
+- `notes` text
+- `user_id` uuid NOT NULL default `auth.uid()`
+- `created_at`, `updated_at`, `deleted_at` timestamptz
+
+The spine `signals.kind = 'closing_soon'` (Task 14) should detect rows where `stage IN ('under_contract', 'in_escrow')` and `expected_close_date` is within the upcoming window. The plan body does not enumerate stage names; this is the actual list.
+
+### `public.tasks`
+
+- `id` uuid PK
+- `contact_id` uuid **nullable** (no FK enforcement)
+- `title` text NOT NULL
+- `description` text nullable
+- `due_date` timestamptz nullable
+- `priority` text default `'medium'`, CHECK in: `low, medium, high, urgent`
+- `status` text default `'open'`, CHECK in: `open, done, snoozed, cancelled`
+- `is_recurring` boolean default false, `recurrence_rule` text
+- `completed_at`, `snoozed_until` timestamptz nullable
+- `user_id` uuid NOT NULL default `auth.uid()`
+- `created_at`, `updated_at`, `deleted_at` timestamptz
+
+The spine plan does not currently read from `tasks` directly -- `commitments` is the spine's parallel concept. If a future task surfaces tasks on the dashboard alongside commitments, use the column shape above.
+
+### Tier mapping for cycle cadence (used by Task 2 trigger and Tasks 14, 15, 16)
+
+The plan body assumes numeric tiers; reality uses letter grades. The mapping committed in `eef1132` (Task 2):
+
+| Plan tier value | Reality tier value | Cadence (days) |
+|---|---|---|
+| `'1'`, `'tier1'` | `'A'` | 7 |
+| `'2'`, `'tier2'` | `'B'` | 14 |
+| `'3'`, `'tier3'` | `'C'` | 30 |
+| (none) | `'P'` | 30 (default branch) |
+| (none) | NULL | 30 (default branch) |
+
+**For Task 16 (seed cycle_state for Tier 1+2):** the seed query must target `tier IN ('A', 'B')`, NOT `tier IN ('1', '2')` or `tier IN ('tier1', 'tier2')`. P contacts may or may not qualify depending on Alex's intent -- confirm before seeding.
+
+### Spec-to-reality column rename map (quick reference)
+
+| Plan body says | Reality is | Tasks affected |
+|---|---|---|
+| `interactions.note` | `interactions.summary` | Tasks 2 (smoke test), 5, 12 |
+| `contacts.tier IN ('1','2','3')` | `contacts.tier IN ('A','B','C','P')` | Tasks 2, 5, 14, 15, 16 |
+| (assumed) `interactions.deleted_at` | does not exist on `interactions` | Task 2 cleanup, Tasks 5/12/14 |
+| (assumed) `interactions.updated_at` | does not exist on `interactions` | Tasks 5/12 |
+
+### Standing rule for all task dispatches below
+
+Every controller-to-subagent prompt below must reference this Schema Reality section (or a tightened slice of it relevant to the task) in its context. Plan task bodies are NOT verbatim authoritative on schema details for the four DO NOT TOUCH tables -- this addendum is.
+
+---
+
 # PART A -- DATABASE LAYER
 
 ## Task 1: Create spine tables migration
