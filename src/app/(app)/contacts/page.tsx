@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { ContactWithTags } from "@/lib/types";
+import { Contact } from "@/lib/types";
 import { ContactCard } from "@/components/contacts/contact-card";
 import { ContactFilters } from "@/components/contacts/contact-filters";
 import { ContactFormModal } from "@/components/contacts/contact-form-modal";
@@ -10,20 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<ContactWithTags[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
   const [relationship, setRelationship] = useState("all");
-  const [tagId, setTagId] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const supabase = createClient();
 
   const fetchContacts = useCallback(async () => {
+    // Tags subsystem (contact_tags + tags tables) is not present in
+    // the live DB. The previous query joined contact_tags(tags(*)) and
+    // PostgREST returned an error for the missing relation, breaking
+    // the entire page. Tag rebuild is its own future phase.
     const { data } = await supabase
       .from("contacts")
-      .select("*, contact_tags(tags(*))")
+      .select("*")
       .order("last_name");
-    if (data) setContacts(data as ContactWithTags[]);
-  }, []);
+    if (data) setContacts(data as Contact[]);
+  }, [supabase]);
 
   useEffect(() => {
     fetchContacts();
@@ -41,13 +44,9 @@ export default function ContactsPage() {
       const matchesRelationship =
         relationship === "all" || c.stage === relationship;
 
-      const matchesTag =
-        tagId === "all" ||
-        c.contact_tags.some((ct) => ct.tags.id === tagId);
-
-      return matchesSearch && matchesRelationship && matchesTag;
+      return matchesSearch && matchesRelationship;
     });
-  }, [contacts, search, relationship, tagId]);
+  }, [contacts, search, relationship]);
 
   return (
     <div className="max-w-5xl">
@@ -64,8 +63,6 @@ export default function ContactsPage() {
         onSearchChange={setSearch}
         relationship={relationship}
         onRelationshipChange={setRelationship}
-        tagId={tagId}
-        onTagChange={setTagId}
       />
 
       <div className="grid gap-3 mt-4">
@@ -78,7 +75,7 @@ export default function ContactsPage() {
             <ContactCard
               key={contact.id}
               contact={contact}
-              tags={contact.contact_tags.map((ct) => ct.tags)}
+              tags={[]}
             />
           ))
         )}

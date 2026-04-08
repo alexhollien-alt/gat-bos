@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Tag } from "@/lib/types";
 import { RELATIONSHIP_CONFIG } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,29 +16,12 @@ export function ContactFilters({
   onSearchChange,
   relationship,
   onRelationshipChange,
-  tagId,
-  onTagChange,
 }: {
   search: string;
   onSearchChange: (v: string) => void;
   relationship: string;
   onRelationshipChange: (v: string) => void;
-  tagId: string;
-  onTagChange: (v: string) => void;
 }) {
-  const [tags, setTags] = useState<Tag[]>([]);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("tags")
-      .select("*")
-      .order("name")
-      .then(({ data }) => {
-        if (data) setTags(data);
-      });
-  }, []);
-
   return (
     <div className="flex items-center gap-3">
       <div className="relative flex-1 max-w-sm">
@@ -62,25 +42,6 @@ export function ContactFilters({
           {Object.entries(RELATIONSHIP_CONFIG).map(([key, val]) => (
             <SelectItem key={key} value={key}>
               {val.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={tagId} onValueChange={onTagChange}>
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="All tags" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All tags</SelectItem>
-          {tags.map((tag) => (
-            <SelectItem key={tag.id} value={tag.id}>
-              <span className="flex items-center gap-2">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: tag.color }}
-                />
-                {tag.name}
-              </span>
             </SelectItem>
           ))}
         </SelectContent>
