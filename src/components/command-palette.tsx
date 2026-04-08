@@ -45,7 +45,7 @@ export function CommandPalette() {
     const supabase = createClient();
     const { data } = await supabase
       .from("contacts")
-      .select("id, first_name, last_name, company, email, phone, health_score, tier")
+      .select("id, first_name, last_name, brokerage, email, phone, health_score, tier")
       .order("first_name", { ascending: true })
       .limit(200);
     if (data) setContacts(data as Contact[]);
@@ -91,7 +91,7 @@ export function CommandPalette() {
           {contacts.map((c) => (
             <CommandItem
               key={c.id}
-              value={`${c.first_name} ${c.last_name} ${c.company || ""} ${c.email || ""}`}
+              value={`${c.first_name} ${c.last_name} ${c.brokerage || ""} ${c.email || ""}`}
               onSelect={() => navigate(`/contacts/${c.id}`)}
             >
               <Users className="mr-2 h-4 w-4" />
@@ -99,9 +99,9 @@ export function CommandPalette() {
                 <span className="text-sm">
                   {c.first_name} {c.last_name}
                 </span>
-                {c.company && (
+                {c.brokerage && (
                   <span className="text-xs text-muted-foreground ml-2">
-                    {c.company}
+                    {c.brokerage}
                   </span>
                 )}
               </div>

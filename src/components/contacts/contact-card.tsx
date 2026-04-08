@@ -19,17 +19,17 @@ export function ContactCard({
             <h3 className="font-medium text-foreground">
               {contact.first_name} {contact.last_name}
             </h3>
-            {contact.company && (
+            {contact.brokerage && (
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Building className="h-3 w-3 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
                   {contact.title ? `${contact.title}, ` : ""}
-                  {contact.company}
+                  {contact.brokerage}
                 </span>
               </div>
             )}
           </div>
-          <RelationshipBadge relationship={contact.relationship} />
+          <RelationshipBadge relationship={contact.stage} />
         </div>
         <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
           {contact.email && (

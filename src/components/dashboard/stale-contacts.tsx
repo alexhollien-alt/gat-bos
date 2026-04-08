@@ -141,7 +141,7 @@ export function StaleContactsWidget({
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
-                    {c.company || "Independent"}
+                    {c.brokerage || "Independent"}
                   </p>
                 </Link>
                 <span

@@ -45,7 +45,7 @@ export function scoreAction(item: Pick<ActionItem, "type" | "contactTier" | "con
 // Contact name helper
 // ---------------------
 
-type ContactSummary = Pick<Contact, "id" | "first_name" | "last_name" | "tier" | "health_score" | "company" | "phone" | "email">;
+type ContactSummary = Pick<Contact, "id" | "first_name" | "last_name" | "tier" | "health_score" | "brokerage" | "phone" | "email">;
 
 function contactName(c: Pick<Contact, "first_name" | "last_name">): string {
   return `${c.first_name} ${c.last_name}`.trim();
@@ -82,7 +82,7 @@ export function buildFollowUpActions(followUps: FollowUpWithContact[]): ActionIt
       contactName: contactName(contact),
       contactTier: contact.tier,
       contactHealthScore: contact.health_score ?? 0,
-      contactCompany: contact.company,
+      contactBrokerage: contact.brokerage,
       contactPhone: contact.phone,
       contactEmail: contact.email,
       title: fu.reason,
@@ -133,7 +133,7 @@ export function buildTaskActions(tasks: TaskWithContact[]): ActionItem[] {
       contactName: contact ? contactName(contact) : "No contact",
       contactTier: contact?.tier ?? null,
       contactHealthScore: contact?.health_score ?? 0,
-      contactCompany: contact?.company ?? null,
+      contactBrokerage: contact?.brokerage ?? null,
       contactPhone: contact?.phone ?? null,
       contactEmail: contact?.email ?? null,
       title: task.title,
@@ -187,7 +187,7 @@ export function buildStaleActions(
       contactName: contactName(contact),
       contactTier: contact.tier,
       contactHealthScore: contact.health_score ?? 0,
-      contactCompany: contact.company,
+      contactBrokerage: contact.brokerage,
       contactPhone: contact.phone,
       contactEmail: contact.email,
       title: `Re-engage ${contactName(contact)}`,

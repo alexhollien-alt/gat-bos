@@ -86,14 +86,12 @@ export async function POST(request: Request) {
           brokerage: body.agent.brokerage || null,
           type: "realtor",
           tier: "P",
-          relationship: "new",
-          lead_status: "prospect",
+          stage: "new",
           source: "website",
-          source_detail: `Intake form -- ${body.situation || "general"}`,
           health_score: 30,
           notes: body.agent.brokerage
-            ? `Signed up via intake form. Brokerage: ${body.agent.brokerage}`
-            : "Signed up via intake form.",
+            ? `Signed up via intake form (${body.situation || "general"}). Brokerage: ${body.agent.brokerage}`
+            : `Signed up via intake form (${body.situation || "general"}).`,
         })
         .select("id")
         .single();

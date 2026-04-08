@@ -95,10 +95,19 @@ export async function POST(request: NextRequest) {
   // Owner-stamp: ignore any user_id supplied in the body, always use the
   // canonical owner. Phase 2.1 is single-user; this prevents a future
   // multi-user mistake from leaking writes across owners.
-  // Also strip lead_status: not a column on contacts. stage + temperature
-  // cover that ground. Silent ignore so external clients don't 500.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { user_id: _ignored, lead_status: _ignoredLeadStatus, ...sanitized } = body;
+  // Also strip dead fields that earlier schemas exposed but the live DB
+  // does not have: lead_status (covered by stage), company (covered by
+  // brokerage), source_detail. Silent ignore so external clients don't 500
+  // when they send the old field names.
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const {
+    user_id: _ignored,
+    lead_status: _ignoredLeadStatus,
+    company: _ignoredCompany,
+    source_detail: _ignoredSourceDetail,
+    ...sanitized
+  } = body;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
   const insertPayload = { ...sanitized, user_id: ownerId };
 
   const { data, error } = await adminClient

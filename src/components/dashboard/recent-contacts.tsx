@@ -33,10 +33,10 @@ export function RecentContactsWidget({
                     {c.first_name} {c.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {c.company || "No company"}
+                    {c.brokerage || "No brokerage"}
                   </p>
                 </div>
-                <RelationshipBadge relationship={c.relationship} />
+                <RelationshipBadge relationship={c.stage} />
               </Link>
             ))}
           </div>

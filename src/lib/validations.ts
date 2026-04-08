@@ -3,11 +3,12 @@ import { z } from "zod";
 export const contactSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
-  company: z.string().optional(),
   title: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().optional(),
-  relationship: z.enum([
+  // stage values mirror contacts.stage CHECK constraint in the live DB.
+  // See src/lib/types.ts RelationshipStrength.
+  stage: z.enum([
     "new",
     "warm",
     "active_partner",
@@ -28,16 +29,6 @@ export const contactSchema = z.object({
     "import",
     "other",
   ]),
-  lead_status: z.enum([
-    "none",
-    "prospect",
-    "contacted",
-    "qualified",
-    "nurturing",
-    "converted",
-    "lost",
-  ]),
-  source_detail: z.string().optional(),
   notes: z.string().optional(),
 });
 

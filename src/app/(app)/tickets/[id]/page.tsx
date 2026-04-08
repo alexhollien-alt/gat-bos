@@ -283,10 +283,10 @@ export default function TicketDetailPage() {
               {agentName && (
                 <div className="text-sm font-medium text-foreground">{agentName}</div>
               )}
-              {ticket.contacts?.company && (
+              {ticket.contacts?.brokerage && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Building className="h-3.5 w-3.5" />
-                  {ticket.contacts.company}
+                  {ticket.contacts.brokerage}
                 </div>
               )}
               {ticket.submitter_email && (

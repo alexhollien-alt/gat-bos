@@ -181,7 +181,7 @@ export function BioPanel({
                   }
                   onAdd={onEdit}
                 />
-                {contact.source !== "manual" && (
+                {contact.source && contact.source !== "manual" && (
                   <FieldRow
                     icon={User}
                     label="Source"

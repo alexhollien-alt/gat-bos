@@ -35,11 +35,11 @@ export default function ContactsPage() {
       const matchesSearch =
         !search ||
         `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchLower) ||
-        c.company?.toLowerCase().includes(searchLower) ||
+        c.brokerage?.toLowerCase().includes(searchLower) ||
         c.email?.toLowerCase().includes(searchLower);
 
       const matchesRelationship =
-        relationship === "all" || c.relationship === relationship;
+        relationship === "all" || c.stage === relationship;
 
       const matchesTag =
         tagId === "all" ||

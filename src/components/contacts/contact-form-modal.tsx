@@ -48,9 +48,8 @@ export function ContactFormModal({
     defaultValues: {
       first_name: "",
       last_name: "",
-      relationship: "new",
+      stage: "new",
       source: "manual",
-      lead_status: "none",
     },
   });
 
@@ -65,14 +64,11 @@ export function ContactFormModal({
       user_id: user!.id,
       first_name: data.first_name,
       last_name: data.last_name,
-      company: data.company || null,
       title: data.title || null,
       email: data.email || null,
       phone: data.phone || null,
-      relationship: data.relationship,
+      stage: data.stage,
       source: data.source,
-      lead_status: data.lead_status,
-      source_detail: data.source_detail || null,
       notes: data.notes || null,
     });
 
@@ -114,15 +110,9 @@ export function ContactFormModal({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Company</Label>
-              <Input {...register("company")} />
-            </div>
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input {...register("title")} />
-            </div>
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input {...register("title")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -143,7 +133,7 @@ export function ContactFormModal({
               <Select
                 defaultValue="new"
                 onValueChange={(v) =>
-                  setValue("relationship", v as RelationshipStrength)
+                  setValue("stage", v as RelationshipStrength)
                 }
               >
                 <SelectTrigger>

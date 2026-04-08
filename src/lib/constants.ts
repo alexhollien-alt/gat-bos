@@ -3,7 +3,6 @@ import {
   InteractionType,
   TaskPriority,
   ContactSource,
-  LeadStatus,
   ContactTier,
   OpportunityStage,
   MaterialRequestType,
@@ -84,16 +83,6 @@ export const SOURCE_LABELS: Record<ContactSource, string> = {
   open_house: "Open House",
   import: "Import",
   other: "Other",
-};
-
-export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
-  none: "N/A",
-  prospect: "Prospect",
-  contacted: "Contacted",
-  qualified: "Qualified",
-  nurturing: "Nurturing",
-  converted: "Converted",
-  lost: "Lost",
 };
 
 // ---------------------

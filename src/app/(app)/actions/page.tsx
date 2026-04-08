@@ -225,9 +225,9 @@ export default function ActionsPage() {
                     <span className="text-sm font-semibold text-foreground truncate">
                       {item.contactName}
                     </span>
-                    {item.contactCompany && (
+                    {item.contactBrokerage && (
                       <span className="text-xs text-[#666666] truncate">
-                        {item.contactCompany}
+                        {item.contactBrokerage}
                       </span>
                     )}
                   </div>

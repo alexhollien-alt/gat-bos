@@ -90,8 +90,8 @@ export function MaterialRequestRow({
               className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
             >
               {request.contacts.first_name} {request.contacts.last_name}
-              {request.contacts.company
-                ? ` - ${request.contacts.company}`
+              {request.contacts.brokerage
+                ? ` - ${request.contacts.brokerage}`
                 : ""}
             </Link>
           )}

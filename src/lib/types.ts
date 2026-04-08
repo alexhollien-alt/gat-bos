@@ -1,3 +1,8 @@
+// Stage values mirror the live contacts.stage CHECK constraint exactly.
+// The type name "RelationshipStrength" is kept because the values describe
+// relationship intensity (new -> warm -> active_partner -> advocate, with
+// dormant as the cold state). The DB column is named `stage` for historical
+// reasons; the values are relationship strength labels.
 export type RelationshipStrength =
   | "new"
   | "warm"
@@ -17,15 +22,6 @@ export type InteractionType =
 export type TaskPriority = "low" | "medium" | "high";
 export type TaskStatus = "pending" | "in_progress" | "completed";
 export type FollowUpStatus = "pending" | "completed" | "skipped";
-
-export type LeadStatus =
-  | "none"
-  | "prospect"
-  | "contacted"
-  | "qualified"
-  | "nurturing"
-  | "converted"
-  | "lost";
 
 export type ContactSource =
   | "manual"
@@ -63,14 +59,14 @@ export interface Contact {
   user_id: string;
   first_name: string;
   last_name: string;
-  company: string | null;
   title: string | null;
   email: string | null;
   phone: string | null;
-  relationship: RelationshipStrength;
-  source: ContactSource;
-  lead_status: LeadStatus;
-  source_detail: string | null;
+  // stage holds the relationship-strength enum. Originally named
+  // `relationship` in older schema/code; the live DB column is `stage`.
+  // NOT NULL in the DB with default 'new'.
+  stage: RelationshipStrength;
+  source: ContactSource | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -79,7 +75,6 @@ export interface Contact {
   // Live DB native fields (not in schema.sql)
   brokerage: string | null;
   website_url: string | null;
-  stage: string | null;
   last_touch_date: string | null;
   next_action: string | null;
   deleted_at: string | null;
@@ -328,7 +323,7 @@ export interface MaterialRequest {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
-  contacts?: Pick<Contact, "id" | "first_name" | "last_name" | "company"> | null;
+  contacts?: Pick<Contact, "id" | "first_name" | "last_name" | "brokerage"> | null;
   items?: MaterialRequestItem[];
 }
 
@@ -370,7 +365,7 @@ export interface ActionItem {
   contactName: string;
   contactTier: ContactTier | null;
   contactHealthScore: number;
-  contactCompany: string | null;
+  contactBrokerage: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
   title: string;

@@ -105,12 +105,12 @@ export function ContactHeader({
                     </span>
                   )}
               </div>
-              {!collapsed && contact.company && (
+              {!collapsed && contact.brokerage && (
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Building className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground truncate">
                     {contact.title ? `${contact.title}, ` : ""}
-                    {contact.company}
+                    {contact.brokerage}
                   </span>
                 </div>
               )}
@@ -166,7 +166,7 @@ export function ContactHeader({
             )}
             {!collapsed && (
               <Select
-                value={contact.relationship}
+                value={contact.stage}
                 onValueChange={onRelationshipChange}
               >
                 <SelectTrigger className="w-36 h-8 text-xs">
