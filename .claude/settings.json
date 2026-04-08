@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '(.tool_input.file_path // .tool_response.filePath) // empty'); [ -z \"$f\" ] && exit 0; case \"$f\" in /Users/alex/crm/*.ts|/Users/alex/crm/*.tsx|/Users/alex/crm/*.js|/Users/alex/crm/*.jsx) (cd /Users/alex/crm && pnpm lint --file \"$f\" --fix) >/dev/null 2>&1 || true ;; esac",
+            "timeout": 30,
+            "statusMessage": "Linting with pnpm lint --fix..."
+          }
+        ]
+      }
+    ]
+  }
+}
