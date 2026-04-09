@@ -245,53 +245,54 @@ export default function ContactDetailPage() {
       )}
 
       {/* Two-column workspace: left rail (actions + bio) + right main (feed + tabs) */}
-      <div className="mt-4 lg:grid lg:grid-cols-[minmax(260px,300px)_1fr] lg:gap-6 lg:items-start">
+      <div className="mt-4 lg:grid lg:grid-cols-[minmax(220px,260px)_1fr] lg:gap-5 lg:items-start">
         {/* Left rail */}
-        <aside className="space-y-4">
-          {/* Quick Actions */}
-          <div className="flex flex-col gap-2">
+        <aside className="space-y-3">
+          {/* Quick Actions -- lean menu style */}
+          <div className="flex flex-col gap-0.5">
             <Button
               size="sm"
+              variant="ghost"
               onClick={() => setShowInteractionModal(true)}
-              className="bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25 hover:text-primary justify-start"
+              className="justify-start h-8 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10"
             >
-              <Plus className="h-3 w-3 mr-1" />
+              <Plus className="h-3 w-3 mr-2" />
               Log interaction
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowTaskModal(true)}
-              className="justify-start"
+              className="justify-start h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Plus className="h-3 w-3 mr-1" />
+              <Plus className="h-3 w-3 mr-2" />
               Add task
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowFollowUpModal(true)}
-              className="justify-start"
+              className="justify-start h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Clock className="h-3 w-3 mr-1" />
+              <Clock className="h-3 w-3 mr-2" />
               Schedule follow-up
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowMaterialRequestModal(true)}
-              className="justify-start"
+              className="justify-start h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Printer className="h-3 w-3 mr-1" />
+              <Printer className="h-3 w-3 mr-2" />
               New request
             </Button>
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
               onClick={() => setShowDesignAssetModal(true)}
-              className="justify-start"
+              className="justify-start h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Link2 className="h-3 w-3 mr-1" />
+              <Link2 className="h-3 w-3 mr-2" />
               Save design
             </Button>
           </div>
