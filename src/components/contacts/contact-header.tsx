@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Building, Info } from "lucide-react";
 
-const COLLAPSE_AT = 80;
+// Hysteresis buffer: expand at 60px, collapse at 100px. Prevents rapid flipping
+// when scrolling exactly at the threshold which caused paint-layer ghosting.
+const COLLAPSE_AT = 100;
+const EXPAND_AT = 60;
 
 export function ContactHeader({
   contact,
@@ -30,12 +33,25 @@ export function ContactHeader({
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
+    let frame = 0;
     const onScroll = () => {
-      setCollapsed(window.scrollY >= COLLAPSE_AT);
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        setCollapsed((prev) => {
+          if (prev && y < EXPAND_AT) return false;
+          if (!prev && y >= COLLAPSE_AT) return true;
+          return prev;
+        });
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const temp = calculateTemperature(contact);
@@ -44,7 +60,7 @@ export function ContactHeader({
   const initials = `${contact.first_name.charAt(0)}${contact.last_name.charAt(0)}`;
 
   return (
-    <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 bg-card/95 backdrop-blur-sm border-b border-border">
+    <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 bg-background border-b border-border">
       <div className="px-4 sm:px-6 lg:px-8">
         <Link
           href="/contacts"

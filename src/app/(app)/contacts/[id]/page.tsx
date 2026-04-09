@@ -220,92 +220,102 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl pb-12">
+    <div className="max-w-7xl pb-12">
       {/* Sticky header */}
       <ContactHeader
         contact={contact}
         onRelationshipChange={updateRelationship}
       />
 
-      <div className="space-y-4 mt-4">
-        {/* Internal note (if present) */}
-        {contact.internal_note && (
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <CircleAlert className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-[10px] font-semibold text-yellow-400 uppercase tracking-wider mb-1">
-                  Internal Note
-                </p>
-                <p className="text-sm text-foreground/90">
-                  {contact.internal_note}
-                </p>
-              </div>
+      {/* Internal note (full width, critical) */}
+      {contact.internal_note && (
+        <div className="mt-4 bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <CircleAlert className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-[10px] font-semibold text-yellow-400 uppercase tracking-wider mb-1">
+                Internal Note
+              </p>
+              <p className="text-sm text-foreground/90">
+                {contact.internal_note}
+              </p>
             </div>
           </div>
-        )}
-
-        {/* Recent Activity Feed: the new top zone */}
-        <ActivityFeed
-          events={activityEvents}
-          onLogInteraction={() => setShowInteractionModal(true)}
-          hasAnyHistory={hasAnyHistory}
-        />
-
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            onClick={() => setShowInteractionModal(true)}
-            className="bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25 hover:text-primary"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Log interaction
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowTaskModal(true)}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Add task
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowFollowUpModal(true)}
-          >
-            <Clock className="h-3 w-3 mr-1" />
-            Schedule follow-up
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowMaterialRequestModal(true)}
-          >
-            <Printer className="h-3 w-3 mr-1" />
-            New request
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowDesignAssetModal(true)}
-          >
-            <Link2 className="h-3 w-3 mr-1" />
-            Save design
-          </Button>
         </div>
+      )}
 
-        {/* Bio panel */}
-        <BioPanel
-          contact={contact}
-          contactId={contactId}
-          tags={tags}
-          onTagsChange={setTags}
-        />
+      {/* Two-column workspace: left rail (actions + bio) + right main (feed + tabs) */}
+      <div className="mt-4 lg:grid lg:grid-cols-[minmax(260px,300px)_1fr] lg:gap-6 lg:items-start">
+        {/* Left rail */}
+        <aside className="space-y-4">
+          {/* Quick Actions */}
+          <div className="flex flex-col gap-2">
+            <Button
+              size="sm"
+              onClick={() => setShowInteractionModal(true)}
+              className="bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25 hover:text-primary justify-start"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Log interaction
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowTaskModal(true)}
+              className="justify-start"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add task
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowFollowUpModal(true)}
+              className="justify-start"
+            >
+              <Clock className="h-3 w-3 mr-1" />
+              Schedule follow-up
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowMaterialRequestModal(true)}
+              className="justify-start"
+            >
+              <Printer className="h-3 w-3 mr-1" />
+              New request
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDesignAssetModal(true)}
+              className="justify-start"
+            >
+              <Link2 className="h-3 w-3 mr-1" />
+              Save design
+            </Button>
+          </div>
 
-        {/* Drill-in tabs (5 tabs, Timeline removed) */}
-        <Tabs defaultValue="notes">
+          {/* Bio panel */}
+          <BioPanel
+            contact={contact}
+            contactId={contactId}
+            tags={tags}
+            onTagsChange={setTags}
+          />
+        </aside>
+
+        {/* Right main */}
+        <div className="space-y-4 mt-4 lg:mt-0 min-w-0">
+          {/* Recent Activity Feed */}
+          <ActivityFeed
+            events={activityEvents}
+            onLogInteraction={() => setShowInteractionModal(true)}
+            hasAnyHistory={hasAnyHistory}
+          />
+
+          {/* Drill-in tabs (5 tabs, Timeline removed) */}
+          <Tabs defaultValue="notes">
           <TabsList>
             <TabsTrigger value="notes">
               Notes <span className="font-mono ml-1">({notes.length})</span>
@@ -405,6 +415,7 @@ export default function ContactDetailPage() {
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
 
       {/* Modals */}
