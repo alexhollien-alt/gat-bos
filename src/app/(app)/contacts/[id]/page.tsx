@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Contact,
@@ -39,12 +40,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+type LoadState = "loading" | "loaded" | "not_found" | "error";
+
 export default function ContactDetailPage() {
   const params = useParams();
-  const contactId = params.id as string;
+  // useParams returns Record<string, string | string[]> | null. Guard against
+  // catch-all routes or a null first-render so we never cast undefined -> string.
+  const rawId = params?.id;
+  const contactId = typeof rawId === "string" ? rawId : "";
   const supabase = createClient();
 
   const [contact, setContact] = useState<Contact | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>("loading");
   const [tags, setTags] = useState<Tag[]>([]);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -59,13 +66,31 @@ export default function ContactDetailPage() {
   const [showDesignAssetModal, setShowDesignAssetModal] = useState(false);
 
   const fetchContact = useCallback(async () => {
-    const { data } = await supabase
+    if (!contactId) {
+      setLoadState("not_found");
+      return;
+    }
+    // maybeSingle() returns data: null when zero rows (clean miss), vs
+    // .single() which errors. Filter out soft-deleted contacts so archived
+    // records render as not_found instead of loading forever.
+    const { data, error } = await supabase
       .from("contacts")
       .select("*")
       .eq("id", contactId)
-      .single();
-    if (data) setContact(data);
-  }, [contactId]);
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) {
+      console.error("Failed to load contact:", error);
+      setLoadState("error");
+      return;
+    }
+    if (!data) {
+      setLoadState("not_found");
+      return;
+    }
+    setContact(data);
+    setLoadState("loaded");
+  }, [contactId, supabase]);
 
   // Tags subsystem (contact_tags + tags tables) is not present in the
   // live DB. PostgREST returns a relation-not-found error when this is
@@ -207,10 +232,41 @@ export default function ContactDetailPage() {
     }
   }
 
-  if (!contact) {
+  if (loadState === "loading") {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         Loading...
+      </div>
+    );
+  }
+
+  if (loadState === "not_found" || !contact) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+        <p className="text-muted-foreground">Contact not found.</p>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/contacts">Back to contacts</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
+        <p className="text-muted-foreground">
+          Something went wrong loading this contact.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setLoadState("loading");
+            fetchContact();
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
