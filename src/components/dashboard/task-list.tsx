@@ -273,7 +273,13 @@ export function TaskListWidget() {
     enabled: !!userId,
     staleTime: 30_000,
     queryFn: async (): Promise<OpportunityRow[]> => {
-      const thirtyDaysAgo = addDays(new Date(), -30).toISOString().split("T")[0];
+      // Full ISO timestamptz so the comparison is tz-aware. The old
+      // YYYY-MM-DD form relied on PostgREST casting the date into a
+      // timestamp at the server timezone boundary, which could shift by
+      // up to 24 hours near midnight UTC and miss rows.
+      const thirtyDaysAgo = new Date(
+        Date.now() - 30 * 86400000
+      ).toISOString();
       const { data, error } = await supabase
         .from("opportunities")
         .select(
