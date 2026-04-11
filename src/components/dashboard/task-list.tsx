@@ -185,7 +185,7 @@ export function TaskListWidget() {
   const closingsQuery = useQuery({
     queryKey: ["task-list", "closings", userId],
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 30_000,
     queryFn: async (): Promise<ClosingRow[]> => {
       const today = todayISO();
       const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
@@ -214,7 +214,7 @@ export function TaskListWidget() {
   const goingColdQuery = useQuery({
     queryKey: ["task-list", "going_cold", userId],
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 30_000,
     queryFn: async (): Promise<AgentHealthRow[]> => {
       const { data, error } = await supabase
         .from("agent_health")
@@ -244,7 +244,7 @@ export function TaskListWidget() {
   const proactiveQuery = useQuery({
     queryKey: ["task-list", "proactive", userId],
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 30_000,
     queryFn: async (): Promise<AgentHealthRow[]> => {
       const { data, error } = await supabase
         .from("agent_health")
@@ -271,7 +271,7 @@ export function TaskListWidget() {
   const pipelineQuery = useQuery({
     queryKey: ["task-list", "stalled_pipeline", userId],
     enabled: !!userId,
-    staleTime: 60_000,
+    staleTime: 30_000,
     queryFn: async (): Promise<OpportunityRow[]> => {
       const thirtyDaysAgo = addDays(new Date(), -30).toISOString().split("T")[0];
       const { data, error } = await supabase
