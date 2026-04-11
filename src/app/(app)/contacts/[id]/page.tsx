@@ -198,15 +198,17 @@ export default function ContactDetailPage() {
   ).length;
 
   async function updateRelationship(value: string) {
+    // DB column is `stage` (holds the relationship-strength enum).
+    // See src/lib/types.ts -- column was renamed from `relationship` to `stage`.
     const { error } = await supabase
       .from("contacts")
-      .update({ relationship: value })
+      .update({ stage: value })
       .eq("id", contactId);
     if (error) {
       toast.error("Failed to update");
     } else {
       setContact((prev) =>
-        prev ? { ...prev, relationship: value as RelationshipStrength } : null
+        prev ? { ...prev, stage: value as RelationshipStrength } : null
       );
     }
   }

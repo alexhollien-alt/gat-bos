@@ -65,7 +65,8 @@ export default function DashboardPage() {
         dormant: 0,
       };
       contactsData.forEach((c) => {
-        const r = c.relationship as RelationshipStrength;
+        // DB column is `stage`, not `relationship` (see src/lib/types.ts).
+        const r = c.stage as RelationshipStrength;
         if (r in counts) counts[r]++;
       });
       setStats(counts);

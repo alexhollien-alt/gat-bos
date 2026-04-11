@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,9 +13,89 @@ const SCORE_BUMPS: Record<string, number> = {
   "email.clicked": 5,
 };
 
+// Replay protection: reject timestamps more than 5 minutes off.
+const TOLERANCE_MS = 5 * 60 * 1000;
+
+/**
+ * Verify a Svix-formatted webhook signature as used by Resend.
+ *
+ * Signed content: `${svix-id}.${svix-timestamp}.${rawBody}`
+ * Header format:  `svix-signature: v1,<base64-hmac> [v1,<base64-hmac>...]`
+ * Secret format:  `whsec_<base64>` (prefix stripped, remainder base64-decoded
+ *                 to get the HMAC key bytes).
+ *
+ * All comparisons are timing-safe.
+ */
+function verifySvixSignature(
+  rawBody: string,
+  headers: Headers,
+  secret: string,
+): boolean {
+  const svixId = headers.get("svix-id");
+  const svixTimestamp = headers.get("svix-timestamp");
+  const svixSignature = headers.get("svix-signature");
+
+  if (!svixId || !svixTimestamp || !svixSignature) return false;
+
+  const tsSeconds = Number(svixTimestamp);
+  if (!Number.isFinite(tsSeconds)) return false;
+  const tsMs = tsSeconds * 1000;
+  if (Math.abs(Date.now() - tsMs) > TOLERANCE_MS) return false;
+
+  const secretBody = secret.startsWith("whsec_")
+    ? secret.slice("whsec_".length)
+    : secret;
+
+  let keyBytes: Buffer;
+  try {
+    keyBytes = Buffer.from(secretBody, "base64");
+  } catch {
+    return false;
+  }
+  if (keyBytes.length === 0) return false;
+
+  const signedPayload = `${svixId}.${svixTimestamp}.${rawBody}`;
+  const expected = createHmac("sha256", keyBytes)
+    .update(signedPayload)
+    .digest();
+
+  // svix-signature can carry multiple space-separated versioned entries.
+  const candidates = svixSignature.split(" ");
+  for (const candidate of candidates) {
+    const commaIdx = candidate.indexOf(",");
+    if (commaIdx < 0) continue;
+    const version = candidate.slice(0, commaIdx);
+    const sig = candidate.slice(commaIdx + 1);
+    if (version !== "v1" || !sig) continue;
+
+    let sigBuf: Buffer;
+    try {
+      sigBuf = Buffer.from(sig, "base64");
+    } catch {
+      continue;
+    }
+    if (sigBuf.length !== expected.length) continue;
+    if (timingSafeEqual(sigBuf, expected)) return true;
+  }
+  return false;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json();
+    const secret = process.env.RESEND_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error("RESEND_WEBHOOK_SECRET not configured");
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    // Read raw body ONCE for signature verification, then parse as JSON.
+    const rawBody = await req.text();
+
+    if (!verifySvixSignature(rawBody, req.headers, secret)) {
+      return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+    }
+
+    const payload = JSON.parse(rawBody);
     const { type, data } = payload;
 
     if (!["email.delivered", "email.opened", "email.clicked"].includes(type)) {
