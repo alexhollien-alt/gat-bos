@@ -179,8 +179,17 @@ export async function POST(request: Request) {
         .single();
 
       if (contactError) {
+        // Fail the whole submission rather than silently continuing with
+        // contactId = null. A NULL contact_id on a material_request row
+        // creates an orphan that the inbox and CRM side never surface,
+        // and the client receives a misleading 201 in the old flow.
         console.error("Auto-create contact error:", contactError);
-      } else if (newContact) {
+        return NextResponse.json(
+          { error: "Failed to create contact" },
+          { status: 500 }
+        );
+      }
+      if (newContact) {
         contactId = newContact.id;
         isNewContact = true;
       }
