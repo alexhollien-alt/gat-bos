@@ -9,7 +9,8 @@
 --           Data is preserved throughout.
 --
 -- CHANGES:
---   1. Extend `contact_type` enum: add value 'escrow'
+--   1. Extend contacts_type_check CHECK constraint: add value 'escrow'
+--      (contact_type is a CHECK-constrained text column, NOT a Postgres enum)
 --   2. Rename: last_touch_date -> last_touchpoint
 --   3. Rename: next_action_date -> next_followup
 --   4. Add:    lender_partner_id uuid  self-FK to contacts(id)
@@ -47,13 +48,35 @@
 BEGIN;
 
 -- ============================================================================
--- 1. Extend the contact_type enum
+-- 1. Extend the contacts_type_check CHECK constraint
 -- ============================================================================
--- Postgres 12+ allows ALTER TYPE ADD VALUE inside a transaction as long as
--- the new value is not USED in the same transaction. We only reference it
--- in the downstream view, which reads the string value via case expression,
--- not via an enum literal, so the transaction is safe.
-ALTER TYPE contact_type ADD VALUE IF NOT EXISTS 'escrow';
+-- contact_type is NOT a Postgres enum. The baseline defines contacts.type as
+-- a plain text column with a CHECK constraint:
+--
+--   type text NOT NULL,
+--   CONSTRAINT contacts_type_check
+--     CHECK (type = ANY (ARRAY['realtor', 'lender', 'builder', 'vendor',
+--       'buyer', 'seller', 'past_client', 'warm_lead', 'referral_partner',
+--       'sphere', 'other']))
+--
+-- To add 'escrow' we drop the check constraint and recreate it with the
+-- extended value list. Idempotent via DROP CONSTRAINT IF EXISTS.
+ALTER TABLE public.contacts DROP CONSTRAINT IF EXISTS contacts_type_check;
+ALTER TABLE public.contacts ADD CONSTRAINT contacts_type_check
+  CHECK (type = ANY (ARRAY[
+    'realtor'::text,
+    'lender'::text,
+    'builder'::text,
+    'vendor'::text,
+    'buyer'::text,
+    'seller'::text,
+    'past_client'::text,
+    'warm_lead'::text,
+    'referral_partner'::text,
+    'sphere'::text,
+    'other'::text,
+    'escrow'::text
+  ]));
 
 -- ============================================================================
 -- 2. + 3. Rename last_touch_date / next_action_date (idempotent)
@@ -201,12 +224,12 @@ COMMIT;
 --   last_touch_date    | (not found)
 --   next_action_date   | (not found)
 --
--- -- enum extension
--- select enumlabel from pg_enum
---   join pg_type t on t.oid = enumtypid
---  where t.typname='contact_type'
---  order by enumsortorder;
--- expected: existing 11 labels + 'escrow'
+-- -- check constraint extension (contact_type is text + CHECK, not an enum)
+-- select pg_get_constraintdef(oid)
+--   from pg_constraint
+--  where conname = 'contacts_type_check'
+--    and conrelid = 'public.contacts'::regclass;
+-- expected: a CHECK that includes 'escrow' alongside the 11 original values
 --
 -- -- view exists and is queryable
 -- select count(*), count(*) filter (where role='agent') as agent_count,
