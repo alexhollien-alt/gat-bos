@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/resend";
 
+// Dev-only smoke test for Resend wiring. Returns 404 in production so the
+// endpoint does not exist as far as external callers can tell, and so an
+// attacker who discovers the URL cannot burn Resend quota by hammering it.
 export async function POST() {
+  if (process.env.NODE_ENV === "production") {
+    return new NextResponse(null, { status: 404 });
+  }
+
   try {
     const data = await sendEmail({
       to: "alex@alexhollienco.com",

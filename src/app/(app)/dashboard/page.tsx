@@ -72,10 +72,11 @@ export default function DashboardPage() {
       setStats(counts);
     }
 
-    // Opportunities
+    // Opportunities (soft-delete aware)
     const { data: oppData } = await supabase
       .from("opportunities")
       .select("*, contacts(id, first_name, last_name)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (oppData) setOpportunities(oppData);
 

@@ -36,17 +36,28 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  // Strip user_id from body -- ownership is immutable via this endpoint.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { user_id: _ignored, ...sanitized } = body;
+  // Strip immutable/forbidden fields from the PATCH body:
+  //   user_id     -- ownership is immutable via this endpoint
+  //   deleted_at  -- cannot be cleared here; restoration is its own endpoint,
+  //                  otherwise any external caller could resurrect archived
+  //                  records by sending `{deleted_at: null}`
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const {
+    user_id: _ignoredUserId,
+    deleted_at: _ignoredDeletedAt,
+    ...sanitized
+  } = body;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   // Auto-set updated_at
   sanitized.updated_at = new Date().toISOString();
 
+  // Only allow updates to live (non-soft-deleted) rows.
   const { data, error } = await adminClient
     .from("contacts")
     .update(sanitized)
     .eq("id", id)
+    .is("deleted_at", null)
     .select()
     .single();
 

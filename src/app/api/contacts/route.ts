@@ -14,12 +14,25 @@ export async function GET(request: NextRequest) {
     .is("deleted_at", null)
     .order("last_name", { ascending: true });
 
-  // Search by name (fuzzy match on first or last name)
-  const name = params.get("name");
-  if (name) {
-    query = query.or(
-      `first_name.ilike.%${name}%,last_name.ilike.%${name}%`
-    );
+  // Search by name (fuzzy match on first or last name).
+  //
+  // IMPORTANT: the value here is interpolated into a PostgREST `.or()`
+  // filter string whose grammar uses commas, periods, parentheses, and
+  // colons to separate column/op/value tuples. Raw user input could
+  // inject additional predicates or escape the intended filter. Strip
+  // every character that carries grammatical meaning before passing it
+  // through. We also cap the length to keep abuse surface small.
+  const rawName = params.get("name");
+  if (rawName) {
+    const safeName = rawName
+      .replace(/[,().:*%\\"']/g, "")
+      .trim()
+      .slice(0, 80);
+    if (safeName.length > 0) {
+      query = query.or(
+        `first_name.ilike.%${safeName}%,last_name.ilike.%${safeName}%`
+      );
+    }
   }
 
   // Filter by tier

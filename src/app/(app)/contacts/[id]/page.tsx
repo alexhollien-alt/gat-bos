@@ -67,14 +67,10 @@ export default function ContactDetailPage() {
     if (data) setContact(data);
   }, [contactId]);
 
-  const fetchTags = useCallback(async () => {
-    const { data } = await supabase
-      .from("contact_tags")
-      .select("tags(*)")
-      .eq("contact_id", contactId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (data) setTags(data.map((ct: any) => ct.tags));
-  }, [contactId]);
+  // Tags subsystem (contact_tags + tags tables) is not present in the
+  // live DB. PostgREST returns a relation-not-found error when this is
+  // queried. Keeping the `tags` state + BioPanel prop wiring as empty
+  // scaffolding until the tags subsystem is rebuilt.
 
   const fetchInteractions = useCallback(async () => {
     const { data } = await supabase
@@ -141,7 +137,6 @@ export default function ContactDetailPage() {
 
   useEffect(() => {
     fetchContact();
-    fetchTags();
     fetchInteractions();
     fetchNotes();
     fetchTasks();
@@ -150,7 +145,6 @@ export default function ContactDetailPage() {
     fetchDesignAssets();
   }, [
     fetchContact,
-    fetchTags,
     fetchInteractions,
     fetchNotes,
     fetchTasks,
