@@ -51,11 +51,11 @@ function sortContacts(
       );
     case "recent_touched":
       return copy.sort((a, b) => {
-        const aTime = a.last_touch_date
-          ? new Date(a.last_touch_date).getTime()
+        const aTime = a.last_touchpoint
+          ? new Date(a.last_touchpoint).getTime()
           : 0;
-        const bTime = b.last_touch_date
-          ? new Date(b.last_touch_date).getTime()
+        const bTime = b.last_touchpoint
+          ? new Date(b.last_touchpoint).getTime()
           : 0;
         return bTime - aTime;
       });

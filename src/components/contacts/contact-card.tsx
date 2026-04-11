@@ -28,7 +28,7 @@ export function ContactCard({
   contact: Contact;
   touchCount: number;
 }) {
-  const stale = isStale(contact.tier, contact.last_touch_date);
+  const stale = isStale(contact.tier, contact.last_touchpoint);
   const touchLabel = touchCount === 1 ? "1 touch" : `${touchCount} touches`;
 
   return (

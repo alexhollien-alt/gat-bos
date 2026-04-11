@@ -11,9 +11,11 @@
 --      or if the Phase 0 backup files are not present on disk.
 --   2. TRUNCATE contacts, interactions, tasks, follow_ups, opportunities
 --      RESTART IDENTITY CASCADE. Wipes all 107 existing contacts and 7 tasks.
---   3. INSERT 126 rows from the cleaned xlsx:
---        - 88 agents   (Contacts sheet)   type='realtor'
+--   3. INSERT 126 rows from the cleaned xlsx in FK-safe order
+--      (lenders BEFORE agents so contacts_lender_partner_id_fkey
+--      resolves during insert; the FK is not deferrable):
 --        - 3 lenders   (Lenders sheet)    type='lender'
+--        - 88 agents   (Contacts sheet)   type='realtor'
 --        - 26 vendors  (Vendor Partners)  type='vendor'
 --        - 9 escrow    (Escrow Team)      type='escrow'
 --   4. Everything wrapped in a single BEGIN/COMMIT. If any INSERT fails

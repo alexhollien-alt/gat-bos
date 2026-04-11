@@ -68,7 +68,7 @@ export function HealthLeadersWidget({
                   <p className="text-xs text-muted-foreground truncate">
                     {c.brokerage || "Independent"}
                     <span className="mx-1">·</span>
-                    <span className="font-mono">{touchLabel(c.last_touch_date)}</span>
+                    <span className="font-mono">{touchLabel(c.last_touchpoint)}</span>
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end">

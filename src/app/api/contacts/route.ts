@@ -40,12 +40,12 @@ export async function GET(request: NextRequest) {
     query = query.lt("health_score", parseInt(scoreBelow, 10));
   }
 
-  // Filter by stale contacts (last_touch_date older than N days)
+  // Filter by stale contacts (last_touchpoint older than N days)
   const staleDays = params.get("stale_days");
   if (staleDays) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - parseInt(staleDays, 10));
-    query = query.lt("last_touch_date", cutoff.toISOString());
+    query = query.lt("last_touchpoint", cutoff.toISOString());
   }
 
   // Exclude contacts with specific tags (e.g., lender-partner, gat-internal)

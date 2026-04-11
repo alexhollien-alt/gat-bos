@@ -337,9 +337,11 @@ header_block = f"""-- ==========================================================
 --      or if the Phase 0 backup files are not present on disk.
 --   2. TRUNCATE contacts, interactions, tasks, follow_ups, opportunities
 --      RESTART IDENTITY CASCADE. Wipes all 107 existing contacts and 7 tasks.
---   3. INSERT 126 rows from the cleaned xlsx:
---        - 88 agents   (Contacts sheet)   type='realtor'
+--   3. INSERT 126 rows from the cleaned xlsx in FK-safe order
+--      (lenders BEFORE agents so contacts_lender_partner_id_fkey
+--      resolves during insert; the FK is not deferrable):
 --        - 3 lenders   (Lenders sheet)    type='lender'
+--        - 88 agents   (Contacts sheet)   type='realtor'
 --        - 26 vendors  (Vendor Partners)  type='vendor'
 --        - 9 escrow    (Escrow Team)      type='escrow'
 --   4. Everything wrapped in a single BEGIN/COMMIT. If any INSERT fails
@@ -400,6 +402,9 @@ END $$;
 -- ----------------------------------------------------------------------------
 -- Destructive wipe
 -- ----------------------------------------------------------------------------
+
+-- NOTE: insert order fixed 2026-04-11: lenders must land before agents
+-- so the contacts_lender_partner_id_fkey constraint resolves on insert.
 TRUNCATE TABLE
   public.contacts,
   public.interactions,
@@ -461,10 +466,14 @@ COMMIT;
 -- ============================================================================
 """
 
+# FK-safe order: lenders before agents. Agents reference lender rows
+# via lender_partner_id, and the FK (contacts_lender_partner_id_fkey)
+# is NOT deferrable, so agents cannot be inserted until lenders exist.
+# See commit 9786e5e for the original fix discovered at Phase 4 apply.
 sql_chunks = [header_block]
-sql_chunks.append(emit_insert('Agents (Contacts sheet)',   agents))
-sql_chunks.append("")
 sql_chunks.append(emit_insert('Lenders sheet',             lenders))
+sql_chunks.append("")
+sql_chunks.append(emit_insert('Agents (Contacts sheet)',   agents))
 sql_chunks.append("")
 sql_chunks.append(emit_insert('Vendor Partners sheet',     vendors))
 sql_chunks.append("")

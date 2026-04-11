@@ -75,7 +75,7 @@ export interface Contact {
   // Live DB native fields (not in schema.sql)
   brokerage: string | null;
   website_url: string | null;
-  last_touch_date: string | null;
+  last_touchpoint: string | null;
   next_action: string | null;
   deleted_at: string | null;
 
@@ -104,7 +104,7 @@ export interface Contact {
   linkedin_url: string | null;
 
   // Status & next action
-  next_action_date: string | null;
+  next_followup: string | null;
   internal_note: string | null;
 
   // Context
