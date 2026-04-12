@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { Contact, ContactTier } from "@/lib/types";
 import { ContactCard } from "@/components/contacts/contact-card";
@@ -63,8 +64,6 @@ function sortContacts(
 }
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [touchCounts, setTouchCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
   const [relationship, setRelationship] = useState("all");
   const [sortBy, setSortBy] = useState<ContactSortKey>("lastname_asc");
@@ -77,39 +76,80 @@ export default function ContactsPage() {
   });
   const [showForm, setShowForm] = useState(false);
   const supabase = createClient();
+  const queryClient = useQueryClient();
 
-  const fetchContacts = useCallback(async () => {
-    // Tags subsystem (contact_tags + tags tables) is not present in
-    // the live DB. The previous query joined contact_tags(tags(*)) and
-    // PostgREST returned an error for the missing relation, breaking
-    // the entire page. Tag rebuild is its own future phase.
-    const { data } = await supabase
-      .from("contacts")
-      .select("*")
-      .order("last_name");
-    if (data) setContacts(data as Contact[]);
-  }, [supabase]);
+  // ----------------------------------------------------------
+  // Data: TanStack Query for contacts + touch counts
+  // ----------------------------------------------------------
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["contacts"],
+    queryFn: async () => {
+      // Tags subsystem (contact_tags + tags tables) is not present in
+      // the live DB. Tag rebuild is its own future phase.
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .is("deleted_at", null)
+        .order("last_name");
+      if (error) throw error;
+      return (data ?? []) as Contact[];
+    },
+    staleTime: 5 * 60 * 1000, // 5 min -- agent profiles rarely change
+  });
 
-  const fetchTouchCounts = useCallback(async () => {
-    const thirtyDaysAgo = new Date(
-      Date.now() - 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
-    const { data } = await supabase
-      .from("interactions")
-      .select("contact_id")
-      .gte("occurred_at", thirtyDaysAgo);
-    if (!data) return;
-    const counts: Record<string, number> = {};
-    for (const row of data as { contact_id: string }[]) {
-      counts[row.contact_id] = (counts[row.contact_id] || 0) + 1;
-    }
-    setTouchCounts(counts);
-  }, [supabase]);
+  const { data: touchCounts = {} } = useQuery({
+    queryKey: ["contacts", "touch_counts"],
+    queryFn: async () => {
+      const thirtyDaysAgo = new Date(
+        Date.now() - 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const { data, error } = await supabase
+        .from("interactions")
+        .select("contact_id")
+        .gte("occurred_at", thirtyDaysAgo);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const row of data as { contact_id: string }[]) {
+        counts[row.contact_id] = (counts[row.contact_id] || 0) + 1;
+      }
+      return counts;
+    },
+    staleTime: 30 * 1000, // 30s -- touch counts change more often
+  });
 
+  // ----------------------------------------------------------
+  // Realtime: invalidate queries on contacts or interactions change
+  // ----------------------------------------------------------
   useEffect(() => {
-    fetchContacts();
-    fetchTouchCounts();
-  }, [fetchContacts, fetchTouchCounts]);
+    const channels = [
+      supabase
+        .channel("contacts:all")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "contacts" },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["contacts"] });
+          }
+        )
+        .subscribe(),
+      supabase
+        .channel("contacts:interactions")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "interactions" },
+          () => {
+            queryClient.invalidateQueries({
+              queryKey: ["contacts", "touch_counts"],
+            });
+          }
+        )
+        .subscribe(),
+    ];
+
+    return () => {
+      channels.forEach((c) => supabase.removeChannel(c));
+    };
+  }, [queryClient, supabase]);
 
   // Apply search + relationship filter first, then group by tier, then sort
   // within each group. Per-section "Show more" slicing happens at render.
@@ -250,7 +290,9 @@ export default function ContactsPage() {
       <ContactFormModal
         open={showForm}
         onOpenChange={setShowForm}
-        onSuccess={fetchContacts}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ["contacts"] })
+        }
       />
     </div>
   );
