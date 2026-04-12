@@ -41,7 +41,6 @@ import {
   GraduationCap,
   Heart,
   BadgePercent,
-  BookOpenCheck,
   Handshake,
 } from "lucide-react";
 
@@ -193,7 +192,7 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
             <div className="intake-animate-in">
               <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-3" style={mono}>Step 1 of 3</p>
               <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-2" style={display}>What are you working on?</h2>
-              <p className="text-[13px] text-[#71717a] mb-8" style={body}>Pick one and I'll show you what's available.</p>
+              <p className="text-[13px] text-[#71717a] mb-8" style={body}>Pick one and I&apos;ll show you what&apos;s available.</p>
               <div className="space-y-3">
                 {SITUATIONS.map((s) => (
                   <button key={s.value} onClick={() => handleSelect(s.value)} className="w-full flex items-center gap-4 p-4 rounded-xl border border-white/[0.06] hover:border-[#e63550]/30 hover:bg-[#e63550]/[0.02] text-left transition-all group" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -242,7 +241,7 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
               <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[12px] text-[#71717a] hover:text-[#f4f4f5] transition-colors mb-6" style={body}><ChevronLeft className="h-3.5 w-3.5" />Back</button>
               <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-3" style={mono}>Step 3 of 3</p>
               <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-2" style={display}>Tell me about you</h2>
-              <p className="text-[13px] text-[#71717a] mb-8" style={body}>I'll reach out within 24 hours to get started on your materials.</p>
+              <p className="text-[13px] text-[#71717a] mb-8" style={body}>I&apos;ll reach out within 24 hours to get started on your materials.</p>
               <input type="text" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} className="absolute opacity-0 h-0 w-0 pointer-events-none" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div className="space-y-4 mb-8">
                 <div>
@@ -278,8 +277,8 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
           {submitted && (
             <div className="intake-animate-in text-center py-8">
               <div className="h-16 w-16 rounded-2xl bg-[#e63550]/10 flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-8 w-8 text-[#e63550]" /></div>
-              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-3" style={display}>You're all set</h2>
-              <p className="text-[14px] text-[#71717a] leading-relaxed max-w-sm mx-auto mb-8" style={body}>I've got your request and I'll reach out within 24 hours. Looking forward to working together.</p>
+              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-3" style={display}>You&apos;re all set</h2>
+              <p className="text-[14px] text-[#71717a] leading-relaxed max-w-sm mx-auto mb-8" style={body}>I&apos;ve got your request and I&apos;ll reach out within 24 hours. Looking forward to working together.</p>
               <button onClick={onClose} className="inline-flex items-center gap-2 bg-[#e63550] hover:bg-[#f04060] text-white rounded-xl px-8 py-3.5 transition-colors" style={{ ...body, fontWeight: 600, fontSize: "14px" }}>Done</button>
             </div>
           )}
@@ -333,21 +332,6 @@ const PARTNERS: Partner[] = [
   { icon: <Truck className="h-5 w-5" />, title: "Movers", description: "Local and long-distance, white-glove service" },
   { icon: <Wrench className="h-5 w-5" />, title: "Contractors", description: "Renovations, repairs, pre-listing prep" },
   { icon: <Home className="h-5 w-5" />, title: "Stagers", description: "Staging, styling, and furniture rental" },
-];
-
-// ---------------------
-// Highlight components
-// ---------------------
-
-const PRINT_HIGHLIGHTS = [
-  "Flyers & feature sheets",
-  "Multi-page brochures",
-  "Postcards & EDDM mailers",
-  "Door hangers",
-  "Listing presentations",
-  "Property websites",
-  "Social media graphics",
-  "Proximity maps",
 ];
 
 // ---------------------

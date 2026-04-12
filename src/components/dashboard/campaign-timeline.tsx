@@ -25,7 +25,6 @@ interface SummaryStats {
 }
 
 const ACCENT = "#e63550";
-const ACCENT_FILL = "rgba(230, 53, 80, 0.12)";
 
 export function CampaignTimelineWidget() {
   const supabase = createClient();

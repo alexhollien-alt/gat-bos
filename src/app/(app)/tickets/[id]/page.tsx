@@ -25,7 +25,6 @@ import {
   Phone,
   Building,
   Zap,
-  Inbox,
   Save,
   ExternalLink,
 } from "lucide-react";
