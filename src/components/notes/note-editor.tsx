@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Note } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { VoiceInput } from "@/components/ui/voice-input";
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -147,6 +148,10 @@ export function NoteForm({
     }
   }
 
+  function appendTranscript(text: string) {
+    setContent((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       <Textarea
@@ -156,7 +161,8 @@ export function NoteForm({
         rows={2}
         className="text-sm"
       />
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <VoiceInput onTranscript={appendTranscript} label="Dictate" />
         <Button type="submit" size="sm" disabled={loading || !content.trim()}>
           {loading ? "Adding..." : "Add note"}
         </Button>

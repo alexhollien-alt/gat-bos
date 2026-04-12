@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VoiceInput } from "@/components/ui/voice-input";
 import { toast } from "sonner";
 
 export function InteractionModal({
@@ -48,6 +49,7 @@ export function InteractionModal({
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<InteractionFormData>({
@@ -59,6 +61,12 @@ export function InteractionModal({
       occurred_at: new Date().toISOString().slice(0, 16),
     },
   });
+
+  function appendSummary(text: string) {
+    const current = watch("summary") || "";
+    const next = current.trim() ? `${current.trim()} ${text}` : text;
+    setValue("summary", next, { shouldValidate: true });
+  }
 
   async function onSubmit(data: InteractionFormData) {
     setLoading(true);
@@ -143,7 +151,10 @@ export function InteractionModal({
             />
           </div>
           <div className="space-y-2">
-            <Label>Summary</Label>
+            <div className="flex items-center justify-between">
+              <Label>Summary</Label>
+              <VoiceInput onTranscript={appendSummary} label="Dictate" />
+            </div>
             <Textarea
               placeholder="What happened?"
               rows={3}
