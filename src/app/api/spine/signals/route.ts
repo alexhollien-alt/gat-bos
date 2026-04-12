@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   // Accept session OR bearer (for cron/scout pushes)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  let userId = user?.id ?? null;
+  const userId = user?.id ?? null;
 
   if (!userId) {
     const unauth = requireApiToken(request);

@@ -1,11 +1,11 @@
 // src/app/api/spine/today/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchTodayPayload } from "@/lib/spine/queries";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
