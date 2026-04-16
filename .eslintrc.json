@@ -2,5 +2,26 @@
   "extends": ["next/core-web-vitals", "next/typescript"],
   "rules": {
     "react-hooks/exhaustive-deps": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/**/*.{ts,tsx,js,jsx}",
+        "src/components/**/*.{ts,tsx,js,jsx}"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Literal[value=/#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?(?![0-9a-fA-F])/]",
+            "message": "Hardcoded hex colors are banned in src/app and src/components. Use CSS variables from globals.css (e.g. var(--accent-red)) or Tailwind palette classes (e.g. text-green-500)."
+          },
+          {
+            "selector": "TemplateElement[value.raw=/#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?(?![0-9a-fA-F])/]",
+            "message": "Hardcoded hex colors are banned in template literals. Use CSS variables or Tailwind palette classes."
+          }
+        ]
+      }
+    }
+  ]
 }

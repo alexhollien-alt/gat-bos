@@ -5,13 +5,14 @@ import { Thermometer } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
+import { MonoNumeral } from "@/components/screen";
 
 function tempColor(temp: number): string {
-  if (temp >= 80) return "#ef4444";
-  if (temp >= 60) return "#f97316";
-  if (temp >= 40) return "#eab308";
-  if (temp >= 20) return "#3b82f6";
-  return "#6b7280";
+  if (temp >= 80) return "var(--status-danger)";
+  if (temp >= 60) return "var(--accent-orange)";
+  if (temp >= 40) return "var(--status-warning)";
+  if (temp >= 20) return "var(--status-info)";
+  return "var(--text-muted)";
 }
 
 function touchLabel(date: string | null): string {
@@ -31,8 +32,8 @@ export function HealthLeadersWidget({
           <Thermometer className="h-4 w-4" />
           Hottest Contacts
           {contacts.length > 0 && (
-            <span className="ml-auto font-mono text-xs bg-secondary text-foreground px-1.5 py-0.5 rounded">
-              {contacts.length}
+            <span className="ml-auto bg-secondary text-foreground px-1.5 py-0.5 rounded">
+              <MonoNumeral size="sm">{contacts.length}</MonoNumeral>
             </span>
           )}
         </CardTitle>
@@ -72,12 +73,13 @@ export function HealthLeadersWidget({
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end">
-                  <span
-                    className="text-2xl font-mono font-semibold leading-none"
+                  <MonoNumeral
+                    size="lg"
+                    className="font-semibold"
                     style={{ color: tempColor(c.health_score) }}
                   >
                     {c.health_score}
-                  </span>
+                  </MonoNumeral>
                   <span className="text-[9px] font-mono uppercase tracking-wide text-muted-foreground mt-0.5">
                     SCORE
                   </span>

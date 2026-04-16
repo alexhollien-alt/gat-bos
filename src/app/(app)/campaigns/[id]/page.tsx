@@ -9,16 +9,17 @@ import { StepBuilder } from "@/components/campaigns/step-builder";
 import { CampaignSettings } from "@/components/campaigns/campaign-settings";
 import { EnrollmentList } from "@/components/campaigns/enrollment-list";
 import type { Campaign, CampaignStep, CampaignType, CampaignStatus } from "@/lib/types";
+import { AccentRule, SectionShell } from "@/components/screen";
 
 const typeColors: Record<CampaignType, string> = {
-  drip: "bg-purple-100 text-purple-700",
-  marketing: "bg-sky-100 text-sky-700",
+  drip: "bg-[color:var(--accent-red)]/10 text-[var(--accent-red)] border border-[color:var(--accent-red)]/20",
+  marketing: "bg-[color:var(--accent-blue)]/10 text-blue-400 border border-[color:var(--accent-blue)]/20",
 };
 
 const statusColors: Record<CampaignStatus, string> = {
   draft: "bg-secondary text-muted-foreground",
-  active: "bg-green-100 text-green-700",
-  paused: "bg-amber-100 text-amber-700",
+  active: "bg-green-500/10 text-green-400 border border-green-500/20",
+  paused: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
   archived: "bg-secondary text-muted-foreground",
 };
 
@@ -66,7 +67,7 @@ export default async function CampaignDetailPage({
   const typedSteps = (steps ?? []) as CampaignStep[];
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-3xl mx-0 space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
         <Link href="/campaigns">
@@ -74,9 +75,9 @@ export default async function CampaignDetailPage({
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-foreground font-display">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-h2-screen sm:text-h1-screen font-display text-foreground leading-[1.1] tracking-headline">
               {typedCampaign.name}
             </h1>
             <Badge
@@ -93,16 +94,17 @@ export default async function CampaignDetailPage({
             </Badge>
           </div>
           {typedCampaign.description && (
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-2 text-small text-muted-foreground max-w-2xl">
               {typedCampaign.description}
             </p>
           )}
-          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground font-mono">
             <span>{typedCampaign.step_count} steps</span>
             <span>{typedCampaign.enrolled_count} enrolled</span>
           </div>
         </div>
       </div>
+      <AccentRule variant="hairline" />
 
       {/* Tabs */}
       <Tabs defaultValue="steps">
@@ -129,6 +131,6 @@ export default async function CampaignDetailPage({
           <CampaignSettings campaign={typedCampaign} />
         </TabsContent>
       </Tabs>
-    </div>
+    </SectionShell>
   );
 }

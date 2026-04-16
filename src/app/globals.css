@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Self Deception';
+  src: url('/fonts/SelfDeception.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 240 10% 4%;
@@ -37,6 +45,38 @@
     --sidebar-accent-foreground: 240 5% 96%;
     --sidebar-border: 240 4% 16%;
     --sidebar-ring: 351 79% 55%;
+
+    /* Brand tokens (print palette, hex-canonical per brand.md) */
+    --brand-red: #b31a35;
+    --brand-blue: #003087;
+    --brand-black: #0a0a0a;
+    --off-white: #f7f7f5;
+    --rule-gray: #e8e8e8;
+    --muted-text: #666666;
+    --ghost-text: #999999;
+
+    /* Screen variants (per brand-reference.md) */
+    --accent-red: #e63550;
+    --accent-blue: #2563eb;
+    --surface-base: #09090b;
+    --surface-raised: #131316;
+    --surface-warm: #18181b;
+    --surface-muted: #f4f4f5;
+    --border-default: #27272a;
+    --border-subtle: #e4e4e7;
+    --border-deep: #3f3f46;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+
+    /* Semantic status (non-chart use -- chart colors use Tailwind utils) */
+    --status-success: #22c55e;
+    --status-warning: #eab308;
+    --status-danger: #ef4444;
+    --status-info: #3b82f6;
+
+    /* Accent extensions (hover states, category colors) */
+    --accent-red-hover: #f04060;
+    --accent-orange: #f97316;
   }
 
   * {
@@ -50,23 +90,6 @@
 
 /* ── Showcase Surface Utilities ── */
 @layer components {
-  .showcase-mesh {
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(230, 53, 80, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(37, 99, 235, 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(192, 38, 211, 0.04) 0%, transparent 50%),
-      hsl(var(--background));
-  }
-
-  .showcase-noise::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
-
   .showcase-card {
     background: hsl(var(--card) / 0.8);
     backdrop-filter: blur(16px) saturate(120%);

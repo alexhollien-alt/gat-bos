@@ -10,6 +10,7 @@ import { signupSchema, type SignupFormData } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Eyebrow, ShowcaseBackdrop } from "@/components/screen";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -42,15 +43,14 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center showcase-mesh relative overflow-hidden">
-      <div className="showcase-noise absolute inset-0" />
+    <ShowcaseBackdrop className="min-h-screen flex items-center justify-center">
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
         <div className="showcase-card p-8 sm:p-10">
           <div className="text-center mb-8">
-            <h1
-              className="text-2xl font-bold text-foreground"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <div className="mb-3">
+              <Eyebrow tone="crimson">Get Started</Eyebrow>
+            </div>
+            <h1 className="font-display text-h2-screen font-bold text-foreground tracking-headline">
               Create Account
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -66,7 +66,7 @@ export default function SignupPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                className="bg-[#1a1a1f] border-white/[0.06] text-foreground placeholder:text-[#3f3f46] focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10"
+                className="bg-[var(--surface-raised)] border-white/[0.06] text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
                 {...register("email")}
               />
               {errors.email && (
@@ -80,7 +80,7 @@ export default function SignupPage() {
               <Input
                 id="password"
                 type="password"
-                className="bg-[#1a1a1f] border-white/[0.06] text-foreground placeholder:text-[#3f3f46] focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10"
+                className="bg-[var(--surface-raised)] border-white/[0.06] text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
                 {...register("password")}
               />
               {errors.password && (
@@ -96,7 +96,7 @@ export default function SignupPage() {
               <Input
                 id="confirmPassword"
                 type="password"
-                className="bg-[#1a1a1f] border-white/[0.06] text-foreground placeholder:text-[#3f3f46] focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10"
+                className="bg-[var(--surface-raised)] border-white/[0.06] text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
                 {...register("confirmPassword")}
               />
               {errors.confirmPassword && (
@@ -110,7 +110,7 @@ export default function SignupPage() {
             )}
             <Button
               type="submit"
-              className="w-full bg-[#e63550] hover:bg-[#f04060] text-white transition-all hover:-translate-y-px"
+              className="w-full bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-all hover:-translate-y-px"
               style={{ boxShadow: "0 4px 14px rgba(230,53,80,0.25)" }}
               disabled={loading}
             >
@@ -121,13 +121,13 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-foreground underline hover:text-[#e63550] transition-colors"
+              className="text-foreground underline hover:text-[var(--accent-red)] transition-colors"
             >
               Sign in
             </Link>
           </p>
         </div>
       </div>
-    </div>
+    </ShowcaseBackdrop>
   );
 }

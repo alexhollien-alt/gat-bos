@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 import {
   ArrowLeft,
   Loader2,
@@ -112,6 +113,7 @@ export default function TicketDetailPage() {
   const isIntake = ticket.source === "intake";
   const agentName = ticket.submitter_name
     || (ticket.contacts ? `${ticket.contacts.first_name} ${ticket.contacts.last_name}` : null);
+  const createdLine = `Created ${new Date(ticket.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}${ticket.submitted_at ? ` \u00B7 Submitted ${new Date(ticket.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}`;
 
   return (
     <div>
@@ -124,41 +126,42 @@ export default function TicketDetailPage() {
         Back to tickets
       </button>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-xl font-semibold text-foreground font-display">{ticket.title}</h1>
-            {isIntake && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                Intake
-              </span>
-            )}
-            {ticket.priority === "rush" && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
-                <Zap className="h-2.5 w-2.5" />
-                Rush
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Created {new Date(ticket.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-            {ticket.submitted_at && ` \u00B7 Submitted ${new Date(ticket.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-          </p>
-        </div>
-
-        <Select value={ticket.status} onValueChange={handleStatusChange}>
-          <SelectTrigger className={cn("h-9 text-sm w-auto min-w-[140px] border-0 font-medium", config.bgColor, config.textColor)}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
-            <SelectItem value="in_production">In Production</SelectItem>
-            <SelectItem value="complete">Complete</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 mx-0">
+        <PageHeader
+          eyebrow="Print ticket"
+          title={ticket.title}
+          subhead={
+            <span className="inline-flex items-center gap-2 flex-wrap">
+              {isIntake && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">
+                  Intake
+                </span>
+              )}
+              {ticket.priority === "rush" && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-[color:var(--brand-red)]/10 text-[var(--brand-red)] px-2 py-0.5 rounded-full">
+                  <Zap className="h-2.5 w-2.5" />
+                  Rush
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">{createdLine}</span>
+            </span>
+          }
+          right={
+            <Select value={ticket.status} onValueChange={handleStatusChange}>
+              <SelectTrigger className={cn("h-9 text-sm w-auto min-w-[140px] border-0 font-medium", config.bgColor, config.textColor)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="in_production">In Production</SelectItem>
+                <SelectItem value="complete">Complete</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        />
+        <AccentRule variant="hairline" className="mt-6 mb-6" />
+      </SectionShell>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -240,9 +243,9 @@ export default function TicketDetailPage() {
                 </div>
               )}
               {listing.special_instructions && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-md">
-                  <p className="text-xs font-medium text-amber-800 mb-1">Special Instructions</p>
-                  <p className="text-xs text-amber-700">{listing.special_instructions}</p>
+                <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
+                  <p className="text-xs font-medium text-amber-300 mb-1">Special Instructions</p>
+                  <p className="text-xs text-amber-200">{listing.special_instructions}</p>
                 </div>
               )}
             </section>

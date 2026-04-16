@@ -53,13 +53,13 @@ import {
 
 const ITEMS_PER_BUCKET = 3;
 
-// Screen palette per digital-aesthetic.md (NOT the print #b31a35/#003087)
+// Screen palette per digital-aesthetic.md (NOT the print brand-red/brand-blue)
 const BUCKET_COLORS = {
-  overdue_followups: "#e63550", // electric crimson
-  closings: "#f97316", // orange
-  going_cold: "#eab308", // yellow
-  proactive: "#22c55e", // green
-  stalled_pipeline: "#71717a", // gray
+  overdue_followups: "var(--accent-red)", // electric crimson
+  closings: "var(--accent-orange)", // orange
+  going_cold: "var(--status-warning)", // yellow
+  proactive: "var(--status-success)", // green
+  stalled_pipeline: "var(--text-muted)", // gray
 } as const;
 
 // ============================================================
@@ -557,7 +557,7 @@ export function TaskListWidget() {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center justify-between gap-2">
           <span className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-[#e63550]" aria-hidden="true" />
+            <Target className="h-4 w-4 text-[var(--accent-red)]" aria-hidden="true" />
             Today&apos;s Focus
           </span>
           {!isLoading && (
@@ -796,7 +796,7 @@ function ActionButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e63550] ${colorMap[variant]}`}
+      className={`min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-red)] ${colorMap[variant]}`}
     >
       {children}
     </button>
@@ -805,12 +805,12 @@ function ActionButton({
 
 function TierBadge({ tier }: { tier: ContactRef["tier"] }) {
   const tierStyles: Record<string, string> = {
-    A: "bg-[#e63550] text-white",
-    B: "bg-[#2563eb] text-white",
-    C: "bg-[#a1a1aa] text-white",
-    P: "bg-[#222228] text-[#a1a1aa]",
+    A: "bg-[var(--accent-red)] text-white",
+    B: "bg-[var(--accent-blue)] text-white",
+    C: "bg-[var(--text-secondary)] text-white",
+    P: "bg-[var(--surface-raised)] text-[var(--text-secondary)]",
   };
-  const cls = tier ? tierStyles[tier] : "bg-[#222228] text-[#a1a1aa]";
+  const cls = tier ? tierStyles[tier] : "bg-[var(--surface-raised)] text-[var(--text-secondary)]";
   return (
     <span
       aria-label={tier ? `Tier ${tier}` : "No tier"}
@@ -841,7 +841,7 @@ function FollowUpRowView({
       <TierBadge tier={row.contacts?.tier ?? null} />
       <Link
         href={`/contacts/${row.contact_id}`}
-        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e63550] rounded"
+        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-red)] rounded"
       >
         <p className="text-sm font-medium text-foreground truncate leading-tight">
           {name}
@@ -888,7 +888,7 @@ function ClosingRowView({ row }: { row: ClosingRow }) {
       <TierBadge tier={row.contacts?.tier ?? null} />
       <Link
         href={`/contacts/${row.contact_id}`}
-        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316] rounded"
+        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-orange)] rounded"
       >
         <p className="text-sm font-medium text-foreground truncate leading-tight">
           {name}
@@ -903,7 +903,7 @@ function ClosingRowView({ row }: { row: ClosingRow }) {
       <Link
         href={`/contacts/${row.contact_id}`}
         aria-label={`View deal for ${name}`}
-        className="min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[#f97316]/10 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f97316]"
+        className="min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[color:var(--accent-orange)]/10 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-orange)]"
       >
         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
       </Link>
@@ -932,7 +932,7 @@ function HealthRowView({
       <TierBadge tier={row.contacts?.tier ?? null} />
       <Link
         href={`/contacts/${row.contact_id}`}
-        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e63550] rounded"
+        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-red)] rounded"
       >
         <p className="text-sm font-medium text-foreground truncate leading-tight">
           {name}
@@ -976,7 +976,7 @@ function PipelineRowView({ row }: { row: OpportunityRow }) {
       <TierBadge tier={row.contacts?.tier ?? null} />
       <Link
         href={`/contacts/${row.contact_id}`}
-        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71717a] rounded"
+        className="flex-1 min-w-0 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--text-muted)] rounded"
       >
         <p className="text-sm font-medium text-foreground truncate leading-tight">
           {name}
@@ -991,7 +991,7 @@ function PipelineRowView({ row }: { row: OpportunityRow }) {
       <Link
         href={`/contacts/${row.contact_id}`}
         aria-label={`View opportunity for ${name}`}
-        className="min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[#71717a]/10 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#71717a]"
+        className="min-w-[44px] min-h-[44px] sm:min-w-[28px] sm:min-h-[28px] rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[color:var(--text-muted)]/10 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--text-muted)]"
       >
         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
       </Link>
@@ -1004,7 +1004,7 @@ function ViewMoreLink({ href, label }: { href: string; label: string }) {
     <li role="listitem" className="px-1 pt-1">
       <Link
         href={href}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e63550] rounded"
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-red)] rounded"
       >
         {label} &rarr;
       </Link>

@@ -20,15 +20,16 @@ import {
   endOfMonth,
   differenceInDays,
 } from "date-fns";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 // ---------------------
 // Color tokens (screen values per digital-aesthetic.md)
 // ---------------------
-const CRIMSON = "#e63550";
-const SIGNAL_BLUE = "#2563eb";
-const SUCCESS = "#22c55e";
-const WARNING = "#eab308";
-const MUTED = "#71717a";
+const CRIMSON = "var(--accent-red)";
+const SIGNAL_BLUE = "var(--accent-blue)";
+const SUCCESS = "var(--status-success)";
+const WARNING = "var(--status-warning)";
+const MUTED = "var(--text-muted)";
 
 // ---------------------
 // Helpers
@@ -46,7 +47,7 @@ function openRateColor(rate: number): string {
 }
 
 const CHART_STYLE = {
-  fontFamily: "'Space Mono', ui-monospace, monospace",
+  fontFamily: "var(--font-mono)",
   fontSize: 11,
 };
 
@@ -163,13 +164,13 @@ function TempTrendsView({ contacts }: { contacts: TempContact[] }) {
                   type="category"
                   dataKey="name"
                   width={80}
-                  tick={{ ...CHART_STYLE, fill: "#a1a1aa" }}
+                  tick={{ ...CHART_STYLE, fill: "var(--text-secondary)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#131316",
+                    background: "var(--surface-raised)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     borderRadius: 8,
                     ...CHART_STYLE,
@@ -215,13 +216,13 @@ function TempTrendsView({ contacts }: { contacts: TempContact[] }) {
                   type="category"
                   dataKey="name"
                   width={80}
-                  tick={{ ...CHART_STYLE, fill: "#a1a1aa" }}
+                  tick={{ ...CHART_STYLE, fill: "var(--text-secondary)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#131316",
+                    background: "var(--surface-raised)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     borderRadius: 8,
                     ...CHART_STYLE,
@@ -309,7 +310,7 @@ function PipelineView({
             >
               <XAxis
                 dataKey="stage"
-                tick={{ ...CHART_STYLE, fill: "#a1a1aa" }}
+                tick={{ ...CHART_STYLE, fill: "var(--text-secondary)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -322,7 +323,7 @@ function PipelineView({
               />
               <Tooltip
                 contentStyle={{
-                  background: "#131316",
+                  background: "var(--surface-raised)",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 8,
                   ...CHART_STYLE,
@@ -410,7 +411,7 @@ function ThroughputView({ weeks, avgTurnaround }: ThroughputViewProps) {
             >
               <XAxis
                 dataKey="week"
-                tick={{ ...CHART_STYLE, fill: "#a1a1aa" }}
+                tick={{ ...CHART_STYLE, fill: "var(--text-secondary)" }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -423,7 +424,7 @@ function ThroughputView({ weeks, avgTurnaround }: ThroughputViewProps) {
               />
               <Tooltip
                 contentStyle={{
-                  background: "#131316",
+                  background: "var(--surface-raised)",
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 8,
                   ...CHART_STYLE,
@@ -830,16 +831,14 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-2xl font-display font-bold text-foreground">
-            Analytics
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 font-mono">
-            Loading...
-          </p>
-        </div>
-      </div>
+      <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-6xl mx-0">
+        <PageHeader
+          eyebrow="Friday review"
+          title="Analytics"
+          subhead={<span className="font-mono">Loading...</span>}
+        />
+        <AccentRule variant="hairline" className="mt-6 mb-6" />
+      </SectionShell>
     );
   }
 
@@ -847,16 +846,17 @@ export default function AnalyticsPage() {
     "bg-card rounded-xl border border-border p-6 flex flex-col";
 
   return (
-    <div className="max-w-6xl">
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-display font-bold text-foreground">
-          Analytics
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1 font-mono">
-          Friday review. Four questions. Each answer is a decision.
-        </p>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-6xl mx-0">
+      <PageHeader
+        eyebrow="Friday review"
+        title="Analytics"
+        subhead={
+          <span className="font-mono">
+            Four questions. Each answer is a decision.
+          </span>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       {/* 2x2 grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -925,6 +925,6 @@ export default function AnalyticsPage() {
         </div>
 
       </div>
-    </div>
+    </SectionShell>
   );
 }

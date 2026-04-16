@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { MaterialRequest } from "@/lib/types";
 import { MaterialRequestRow } from "@/components/materials/material-request-row";
 import { REQUEST_STATUS_CONFIG } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import type { MaterialRequestStatus } from "@/lib/types";
 import { Inbox } from "lucide-react";
+import {
+  AccentRule,
+  FilterPill,
+  PageHeader,
+  SectionShell,
+} from "@/components/screen";
 
 const STATUS_FILTERS: { value: MaterialRequestStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -16,6 +22,28 @@ const STATUS_FILTERS: { value: MaterialRequestStatus | "all"; label: string }[] 
   { value: "in_production", label: "In Production" },
   { value: "complete", label: "Complete" },
 ];
+
+function NewIntakeBadge({ count }: { count: number }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--accent-red)]/40 bg-[color:var(--accent-red)]/10 px-3 py-1.5 text-[var(--accent-red)]">
+      <Inbox className="h-3.5 w-3.5" />
+      <span className="font-mono uppercase text-micro tracking-label font-medium">
+        {count} new intake{count !== 1 ? "s" : ""}
+      </span>
+    </div>
+  );
+}
+
+function PreviewLink() {
+  return (
+    <Link
+      href="/weekly-edge/preview"
+      className="font-mono uppercase text-micro tracking-label font-medium text-muted-foreground transition-colors hover:text-[var(--accent-red)]"
+    >
+      Preview this week →
+    </Link>
+  );
+}
 
 export default function MaterialsPage() {
   const supabase = createClient();
@@ -46,7 +74,6 @@ export default function MaterialsPage() {
       );
     }
 
-    // Count new intake submissions (submitted status, intake source)
     const { count } = await supabase
       .from("material_requests")
       .select("*", { count: "exact", head: true })
@@ -55,54 +82,47 @@ export default function MaterialsPage() {
       .is("deleted_at", null);
 
     setIntakeCount(count ?? 0);
-  }, [statusFilter]);
+  }, [statusFilter, supabase]);
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const openCount = requests.filter(
-    (r) => r.status !== "complete"
-  ).length;
+  const openCount = requests.filter((r) => r.status !== "complete").length;
+  const openCountText = `${openCount} open request${openCount !== 1 ? "s" : ""}`;
 
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-display">
-            Material Requests
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {openCount} open request{openCount !== 1 ? "s" : ""}
-          </p>
-        </div>
-        {intakeCount > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
-            <Inbox className="h-4 w-4" />
-            {intakeCount} new intake submission{intakeCount !== 1 ? "s" : ""}
-          </div>
-        )}
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-4xl mx-0">
+      <PageHeader
+        eyebrow="Print queue"
+        title="Material Requests"
+        subhead={openCountText}
+        right={
+          intakeCount > 0 ? (
+            <div className="flex items-center gap-3">
+              <PreviewLink />
+              <NewIntakeBadge count={intakeCount} />
+            </div>
+          ) : (
+            <PreviewLink />
+          )
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
-      {/* Status filter pills */}
-      <div className="flex items-center gap-1.5 mb-4">
+      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
         {STATUS_FILTERS.map((filter) => (
-          <button
+          <FilterPill
             key={filter.value}
+            tone="neutral"
+            active={statusFilter === filter.value}
             onClick={() => setStatusFilter(filter.value)}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium transition-colors",
-              statusFilter === filter.value
-                ? "bg-foreground text-background"
-                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-            )}
           >
             {filter.label}
-          </button>
+          </FilterPill>
         ))}
       </div>
 
-      {/* Request list */}
       <div className="space-y-2">
         {requests.map((req) => (
           <MaterialRequestRow
@@ -122,6 +142,6 @@ export default function MaterialsPage() {
           </div>
         )}
       </div>
-    </div>
+    </SectionShell>
   );
 }

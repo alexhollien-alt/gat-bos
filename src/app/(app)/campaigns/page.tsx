@@ -12,16 +12,17 @@ import {
 } from "@/components/ui/table";
 import type { Campaign, CampaignType, CampaignStatus } from "@/lib/types";
 import { campaignTypeValues, campaignStatusValues } from "@/lib/validations";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 const typeColors: Record<CampaignType, string> = {
-  drip: "bg-purple-100 text-purple-700",
-  marketing: "bg-sky-100 text-sky-700",
+  drip: "bg-[color:var(--accent-red)]/10 text-[var(--accent-red)] border border-[color:var(--accent-red)]/20",
+  marketing: "bg-[color:var(--accent-blue)]/10 text-blue-400 border border-[color:var(--accent-blue)]/20",
 };
 
 const statusColors: Record<CampaignStatus, string> = {
   draft: "bg-secondary text-muted-foreground",
-  active: "bg-green-100 text-green-700",
-  paused: "bg-amber-100 text-amber-700",
+  active: "bg-green-500/10 text-green-400 border border-green-500/20",
+  paused: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
   archived: "bg-secondary text-muted-foreground",
 };
 
@@ -64,19 +65,18 @@ export default async function CampaignsPage({
   const { data: campaigns } = await query;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-display">Campaigns</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {campaigns?.length ?? 0} campaign
-            {(campaigns?.length ?? 0) !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <Link href="/campaigns/new">
-          <Button size="sm">New Campaign</Button>
-        </Link>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-5xl mx-0 space-y-6">
+      <PageHeader
+        eyebrow="Automation"
+        title="Campaigns"
+        subhead={`${campaigns?.length ?? 0} campaign${(campaigns?.length ?? 0) !== 1 ? "s" : ""}`}
+        right={
+          <Link href="/campaigns/new">
+            <Button size="sm">New Campaign</Button>
+          </Link>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
@@ -190,6 +190,6 @@ export default async function CampaignsPage({
           </Table>
         </div>
       )}
-    </div>
+    </SectionShell>
   );
 }

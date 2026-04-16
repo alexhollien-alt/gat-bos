@@ -1,9 +1,17 @@
 import { Toaster } from "@/components/ui/sonner";
+import { AccentRule, Eyebrow, ShowcaseBackdrop, StatRail } from "@/components/screen";
 
 export const metadata = {
   title: "Your Marketing Advantage -- Alex Hollien | Great American Title",
   description: "Full-service marketing, data, and transaction support for Arizona real estate agents",
 };
+
+const HERO_STATS = [
+  { stat: "50+", label: "Agent Partners" },
+  { stat: "2+", label: "Years in Title" },
+  { stat: "11", label: "Offices Valley-Wide" },
+  { stat: "#1", label: "Ranked 17 Years" },
+];
 
 export default function IntakeLayout({
   children,
@@ -11,61 +19,9 @@ export default function IntakeLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: "#09090b" }}>
-      {/* Google Fonts */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=Space+Mono&display=swap"
-      />
-
-      {/* Self Deception font for signature */}
-      <style>{`
-        @font-face {
-          font-family: 'Self Deception';
-          src: url('/fonts/SelfDeception.ttf') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-          font-display: swap;
-        }
-      `}</style>
-
+    <div className="min-h-screen relative" style={{ backgroundColor: "var(--surface-base)" }}>
       {/* Header */}
-      <header
-        className="relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #09090b 0%, #131316 40%, #09090b 100%)" }}
-      >
-        {/* Arizona sunset mid-layer */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.12]"
-          style={{
-            backgroundImage: "url('/az-sunset.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center 30%",
-          }}
-        />
-        {/* Dark overlay to keep text legible */}
-        <div className="absolute inset-0 pointer-events-none bg-black/60" />
-        {/* Rich layered gradients */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              radial-gradient(ellipse at 90% 10%, rgba(230,53,80,0.16) 0%, transparent 50%),
-              radial-gradient(ellipse at 5% 95%, rgba(37,99,235,0.10) 0%, transparent 50%),
-              radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.012) 0%, transparent 70%)
-            `,
-          }}
-        />
-        {/* Noise */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.025]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          }}
-        />
-
+      <ShowcaseBackdrop image="/az-sunset.jpg" imageOpacity={0.12} imagePosition="center 30%" overlayOpacity={0.6}>
         <div className="relative max-w-5xl mx-auto px-6 sm:px-8">
           {/* Top bar: GAT logo */}
           <div className="flex items-center py-4">
@@ -95,24 +51,17 @@ export default function IntakeLayout({
 
             {/* Right: positioning text -- fills to match image height */}
             <div className="flex-1 flex flex-col justify-center sm:pl-8 pt-6 sm:pt-0">
-              <p
-                className="text-[10px] uppercase tracking-[0.3em] text-[#e63550] font-semibold mb-4 opacity-80"
-                style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
-              >
-                Built For Agents
-              </p>
-              <h1
-                className="text-[28px] sm:text-[38px] text-white leading-[1.08] mb-4 tracking-[-0.02em]"
-                style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
-              >
+              <div className="mb-4">
+                <Eyebrow tone="crimson" className="text-[10px] tracking-[0.3em] opacity-80">
+                  Built For Agents
+                </Eyebrow>
+              </div>
+              <h1 className="font-display text-[28px] sm:text-[38px] text-white leading-[1.08] mb-4 tracking-[-0.02em]">
                 Behind every great agent
                 <br className="hidden sm:block" />
                 is the team behind them
               </h1>
-              <p
-                className="text-[13px] sm:text-[14px] text-white/25 leading-[1.8] max-w-md mb-6"
-                style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
-              >
+              <p className="font-sans text-[13px] sm:text-[14px] text-white/25 leading-[1.8] max-w-md mb-6">
                 Full-service design, print production, data tools, and
                 hands-on transaction support -- all included when you
                 close with Great American Title.
@@ -121,32 +70,24 @@ export default function IntakeLayout({
               {/* Name + contact */}
               <div className="flex items-center gap-4">
                 <div>
-                  <h2
-                    className="text-[18px] sm:text-[20px] text-white leading-tight tracking-[-0.01em]"
-                    style={{ fontFamily: "'Syne', system-ui, sans-serif" }}
-                  >
+                  <h2 className="font-display text-[18px] sm:text-[20px] text-white leading-tight tracking-[-0.01em]">
                     Alex Hollien
                   </h2>
-                  <p
-                    className="text-[8px] uppercase tracking-[0.2em] text-[#e63550]/50 font-semibold mt-0.5"
-                    style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
-                  >
+                  <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-[color:var(--accent-red)]/50 font-semibold mt-0.5">
                     Title Sales Executive &nbsp;&bull;&nbsp; Phoenix Valley
                   </p>
                 </div>
                 <div className="hidden sm:flex items-center gap-2 ml-auto">
                   <a
                     href="tel:+14802042983"
-                    className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
-                    style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+                    className="font-sans text-[10px] text-white/20 hover:text-white/50 transition-colors"
                   >
                     (480) 204-2983
                   </a>
                   <span className="text-white/8 text-[8px]">&bull;</span>
                   <a
                     href="mailto:alex@alexhollienco.com"
-                    className="text-[10px] text-white/20 hover:text-white/50 transition-colors"
-                    style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+                    className="font-sans text-[10px] text-white/20 hover:text-white/50 transition-colors"
                   >
                     alex@alexhollienco.com
                   </a>
@@ -156,73 +97,29 @@ export default function IntakeLayout({
           </div>
 
           {/* Stats bar -- underneath hero */}
-          <div className="flex items-center justify-center gap-8 sm:gap-14 py-5 border-t border-white/[0.06]">
-            {[
-              { stat: "50+", label: "Agent Partners" },
-              { stat: "2+", label: "Years in Title" },
-              { stat: "11", label: "Offices Valley-Wide" },
-              { stat: "#1", label: "Ranked 17 Years" },
-            ].map((item) => (
-              <div key={item.label} className="flex items-baseline gap-1.5 text-center">
-                <span
-                  className="text-[20px] sm:text-[24px] text-white/80 leading-none tracking-[-0.02em]"
-                  style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
-                >
-                  {item.stat}
-                </span>
-                <span
-                  className="text-[8px] sm:text-[9px] text-white/30 uppercase tracking-[0.12em] font-medium"
-                  style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          <StatRail items={HERO_STATS} size="md" />
         </div>
 
         {/* Bottom accent bar */}
-        <div
-          className="h-[3px]"
-          style={{ background: "linear-gradient(90deg, #e63550 0%, #e63550 30%, #2563eb 100%)" }}
-        />
-      </header>
+        <AccentRule variant="primary" />
+      </ShowcaseBackdrop>
 
       {/* Content */}
-      <main className="relative max-w-5xl mx-auto px-6 sm:px-8 py-10 sm:py-14" style={{ color: "#f4f4f5" }}>
+      <main className="relative max-w-5xl mx-auto px-6 sm:px-8 py-10 sm:py-14" style={{ color: "var(--surface-muted)" }}>
         {children}
       </main>
 
       {/* Footer */}
       <footer className="relative pb-10 text-center">
         <div className="max-w-5xl mx-auto px-6 sm:px-8">
-          <div className="h-[1px] bg-gradient-to-r from-transparent via-[#27272a] to-transparent mb-6" />
-          <p
-            className="text-[10px] text-[#71717a] tracking-[0.15em] uppercase"
-            style={{ fontFamily: "'Space Mono', 'Courier New', monospace" }}
-          >
-            Title & Escrow Services Provided by Great American Title Agency
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-[var(--border-default)] to-transparent mb-6" />
+          <p className="font-mono text-[10px] text-[var(--text-muted)] tracking-[0.15em] uppercase">
+            Title &amp; Escrow Services Provided by Great American Title Agency
           </p>
         </div>
       </footer>
 
       <Toaster position="bottom-right" />
-
-      <style>{`
-        @keyframes intake-fade-up {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .intake-animate-in {
-          animation: intake-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .intake-animate-in {
-            animation: none;
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { formatDistanceToNow, differenceInDays, subDays } from "date-fns";
+import { AccentRule, MonoNumeral, PageHeader, SectionShell } from "@/components/screen";
 
 // ---------------------
 // Types
@@ -80,10 +81,10 @@ const COLUMNS: { status: MaterialRequestStatus; label: string }[] = [
 // ---------------------
 
 const TIER_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: "bg-[#b31a35]/10", text: "text-[#b31a35]" },
-  B: { bg: "bg-[#003087]/10", text: "text-[#003087]" },
-  C: { bg: "bg-[#666]/10", text: "text-[#666]" },
-  P: { bg: "bg-[#e8e8e8]", text: "text-[#666]" },
+  A: { bg: "bg-[color:var(--brand-red)]/10", text: "text-[var(--brand-red)]" },
+  B: { bg: "bg-[color:var(--brand-blue)]/10", text: "text-[var(--brand-blue)]" },
+  C: { bg: "bg-[color:var(--muted-text)]/10", text: "text-[var(--muted-text)]" },
+  P: { bg: "bg-[var(--rule-gray)]", text: "text-[var(--muted-text)]" },
 };
 
 // ---------------------
@@ -153,20 +154,20 @@ function TicketCard({
     >
       {/* Rush badge */}
       {isRush && (
-        <span className="inline-block text-[9px] uppercase font-bold text-[#b31a35] bg-[#b31a35]/10 px-1.5 py-0.5 rounded mb-1.5">
+        <span className="inline-block text-[9px] uppercase font-bold text-[var(--brand-red)] bg-[color:var(--brand-red)]/10 px-1.5 py-0.5 rounded mb-1.5">
           RUSH
         </span>
       )}
 
       {/* Title */}
-      <p className="text-[13px] font-semibold text-[#0a0a0a] leading-tight mb-1.5 line-clamp-2">
+      <p className="text-[13px] font-semibold text-[var(--brand-black)] leading-tight mb-1.5 line-clamp-2">
         {ticket.title}
       </p>
 
       {/* Agent name + tier */}
       {agentName && (
         <div className="flex items-center gap-1.5 mb-1.5">
-          <span className="text-[11px] text-[#666] truncate">{agentName}</span>
+          <span className="text-[11px] text-[var(--muted-text)] truncate">{agentName}</span>
           {tierBadge && contact?.tier && (
             <span
               className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${tierBadge.bg} ${tierBadge.text}`}
@@ -183,7 +184,7 @@ function TicketCard({
           {productPills.map((pill, i) => (
             <span
               key={i}
-              className="text-[10px] bg-[#f7f7f5] text-[#666] px-2 py-0.5 rounded-full"
+              className="text-[10px] bg-[var(--off-white)] text-[var(--muted-text)] px-2 py-0.5 rounded-full"
             >
               {pill}
             </span>
@@ -193,7 +194,7 @@ function TicketCard({
 
       {/* Time + status select */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] text-[#999]">
+        <span className="text-[10px] text-[var(--ghost-text)]">
           {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
         </span>
         <div onClick={(e) => e.stopPropagation()}>
@@ -203,7 +204,7 @@ function TicketCard({
               onStatusChange(ticket.id, val as MaterialRequestStatus)
             }
           >
-            <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px] border-[#e8e8e8] bg-[#f7f7f5]">
+            <SelectTrigger className="h-6 text-[10px] w-auto min-w-[100px] border-[var(--rule-gray)] bg-[var(--off-white)]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -218,19 +219,19 @@ function TicketCard({
 
       {/* Expanded agent context */}
       {expanded && contact && (
-        <div className="mt-3 pt-3 border-t border-[#e8e8e8]">
-          <div className="space-y-1.5 text-[11px] text-[#666]">
+        <div className="mt-3 pt-3 border-t border-[var(--rule-gray)]">
+          <div className="space-y-1.5 text-[11px] text-[var(--muted-text)]">
             {contact.company && (
               <p>
-                <span className="text-[#999]">Company:</span> {contact.company}
+                <span className="text-[var(--ghost-text)]">Company:</span> {contact.company}
               </p>
             )}
             {contact.phone && (
               <p>
-                <span className="text-[#999]">Phone:</span>{" "}
+                <span className="text-[var(--ghost-text)]">Phone:</span>{" "}
                 <a
                   href={`tel:${contact.phone}`}
-                  className="hover:text-[#003087]"
+                  className="hover:text-[var(--brand-blue)]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {contact.phone}
@@ -239,10 +240,10 @@ function TicketCard({
             )}
             {contact.email && (
               <p>
-                <span className="text-[#999]">Email:</span>{" "}
+                <span className="text-[var(--ghost-text)]">Email:</span>{" "}
                 <a
                   href={`mailto:${contact.email}`}
-                  className="hover:text-[#003087]"
+                  className="hover:text-[var(--brand-blue)]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {contact.email}
@@ -251,18 +252,18 @@ function TicketCard({
             )}
             {contact.palette && (
               <p>
-                <span className="text-[#999]">Palette:</span> {contact.palette}
+                <span className="text-[var(--ghost-text)]">Palette:</span> {contact.palette}
               </p>
             )}
             {/* Brand color swatches */}
             {contact.brand_colors &&
               Object.keys(contact.brand_colors).length > 0 && (
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[#999]">Brand:</span>
+                  <span className="text-[var(--ghost-text)]">Brand:</span>
                   {Object.entries(contact.brand_colors).map(([key, hex]) => (
                     <span
                       key={key}
-                      className="inline-block w-4 h-4 rounded-full border border-[#e8e8e8]"
+                      className="inline-block w-4 h-4 rounded-full border border-[var(--rule-gray)]"
                       style={{ backgroundColor: hex }}
                       title={`${key}: ${hex}`}
                     />
@@ -271,7 +272,7 @@ function TicketCard({
               )}
             <Link
               href={`/contacts/${contact.id}`}
-              className="inline-block mt-1.5 text-[11px] font-medium text-[#003087] hover:underline"
+              className="inline-block mt-1.5 text-[11px] font-medium text-[var(--brand-blue)] hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               View Contact
@@ -364,45 +365,48 @@ export default function TicketsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-5 w-5 animate-spin text-[#999]" />
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--ghost-text)]" />
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header + metrics bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-xl font-semibold text-foreground font-display">
-          Ticket Workbench
-        </h1>
-        <div className="flex items-center gap-4 text-[12px]">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#999] uppercase tracking-wider text-[10px]">
-              Pending
-            </span>
-            <span className="font-semibold text-[#0a0a0a]">{pending}</span>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 mx-0">
+      <PageHeader
+        eyebrow="Print queue"
+        title="Ticket Workbench"
+        right={
+          <div className="flex items-center gap-4 text-[12px]">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                Pending
+              </span>
+              <MonoNumeral size="sm" className="text-foreground font-semibold">
+                {pending}
+              </MonoNumeral>
+            </div>
+            <span className="text-border">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                This Week
+              </span>
+              <MonoNumeral size="sm" className="text-foreground font-semibold">
+                {completedThisWeek}
+              </MonoNumeral>
+            </div>
+            <span className="text-border">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                Avg
+              </span>
+              <MonoNumeral size="sm" className="text-foreground font-semibold">
+                {avgTurnaround}
+              </MonoNumeral>
+            </div>
           </div>
-          <span className="text-[#e8e8e8]">|</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#999] uppercase tracking-wider text-[10px]">
-              This Week
-            </span>
-            <span className="font-semibold text-[#0a0a0a]">
-              {completedThisWeek}
-            </span>
-          </div>
-          <span className="text-[#e8e8e8]">|</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#999] uppercase tracking-wider text-[10px]">
-              Avg
-            </span>
-            <span className="font-semibold text-[#0a0a0a]">
-              {avgTurnaround}
-            </span>
-          </div>
-        </div>
-      </div>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       {/* Kanban grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -411,11 +415,11 @@ export default function TicketsPage() {
           return (
             <div
               key={col.status}
-              className="bg-[#f7f7f5] rounded-xl p-3 min-h-[400px]"
+              className="bg-[var(--off-white)] rounded-xl p-3 min-h-[400px]"
             >
               {/* Column header */}
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] uppercase tracking-wider text-[#999] font-medium">
+                <span className="text-[11px] uppercase tracking-wider text-[var(--ghost-text)] font-medium">
                   {col.label}
                 </span>
                 <span className="text-[11px] font-semibold text-muted-foreground bg-card px-2 py-0.5 rounded-full border border-border">
@@ -425,7 +429,7 @@ export default function TicketsPage() {
 
               {/* Cards */}
               {colTickets.length === 0 ? (
-                <p className="text-[11px] text-[#999] text-center py-8">
+                <p className="text-[11px] text-[var(--ghost-text)] text-center py-8">
                   No tickets
                 </p>
               ) : (
@@ -441,6 +445,6 @@ export default function TicketsPage() {
           );
         })}
       </div>
-    </div>
+    </SectionShell>
   );
 }

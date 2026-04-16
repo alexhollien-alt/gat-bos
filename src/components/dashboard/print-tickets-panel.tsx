@@ -29,15 +29,15 @@ interface PanelTicket {
 // Tier badge config
 // ---------------------
 
-// Screen brand values per digital-aesthetic.md (NOT the print #b31a35/#003087)
+// Screen brand values per digital-aesthetic.md (NOT the print brand-red/brand-blue)
 const TIER_BADGE: Record<
   string,
   { bg: string; color: string }
 > = {
-  A: { bg: "bg-[#e63550]/10", color: "text-[#e63550]" },
-  B: { bg: "bg-[#2563eb]/10", color: "text-[#2563eb]" },
-  C: { bg: "bg-[#a1a1aa]/10", color: "text-[#a1a1aa]" },
-  P: { bg: "bg-[#222228]/10", color: "text-muted-foreground" },
+  A: { bg: "bg-[color:var(--accent-red)]/10", color: "text-[var(--accent-red)]" },
+  B: { bg: "bg-[color:var(--accent-blue)]/10", color: "text-[var(--accent-blue)]" },
+  C: { bg: "bg-[color:var(--text-secondary)]/10", color: "text-[var(--text-secondary)]" },
+  P: { bg: "bg-[color:var(--surface-raised)]/10", color: "text-muted-foreground" },
 };
 
 // ---------------------

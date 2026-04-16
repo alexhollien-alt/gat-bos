@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { subDays, format, startOfDay } from "date-fns";
+import { MonoNumeral } from "@/components/screen";
 
 interface DailyActivity {
   day: string;
@@ -24,7 +25,7 @@ interface SummaryStats {
   openRate: number;
 }
 
-const ACCENT = "#e63550";
+const ACCENT = "var(--accent-red)";
 
 export function CampaignTimelineWidget() {
   const supabase = createClient();
@@ -146,24 +147,26 @@ export function CampaignTimelineWidget() {
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
               Active
             </span>
-            <span className="text-lg font-mono font-semibold text-foreground leading-tight">
+            <MonoNumeral size="md" className="font-semibold text-foreground">
               {stats.activeCampaigns}
-            </span>
+            </MonoNumeral>
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
               Sent (30d)
             </span>
-            <span className="text-lg font-mono font-semibold text-foreground leading-tight">
+            <MonoNumeral size="md" className="font-semibold text-foreground">
               {stats.sent30d}
-            </span>
+            </MonoNumeral>
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
               Open rate
             </span>
-            <span className="text-lg font-mono font-semibold text-foreground leading-tight">
-              {stats.openRate}
+            <span className="leading-tight">
+              <MonoNumeral size="md" className="font-semibold text-foreground">
+                {stats.openRate}
+              </MonoNumeral>
               <span className="text-sm font-mono text-muted-foreground">%</span>
             </span>
           </div>
@@ -188,7 +191,7 @@ export function CampaignTimelineWidget() {
                   border: "1px solid var(--border)",
                   borderRadius: 6,
                   fontSize: 11,
-                  fontFamily: "'Space Mono', monospace",
+                  fontFamily: "var(--font-mono)",
                   color: "var(--foreground)",
                   padding: "4px 8px",
                 }}

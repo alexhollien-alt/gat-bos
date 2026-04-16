@@ -10,12 +10,13 @@ import {
 } from "@/lib/action-scoring";
 import { addDays } from "date-fns";
 import { Zap, Phone, Mail, Clock, CheckCircle2 } from "lucide-react";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 const TIER_COLORS: Record<string, string> = {
-  A: "bg-[#b31a35] text-white",
-  B: "bg-[#003087] text-white",
-  C: "bg-[#666666] text-white",
-  P: "bg-[#222228] text-[#a1a1aa]",
+  A: "bg-[var(--accent-red)] text-white",
+  B: "bg-[var(--accent-blue)] text-white",
+  C: "bg-[var(--border-deep)] text-[var(--border-subtle)]",
+  P: "bg-[var(--surface-warm)] text-[var(--text-secondary)]",
 };
 
 export default function ActionsPage() {
@@ -171,29 +172,35 @@ export default function ActionsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-muted-foreground" />
-            <h1 className="text-xl font-semibold text-foreground font-display">Actions</h1>
-          </div>
-        </div>
+      <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-2xl mx-auto">
+        <PageHeader
+          eyebrow="Priority queue"
+          title={
+            <span className="inline-flex items-center gap-3">
+              <Zap className="h-6 w-6 text-muted-foreground" />
+              Actions
+            </span>
+          }
+        />
+        <AccentRule variant="hairline" className="mt-6 mb-6" />
         <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
-      </div>
+      </SectionShell>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Zap className="h-5 w-5 text-[#b31a35]" />
-          <h1 className="text-xl font-semibold text-foreground font-display">Actions</h1>
-        </div>
-        <span className="text-sm text-muted-foreground">
-          {actions.length} remaining
-        </span>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-2xl mx-auto">
+      <PageHeader
+        eyebrow="Priority queue"
+        title={
+          <span className="inline-flex items-center gap-3">
+            <Zap className="h-6 w-6 text-[var(--accent-red)]" />
+            Actions
+          </span>
+        }
+        subhead={`${actions.length} remaining`}
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       {actions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -213,7 +220,7 @@ export default function ActionsPage() {
                   className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
                     item.contactTier
                       ? TIER_COLORS[item.contactTier]
-                      : "bg-[#222228] text-[#a1a1aa]"
+                      : "bg-[var(--surface-raised)] text-[var(--text-secondary)]"
                   }`}
                 >
                   {item.contactTier ?? "-"}
@@ -226,13 +233,13 @@ export default function ActionsPage() {
                       {item.contactName}
                     </span>
                     {item.contactBrokerage && (
-                      <span className="text-xs text-[#666666] truncate">
+                      <span className="text-xs text-[var(--muted-text)] truncate">
                         {item.contactBrokerage}
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{item.title}</p>
-                  <p className="text-xs text-[#999999] mt-0.5">
+                  <p className="text-xs text-[var(--ghost-text)] mt-0.5">
                     {item.subtitle}
                   </p>
                 </div>
@@ -266,6 +273,6 @@ export default function ActionsPage() {
           ))}
         </div>
       )}
-    </div>
+    </SectionShell>
   );
 }

@@ -45,14 +45,6 @@ import {
 } from "lucide-react";
 
 // ---------------------
-// Styles
-// ---------------------
-
-const display = { fontFamily: "'Syne', system-ui, sans-serif" };
-const body = { fontFamily: "'Inter', system-ui, sans-serif" };
-const mono = { fontFamily: "'Space Mono', 'Courier New', monospace" };
-
-// ---------------------
 // Portfolio Data -- labels match actual document type
 // ---------------------
 
@@ -181,27 +173,27 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "#131316", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
-        <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[#222228] flex items-center justify-center text-[#71717a] hover:text-[#f4f4f5] transition-colors z-10">
+      <div className="relative rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "var(--surface-raised)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
+        <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--surface-muted)] transition-colors z-10">
           <X className="h-4 w-4" />
         </button>
 
         <div className="p-8 sm:p-10">
           {/* Step 1 */}
           {step === 1 && (
-            <div className="intake-animate-in">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-3" style={mono}>Step 1 of 3</p>
-              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-2" style={display}>What are you working on?</h2>
-              <p className="text-[13px] text-[#71717a] mb-8" style={body}>Pick one and I&apos;ll show you what&apos;s available.</p>
+            <div className="animate-fade-in-up">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-red)] font-semibold mb-3 font-mono">Step 1 of 3</p>
+              <h2 className="text-[24px] sm:text-[28px] text-[var(--surface-muted)] leading-tight mb-2 font-display">What are you working on?</h2>
+              <p className="text-[13px] text-[var(--text-muted)] mb-8">Pick one and I&apos;ll show you what&apos;s available.</p>
               <div className="space-y-3">
                 {SITUATIONS.map((s) => (
-                  <button key={s.value} onClick={() => handleSelect(s.value)} className="w-full flex items-center gap-4 p-4 rounded-xl border border-white/[0.06] hover:border-[#e63550]/30 hover:bg-[#e63550]/[0.02] text-left transition-all group" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-[#1a1a1f] flex items-center justify-center text-[#a1a1aa] group-hover:text-[#e63550] group-hover:bg-[#e63550]/[0.06] transition-colors">{s.icon}</div>
+                  <button key={s.value} onClick={() => handleSelect(s.value)} className="w-full flex items-center gap-4 p-4 rounded-xl border border-white/[0.06] hover:border-[color:var(--accent-red)]/30 hover:bg-[color:var(--accent-red)]/[0.02] text-left transition-all group" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-[var(--surface-raised)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--accent-red)] group-hover:bg-[color:var(--accent-red)]/[0.06] transition-colors">{s.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[14px] text-[#f4f4f5] font-semibold mb-0.5" style={body}>{s.title}</div>
-                      <div className="text-[12px] text-[#71717a]" style={body}>{s.subtitle}</div>
+                      <div className="text-[14px] text-[var(--surface-muted)] font-semibold mb-0.5">{s.title}</div>
+                      <div className="text-[12px] text-[var(--text-muted)]">{s.subtitle}</div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-[#27272a] group-hover:text-[#e63550] transition-colors" />
+                    <ArrowRight className="h-4 w-4 text-[var(--border-default)] group-hover:text-[var(--accent-red)] transition-colors" />
                   </button>
                 ))}
               </div>
@@ -210,64 +202,64 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
 
           {/* Step 2 */}
           {step === 2 && situation && (
-            <div className="intake-animate-in">
-              <button onClick={() => { setStep(1); setSituation(null); setSelectedProducts([]); }} className="flex items-center gap-1.5 text-[12px] text-[#71717a] hover:text-[#f4f4f5] transition-colors mb-6" style={body}><ChevronLeft className="h-3.5 w-3.5" />Back</button>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-3" style={mono}>Step 2 of 3 &middot; {sitLabel}</p>
-              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-2" style={display}>Select what you need</h2>
-              <p className="text-[13px] text-[#71717a] mb-8" style={body}>Everything is custom designed and branded to you. Pick all that apply.</p>
+            <div className="animate-fade-in-up">
+              <button onClick={() => { setStep(1); setSituation(null); setSelectedProducts([]); }} className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--surface-muted)] transition-colors mb-6"><ChevronLeft className="h-3.5 w-3.5" />Back</button>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-red)] font-semibold mb-3 font-mono">Step 2 of 3 &middot; {sitLabel}</p>
+              <h2 className="text-[24px] sm:text-[28px] text-[var(--surface-muted)] leading-tight mb-2 font-display">Select what you need</h2>
+              <p className="text-[13px] text-[var(--text-muted)] mb-8">Everything is custom designed and branded to you. Pick all that apply.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                 {options.map((opt) => {
                   const key = `${opt.value}:${opt.title}`;
                   const isSelected = selectedProducts.includes(key);
                   return (
-                    <button key={opt.title} onClick={() => toggleProduct(opt.value, opt.title)} className={`relative p-4 rounded-xl border text-left transition-all ${isSelected ? "border-[#e63550] bg-[#e63550]/[0.03]" : "border-white/[0.06] bg-[#131316] hover:border-white/[0.12]"}`} style={{ boxShadow: isSelected ? "0 2px 8px rgba(230,53,80,0.1)" : "0 1px 3px rgba(0,0,0,0.04)" }}>
-                      {opt.popular && <span className="absolute top-3 right-3 text-[8px] uppercase tracking-[0.1em] font-bold text-[#e63550] bg-[#e63550]/[0.08] px-2 py-0.5 rounded-full" style={body}>Popular</span>}
+                    <button key={opt.title} onClick={() => toggleProduct(opt.value, opt.title)} className={`relative p-4 rounded-xl border text-left transition-all ${isSelected ? "border-[var(--accent-red)] bg-[color:var(--accent-red)]/[0.03]" : "border-white/[0.06] bg-[var(--surface-raised)] hover:border-white/[0.12]"}`} style={{ boxShadow: isSelected ? "0 2px 8px rgba(230,53,80,0.1)" : "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      {opt.popular && <span className="absolute top-3 right-3 text-[8px] uppercase tracking-[0.1em] font-bold text-[var(--accent-red)] bg-[color:var(--accent-red)]/[0.08] px-2 py-0.5 rounded-full">Popular</span>}
                       <div className="flex items-center gap-3 mb-2">
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-[#e63550]/10 text-[#e63550]" : "bg-[#1a1a1f] text-[#71717a]"}`}>{isSelected ? <CheckCircle2 className="h-4 w-4" /> : opt.icon}</div>
-                        <h4 className="text-[13px] text-[#f4f4f5] font-semibold" style={body}>{opt.title}</h4>
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${isSelected ? "bg-[color:var(--accent-red)]/10 text-[var(--accent-red)]" : "bg-[var(--surface-raised)] text-[var(--text-muted)]"}`}>{isSelected ? <CheckCircle2 className="h-4 w-4" /> : opt.icon}</div>
+                        <h4 className="text-[13px] text-[var(--surface-muted)] font-semibold">{opt.title}</h4>
                       </div>
-                      <p className="text-[11px] text-[#71717a] leading-relaxed pl-11" style={body}>{opt.description}</p>
+                      <p className="text-[11px] text-[var(--text-muted)] leading-relaxed pl-11">{opt.description}</p>
                     </button>
                   );
                 })}
               </div>
-              <button onClick={() => setStep(3)} disabled={selectedProducts.length === 0} className="w-full flex items-center justify-center gap-2 bg-[#e63550] hover:bg-[#f04060] disabled:bg-[#27272a] disabled:cursor-not-allowed text-white rounded-xl px-6 py-3.5 transition-colors" style={{ ...body, fontWeight: 600, fontSize: "13px", letterSpacing: "0.03em" }}>Continue<ArrowRight className="h-4 w-4" /></button>
+              <button onClick={() => setStep(3)} disabled={selectedProducts.length === 0} className="w-full flex items-center justify-center gap-2 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] disabled:bg-[var(--border-default)] disabled:cursor-not-allowed text-white rounded-xl px-6 py-3.5 transition-colors" style={{fontWeight: 600, fontSize: "13px", letterSpacing: "0.03em" }}>Continue<ArrowRight className="h-4 w-4" /></button>
             </div>
           )}
 
           {/* Step 3 */}
           {step === 3 && !submitted && (
-            <div className="intake-animate-in">
-              <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[12px] text-[#71717a] hover:text-[#f4f4f5] transition-colors mb-6" style={body}><ChevronLeft className="h-3.5 w-3.5" />Back</button>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-3" style={mono}>Step 3 of 3</p>
-              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-2" style={display}>Tell me about you</h2>
-              <p className="text-[13px] text-[#71717a] mb-8" style={body}>I&apos;ll reach out within 24 hours to get started on your materials.</p>
+            <div className="animate-fade-in-up">
+              <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--surface-muted)] transition-colors mb-6"><ChevronLeft className="h-3.5 w-3.5" />Back</button>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-red)] font-semibold mb-3 font-mono">Step 3 of 3</p>
+              <h2 className="text-[24px] sm:text-[28px] text-[var(--surface-muted)] leading-tight mb-2 font-display">Tell me about you</h2>
+              <p className="text-[13px] text-[var(--text-muted)] mb-8">I&apos;ll reach out within 24 hours to get started on your materials.</p>
               <input type="text" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} className="absolute opacity-0 h-0 w-0 pointer-events-none" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div className="space-y-4 mb-8">
                 <div>
-                  <label className="block text-[10px] text-[#71717a] font-semibold mb-1.5 uppercase tracking-[0.15em]" style={body}>Full Name *</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Jane Smith" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[#1a1a1f] text-[14px] text-[#f4f4f5] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10 transition-all" style={body} />
+                  <label className="block text-[10px] text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-[0.15em]">Full Name *</label>
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Jane Smith" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[var(--surface-raised)] text-[14px] text-[var(--surface-muted)] placeholder:text-[var(--border-deep)] focus:outline-none focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10 transition-all" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-[#71717a] font-semibold mb-1.5 uppercase tracking-[0.15em]" style={body}>Email *</label>
-                  <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="jane@brokerage.com" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[#1a1a1f] text-[14px] text-[#f4f4f5] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10 transition-all" style={body} />
+                  <label className="block text-[10px] text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-[0.15em]">Email *</label>
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="jane@brokerage.com" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[var(--surface-raised)] text-[14px] text-[var(--surface-muted)] placeholder:text-[var(--border-deep)] focus:outline-none focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10 transition-all" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] text-[#71717a] font-semibold mb-1.5 uppercase tracking-[0.15em]" style={body}>Phone</label>
-                    <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="(480) 555-1234" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[#1a1a1f] text-[14px] text-[#f4f4f5] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10 transition-all" style={body} />
+                    <label className="block text-[10px] text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-[0.15em]">Phone</label>
+                    <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="(480) 555-1234" className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[var(--surface-raised)] text-[14px] text-[var(--surface-muted)] placeholder:text-[var(--border-deep)] focus:outline-none focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10 transition-all" />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-[#71717a] font-semibold mb-1.5 uppercase tracking-[0.15em]" style={body}>Brokerage</label>
-                    <input type="text" value={formData.brokerage} onChange={(e) => setFormData({ ...formData, brokerage: e.target.value })} placeholder="Keller Williams, Compass..." className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[#1a1a1f] text-[14px] text-[#f4f4f5] placeholder:text-[#3f3f46] focus:outline-none focus:border-[#e63550]/40 focus:ring-2 focus:ring-[#e63550]/10 transition-all" style={body} />
+                    <label className="block text-[10px] text-[var(--text-muted)] font-semibold mb-1.5 uppercase tracking-[0.15em]">Brokerage</label>
+                    <input type="text" value={formData.brokerage} onChange={(e) => setFormData({ ...formData, brokerage: e.target.value })} placeholder="Keller Williams, Compass..." className="w-full px-4 py-3 rounded-xl border border-white/[0.06] bg-[var(--surface-raised)] text-[14px] text-[var(--surface-muted)] placeholder:text-[var(--border-deep)] focus:outline-none focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10 transition-all" />
                   </div>
                 </div>
               </div>
-              <div className="bg-[#1a1a1f] rounded-xl p-4 mb-6 border border-white/[0.06]">
-                <p className="text-[10px] text-[#71717a] uppercase tracking-[0.15em] font-semibold mb-2" style={body}>Selected ({selectedProducts.length})</p>
-                <div className="flex flex-wrap gap-2">{selectedProducts.map((p) => (<span key={p} className="text-[11px] text-[#a1a1aa] bg-[#131316] border border-white/[0.06] rounded-full px-3 py-1" style={body}>{p.split(":")[1]}</span>))}</div>
+              <div className="bg-[var(--surface-raised)] rounded-xl p-4 mb-6 border border-white/[0.06]">
+                <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-[0.15em] font-semibold mb-2">Selected ({selectedProducts.length})</p>
+                <div className="flex flex-wrap gap-2">{selectedProducts.map((p) => (<span key={p} className="text-[11px] text-[var(--text-secondary)] bg-[var(--surface-raised)] border border-white/[0.06] rounded-full px-3 py-1">{p.split(":")[1]}</span>))}</div>
               </div>
-              <button onClick={handleSubmit} disabled={!formData.name || !formData.email || submitting} className="w-full flex items-center justify-center gap-2 bg-[#e63550] hover:bg-[#f04060] disabled:bg-[#27272a] disabled:cursor-not-allowed text-white rounded-xl px-6 py-4 transition-colors" style={{ ...body, fontWeight: 600, fontSize: "14px", letterSpacing: "0.03em", boxShadow: "0 4px 14px rgba(230,53,80,0.25)" }}>
+              <button onClick={handleSubmit} disabled={!formData.name || !formData.email || submitting} className="w-full flex items-center justify-center gap-2 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] disabled:bg-[var(--border-default)] disabled:cursor-not-allowed text-white rounded-xl px-6 py-4 transition-colors" style={{fontWeight: 600, fontSize: "14px", letterSpacing: "0.03em", boxShadow: "0 4px 14px rgba(230,53,80,0.25)" }}>
                 {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Submitting...</> : <><Send className="h-4 w-4" />Submit Request</>}
               </button>
             </div>
@@ -275,11 +267,11 @@ function DiscoveryFlow({ onClose }: { onClose: () => void }) {
 
           {/* Success */}
           {submitted && (
-            <div className="intake-animate-in text-center py-8">
-              <div className="h-16 w-16 rounded-2xl bg-[#e63550]/10 flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-8 w-8 text-[#e63550]" /></div>
-              <h2 className="text-[24px] sm:text-[28px] text-[#f4f4f5] leading-tight mb-3" style={display}>You&apos;re all set</h2>
-              <p className="text-[14px] text-[#71717a] leading-relaxed max-w-sm mx-auto mb-8" style={body}>I&apos;ve got your request and I&apos;ll reach out within 24 hours. Looking forward to working together.</p>
-              <button onClick={onClose} className="inline-flex items-center gap-2 bg-[#e63550] hover:bg-[#f04060] text-white rounded-xl px-8 py-3.5 transition-colors" style={{ ...body, fontWeight: 600, fontSize: "14px" }}>Done</button>
+            <div className="animate-fade-in-up text-center py-8">
+              <div className="h-16 w-16 rounded-2xl bg-[color:var(--accent-red)]/10 flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-8 w-8 text-[var(--accent-red)]" /></div>
+              <h2 className="text-[24px] sm:text-[28px] text-[var(--surface-muted)] leading-tight mb-3 font-display">You&apos;re all set</h2>
+              <p className="text-[14px] text-[var(--text-muted)] leading-relaxed max-w-sm mx-auto mb-8">I&apos;ve got your request and I&apos;ll reach out within 24 hours. Looking forward to working together.</p>
+              <button onClick={onClose} className="inline-flex items-center gap-2 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-xl px-8 py-3.5 transition-colors" style={{fontWeight: 600, fontSize: "14px" }}>Done</button>
             </div>
           )}
         </div>
@@ -302,19 +294,19 @@ interface Service {
 }
 
 const SERVICES: Service[] = [
-  { icon: <Smartphone className="h-5 w-5" />, title: "GAT App ONE", tagline: "#1 net sheet and closing cost app", description: "Seller net sheets, buyer estimates, and real estate calculators branded to you.", accent: "#e63550", link: "https://getgatapp.com/AlexHollien" },
-  { icon: <Palette className="h-5 w-5" />, title: "Graphic Design", tagline: "Flyers, brochures, postcards, and more", description: "Listing flyers, multi-page brochures, EDDM mailers, door hangers, social graphics, and buyer/seller guides.", accent: "#2563eb" },
-  { icon: <TrendingUp className="h-5 w-5" />, title: "Market Ready Tours", tagline: "Branded home tour videos", description: "Professional video walkthroughs delivered ready to post on MLS, social, and email.", accent: "#e63550" },
-  { icon: <Package className="h-5 w-5" />, title: "Market Ready Merch", tagline: "Signs, stickers, and branded goods", description: "Metal signs, for-sale signs, open house signs, corrugated plastic, custom golf balls, and stickers.", accent: "#2563eb" },
-  { icon: <Search className="h-5 w-5" />, title: "Market Reports & Intel", tagline: "Altos Research, weekly and daily data", description: "CrispData reports, Altos stats, weekly/daily real-time market data, and talking points for your clients.", accent: "#e63550" },
-  { icon: <Database className="h-5 w-5" />, title: "FSBO, Expired & Lead Data", tagline: "7 lead sources for prospecting", description: "FSBO, expired, cancelled, and pre-foreclosure leads from seven platforms. Ownership research and mailing lists.", accent: "#2563eb" },
-  { icon: <Mic className="h-5 w-5" />, title: "Podcast Studio", tagline: "In-house recording studio", description: "Record your own podcast, market updates, or get featured on The Great American Title Podcast.", accent: "#e63550" },
-  { icon: <GraduationCap className="h-5 w-5" />, title: "CRM Training", tagline: "Streamline your workflow", description: "One-on-one CRM training to help you manage leads, automate follow-ups, and boost productivity.", accent: "#2563eb" },
-  { icon: <PartyPopper className="h-5 w-5" />, title: "Open House Support", tagline: "Drive traffic and generate conversations", description: "Event planning, materials, and promotion that turn open houses into lead gen.", accent: "#e63550" },
-  { icon: <Handshake className="h-5 w-5" />, title: "GAT Concierge", tagline: "Trusted vendors for your clients", description: "Roofing, insurance, moving, cleaning, landscape, painting, pool, HVAC, solar, and more -- vetted and discounted.", accent: "#2563eb" },
-  { icon: <BadgePercent className="h-5 w-5" />, title: "Client Discounts", tagline: "20% off escrow for qualifying buyers", description: "First responders, military, seniors, teachers, and first-time homebuyers all receive 20% off basic escrow fees.", accent: "#e63550" },
-  { icon: <Heart className="h-5 w-5" />, title: "GAT Cares", tagline: "7.5% donated to Arizona charities", description: "Your clients can direct 7.5% of escrow fees to a pre-approved nonprofit at closing. Over $2.8M donated since 2006.", accent: "#2563eb" },
-  { icon: <ShieldCheck className="h-5 w-5" />, title: "Transaction Expertise", tagline: "Hands-on support across every step", description: "HOA/CC&R navigation, complex community knowledge, and your dedicated escrow officer.", accent: "#e63550" },
+  { icon: <Smartphone className="h-5 w-5" />, title: "GAT App ONE", tagline: "#1 net sheet and closing cost app", description: "Seller net sheets, buyer estimates, and real estate calculators branded to you.", accent: "var(--accent-red)", link: "https://getgatapp.com/AlexHollien" },
+  { icon: <Palette className="h-5 w-5" />, title: "Graphic Design", tagline: "Flyers, brochures, postcards, and more", description: "Listing flyers, multi-page brochures, EDDM mailers, door hangers, social graphics, and buyer/seller guides.", accent: "var(--accent-blue)" },
+  { icon: <TrendingUp className="h-5 w-5" />, title: "Market Ready Tours", tagline: "Branded home tour videos", description: "Professional video walkthroughs delivered ready to post on MLS, social, and email.", accent: "var(--accent-red)" },
+  { icon: <Package className="h-5 w-5" />, title: "Market Ready Merch", tagline: "Signs, stickers, and branded goods", description: "Metal signs, for-sale signs, open house signs, corrugated plastic, custom golf balls, and stickers.", accent: "var(--accent-blue)" },
+  { icon: <Search className="h-5 w-5" />, title: "Market Reports & Intel", tagline: "Altos Research, weekly and daily data", description: "CrispData reports, Altos stats, weekly/daily real-time market data, and talking points for your clients.", accent: "var(--accent-red)" },
+  { icon: <Database className="h-5 w-5" />, title: "FSBO, Expired & Lead Data", tagline: "7 lead sources for prospecting", description: "FSBO, expired, cancelled, and pre-foreclosure leads from seven platforms. Ownership research and mailing lists.", accent: "var(--accent-blue)" },
+  { icon: <Mic className="h-5 w-5" />, title: "Podcast Studio", tagline: "In-house recording studio", description: "Record your own podcast, market updates, or get featured on The Great American Title Podcast.", accent: "var(--accent-red)" },
+  { icon: <GraduationCap className="h-5 w-5" />, title: "CRM Training", tagline: "Streamline your workflow", description: "One-on-one CRM training to help you manage leads, automate follow-ups, and boost productivity.", accent: "var(--accent-blue)" },
+  { icon: <PartyPopper className="h-5 w-5" />, title: "Open House Support", tagline: "Drive traffic and generate conversations", description: "Event planning, materials, and promotion that turn open houses into lead gen.", accent: "var(--accent-red)" },
+  { icon: <Handshake className="h-5 w-5" />, title: "GAT Concierge", tagline: "Trusted vendors for your clients", description: "Roofing, insurance, moving, cleaning, landscape, painting, pool, HVAC, solar, and more -- vetted and discounted.", accent: "var(--accent-blue)" },
+  { icon: <BadgePercent className="h-5 w-5" />, title: "Client Discounts", tagline: "20% off escrow for qualifying buyers", description: "First responders, military, seniors, teachers, and first-time homebuyers all receive 20% off basic escrow fees.", accent: "var(--accent-red)" },
+  { icon: <Heart className="h-5 w-5" />, title: "GAT Cares", tagline: "7.5% donated to Arizona charities", description: "Your clients can direct 7.5% of escrow fees to a pre-approved nonprofit at closing. Over $2.8M donated since 2006.", accent: "var(--accent-blue)" },
+  { icon: <ShieldCheck className="h-5 w-5" />, title: "Transaction Expertise", tagline: "Hands-on support across every step", description: "HOA/CC&R navigation, complex community knowledge, and your dedicated escrow officer.", accent: "var(--accent-red)" },
 ];
 
 const ESCROW_OFFICERS = [
@@ -371,7 +363,7 @@ function PortfolioSwipe({ items }: { items: typeof PORTFOLIO_ITEMS }) {
             className="relative overflow-hidden rounded-xl snap-start flex-shrink-0"
             style={{ width: "78vw" }}
           >
-            <div className="aspect-[4/3] overflow-hidden bg-[#27272a]">
+            <div className="aspect-[4/3] overflow-hidden bg-[var(--border-default)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.src}
@@ -381,8 +373,8 @@ function PortfolioSwipe({ items }: { items: typeof PORTFOLIO_ITEMS }) {
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-3">
-              <p className="text-[8px] text-white/60 uppercase tracking-[0.15em] font-semibold" style={body}>{item.label}</p>
-              <p className="text-[12px] text-white font-medium" style={body}>{item.agent}</p>
+              <p className="text-[8px] text-white/60 uppercase tracking-[0.15em] font-semibold">{item.label}</p>
+              <p className="text-[12px] text-white font-medium">{item.agent}</p>
             </div>
           </div>
         ))}
@@ -396,7 +388,7 @@ function PortfolioSwipe({ items }: { items: typeof PORTFOLIO_ITEMS }) {
             className="h-1.5 rounded-full transition-all duration-200"
             style={{
               width: activeIndex === i ? 20 : 6,
-              backgroundColor: activeIndex === i ? "#e63550" : "#27272a",
+              backgroundColor: activeIndex === i ? "var(--accent-red)" : "var(--border-default)",
             }}
             aria-label={`View portfolio item ${i + 1}`}
           />
@@ -414,7 +406,7 @@ function ToolkitAccordion({ services }: { services: Service[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="sm:hidden divide-y divide-[#27272a]">
+    <div className="sm:hidden divide-y divide-[var(--border-default)]">
       {services.map((service, i) => {
         const isOpen = openIndex === i;
         const isLink = !!service.link;
@@ -426,22 +418,22 @@ function ToolkitAccordion({ services }: { services: Service[] }) {
             >
               <div
                 className="flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${service.accent}0c`, color: service.accent }}
+                style={{ backgroundColor: `color-mix(in srgb, ${service.accent} 5%, transparent)`, color: service.accent }}
               >
                 {service.icon}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-[13px] text-[#f4f4f5] font-semibold" style={body}>{service.title}</h4>
-                  {isLink && <ExternalLink className="h-3 w-3 text-[#3f3f46] flex-shrink-0" />}
+                  <h4 className="text-[13px] text-[var(--surface-muted)] font-semibold">{service.title}</h4>
+                  {isLink && <ExternalLink className="h-3 w-3 text-[var(--border-deep)] flex-shrink-0" />}
                 </div>
-                <p className="text-[10px] text-[#71717a] leading-tight mt-0.5" style={body}>{service.tagline}</p>
+                <p className="text-[10px] text-[var(--text-muted)] leading-tight mt-0.5">{service.tagline}</p>
               </div>
               <div
-                className="flex-shrink-0 h-6 w-6 rounded-full bg-[#1a1a1f] flex items-center justify-center transition-transform duration-200"
+                className="flex-shrink-0 h-6 w-6 rounded-full bg-[var(--surface-raised)] flex items-center justify-center transition-transform duration-200"
                 style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
               >
-                <span className="text-[14px] text-[#71717a] leading-none">+</span>
+                <span className="text-[14px] text-[var(--text-muted)] leading-none">+</span>
               </div>
             </button>
             <div
@@ -449,15 +441,14 @@ function ToolkitAccordion({ services }: { services: Service[] }) {
               style={{ maxHeight: isOpen ? "120px" : "0px", opacity: isOpen ? 1 : 0 }}
             >
               <div className="pl-11 pb-3">
-                <p className="text-[12px] text-[#a1a1aa] leading-relaxed" style={body}>{service.description}</p>
+                <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed">{service.description}</p>
                 {isLink && (
                   <a
                     href={service.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] text-[#e63550] font-medium mt-1.5"
-                    style={body}
-                  >
+                    className="inline-flex items-center gap-1 text-[11px] text-[var(--accent-red)] font-medium mt-1.5"
+                                     >
                     Open <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
@@ -482,17 +473,16 @@ export default function IntakeShowcase() {
       {showDiscovery && <DiscoveryFlow onClose={() => setShowDiscovery(false)} />}
 
       {/* ── How It Works + Portfolio (merged) ── */}
-      <div className="mb-10 intake-animate-in" style={{ animationDelay: "100ms" }}>
+      <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
         <div className="flex items-end justify-between mb-6">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-1" style={mono}>How It Works</p>
-            <h3 className="text-[22px] sm:text-[26px] text-[#f4f4f5] leading-tight" style={display}>Three steps. Zero guesswork.</h3>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-red)] font-semibold mb-1 font-mono">How It Works</p>
+            <h3 className="text-[22px] sm:text-[26px] text-[var(--surface-muted)] leading-tight font-display">Three steps. Zero guesswork.</h3>
           </div>
           <button
             onClick={() => setShowDiscovery(true)}
-            className="hidden sm:inline-flex items-center gap-2 text-[12px] text-[#71717a] hover:text-[#f4f4f5] transition-colors"
-            style={body}
-          >
+            className="hidden sm:inline-flex items-center gap-2 text-[12px] text-[var(--text-muted)] hover:text-[var(--surface-muted)] transition-colors"
+                     >
             Get Yours Made
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
@@ -505,12 +495,12 @@ export default function IntakeShowcase() {
             { num: "02", title: "I design it, you approve", desc: "Custom materials branded to you. Review, revise, sign off.", icon: <Palette className="h-4 w-4" /> },
             { num: "03", title: "Delivered to a local office", desc: "Picked up at one of 11 offices, or posted and ready.", icon: <Send className="h-4 w-4" /> },
           ].map((step) => (
-            <div key={step.num} className="flex items-start gap-3 bg-[#131316] rounded-xl border border-white/[0.06] p-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-[#e63550]/10 flex items-center justify-center text-[#e63550]">{step.icon}</div>
+            <div key={step.num} className="flex items-start gap-3 bg-[var(--surface-raised)] rounded-xl border border-white/[0.06] p-4" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+              <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-[color:var(--accent-red)]/10 flex items-center justify-center text-[var(--accent-red)]">{step.icon}</div>
               <div className="flex-1">
-                <span className="text-[8px] uppercase tracking-[0.2em] text-[#e63550] font-bold" style={mono}>Step {step.num}</span>
-                <h4 className="text-[13px] text-[#f4f4f5] font-semibold mt-0.5" style={body}>{step.title}</h4>
-                <p className="text-[11px] text-[#71717a] leading-relaxed mt-0.5" style={body}>{step.desc}</p>
+                <span className="text-[8px] uppercase tracking-[0.2em] text-[var(--accent-red)] font-bold font-mono">Step {step.num}</span>
+                <h4 className="text-[13px] text-[var(--surface-muted)] font-semibold mt-0.5">{step.title}</h4>
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-0.5">{step.desc}</p>
               </div>
             </div>
           ))}
@@ -528,7 +518,7 @@ export default function IntakeShowcase() {
               key={i}
               className="group relative overflow-hidden cursor-pointer"
             >
-              <div className="aspect-[4/3] overflow-hidden bg-[#27272a]">
+              <div className="aspect-[4/3] overflow-hidden bg-[var(--border-default)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.src}
@@ -538,8 +528,8 @@ export default function IntakeShowcase() {
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute bottom-0 left-0 right-0 p-2.5 translate-y-1 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                <p className="text-[8px] text-white/60 uppercase tracking-[0.15em] font-semibold" style={body}>{item.label}</p>
-                <p className="text-[11px] text-white font-medium" style={body}>{item.agent}</p>
+                <p className="text-[8px] text-white/60 uppercase tracking-[0.15em] font-semibold">{item.label}</p>
+                <p className="text-[11px] text-white font-medium">{item.agent}</p>
               </div>
             </div>
           ))}
@@ -547,13 +537,13 @@ export default function IntakeShowcase() {
       </div>
 
       {/* ── What Shows Up Every Week ── */}
-      <div className="mb-10 intake-animate-in" style={{ animationDelay: "175ms" }}>
+      <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "175ms" }}>
         <div
           className="relative rounded-xl overflow-hidden px-6 sm:px-8 py-6"
-          style={{ background: "linear-gradient(135deg, #131316 0%, #1a1a1f 100%)", border: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ background: "linear-gradient(135deg, var(--surface-raised) 0%, var(--surface-raised) 100%)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
-          <p className="text-[9px] uppercase tracking-[0.3em] text-white/40 font-semibold mb-4" style={mono}>What shows up without you asking</p>
+          <p className="text-[9px] uppercase tracking-[0.3em] text-white/40 font-semibold mb-4 font-mono">What shows up without you asking</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 relative">
             {[
               { icon: <Mail className="h-4 w-4" />, title: "Weekly market intel", desc: "The Weekly Edge lands in your inbox every Wednesday with data, trends, and talking points for your market." },
@@ -563,8 +553,8 @@ export default function IntakeShowcase() {
               <div key={item.title} className="flex items-start gap-3">
                 <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-white/[0.08] flex items-center justify-center text-white/60 mt-0.5">{item.icon}</div>
                 <div>
-                  <h4 className="text-[12px] text-white font-semibold mb-0.5" style={body}>{item.title}</h4>
-                  <p className="text-[11px] text-white/35 leading-relaxed" style={body}>{item.desc}</p>
+                  <h4 className="text-[12px] text-white font-semibold mb-0.5">{item.title}</h4>
+                  <p className="text-[11px] text-white/35 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -573,14 +563,14 @@ export default function IntakeShowcase() {
       </div>
 
       {/* ── Divider ── */}
-      <div className="h-[1px] bg-gradient-to-r from-transparent via-[#27272a] to-transparent mb-10" />
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-[var(--border-default)] to-transparent mb-10" />
 
       {/* ── Your Toolkit ── */}
-      <div className="mb-10 intake-animate-in" style={{ animationDelay: "200ms" }}>
+      <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
         <div className="flex items-end justify-between mb-5">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-[#e63550] font-semibold mb-1" style={mono}>Your Toolkit</p>
-            <h3 className="text-[22px] sm:text-[26px] text-[#f4f4f5] leading-tight" style={display}>Tools that come with the partnership</h3>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-red)] font-semibold mb-1 font-mono">Your Toolkit</p>
+            <h3 className="text-[22px] sm:text-[26px] text-[var(--surface-muted)] leading-tight font-display">Tools that come with the partnership</h3>
           </div>
         </div>
 
@@ -597,20 +587,20 @@ export default function IntakeShowcase() {
               <Tag
                 key={service.title}
                 {...tagProps}
-                className="group flex items-start gap-3 py-3 border-b border-[#27272a] last:border-0 transition-colors hover:bg-[#1a1a1f] -mx-2 px-2 rounded-lg"
+                className="group flex items-start gap-3 py-3 border-b border-[var(--border-default)] last:border-0 transition-colors hover:bg-[var(--surface-raised)] -mx-2 px-2 rounded-lg"
               >
                 <div
                   className="flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center mt-0.5"
-                  style={{ backgroundColor: `${service.accent}0c`, color: service.accent }}
+                  style={{ backgroundColor: `color-mix(in srgb, ${service.accent} 5%, transparent)`, color: service.accent }}
                 >
                   {service.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h4 className="text-[13px] text-[#f4f4f5] font-semibold" style={body}>{service.title}</h4>
-                    {isLink && <ExternalLink className="h-3 w-3 text-[#3f3f46] group-hover:text-[#e63550] transition-colors flex-shrink-0" />}
+                    <h4 className="text-[13px] text-[var(--surface-muted)] font-semibold">{service.title}</h4>
+                    {isLink && <ExternalLink className="h-3 w-3 text-[var(--border-deep)] group-hover:text-[var(--accent-red)] transition-colors flex-shrink-0" />}
                   </div>
-                  <p className="text-[11px] text-[#71717a] leading-relaxed" style={body}>{service.description}</p>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{service.description}</p>
                 </div>
               </Tag>
             );
@@ -619,24 +609,24 @@ export default function IntakeShowcase() {
       </div>
 
       {/* ── Referral Carousel (animated) ── */}
-      <div className="mb-10 intake-animate-in" style={{ animationDelay: "250ms" }}>
+      <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "250ms" }}>
         <div className="relative overflow-hidden">
           <div className="flex items-end justify-between mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.25em] text-[#2563eb] font-semibold mb-1" style={mono}>Referral Network</p>
-              <h3 className="text-[20px] sm:text-[22px] text-[#f4f4f5] leading-tight" style={display}>People you can confidently refer</h3>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-blue)] font-semibold mb-1 font-mono">Referral Network</p>
+              <h3 className="text-[20px] sm:text-[22px] text-[var(--surface-muted)] leading-tight font-display">People you can confidently refer</h3>
             </div>
           </div>
 
-          <div className="absolute left-0 top-12 bottom-0 w-12 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-12 bottom-0 w-12 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-12 bottom-0 w-12 bg-gradient-to-r from-[var(--surface-base)] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-12 bottom-0 w-12 bg-gradient-to-l from-[var(--surface-base)] to-transparent z-10 pointer-events-none" />
 
           <div className="flex gap-3 w-max" style={{ animation: "carousel-scroll 25s linear infinite" }} onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.animationPlayState = "paused"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.animationPlayState = "running"; }}>
             {[...PARTNERS, ...PARTNERS].map((p, i) => (
-              <div key={`${p.title}-${i}`} className="flex-shrink-0 w-[180px] bg-[#131316] rounded-xl border border-white/[0.06] p-4 hover:shadow-md hover:border-white/[0.12] transition-all" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <div className="h-8 w-8 rounded-lg flex items-center justify-center mb-2.5" style={{ backgroundColor: i % 2 === 0 ? "#e635500c" : "#2563eb0c", color: i % 2 === 0 ? "#e63550" : "#2563eb" }}>{p.icon}</div>
-                <h4 className="text-[13px] text-[#f4f4f5] font-semibold mb-0.5" style={body}>{p.title}</h4>
-                <p className="text-[10px] text-[#71717a] leading-relaxed" style={body}>{p.description}</p>
+              <div key={`${p.title}-${i}`} className="flex-shrink-0 w-[180px] bg-[var(--surface-raised)] rounded-xl border border-white/[0.06] p-4 hover:shadow-md hover:border-white/[0.12] transition-all" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center mb-2.5" style={{ backgroundColor: i % 2 === 0 ? "color-mix(in srgb, var(--accent-red) 5%, transparent)" : "color-mix(in srgb, var(--accent-blue) 5%, transparent)", color: i % 2 === 0 ? "var(--accent-red)" : "var(--accent-blue)" }}>{p.icon}</div>
+                <h4 className="text-[13px] text-[var(--surface-muted)] font-semibold mb-0.5">{p.title}</h4>
+                <p className="text-[10px] text-[var(--text-muted)] leading-relaxed">{p.description}</p>
               </div>
             ))}
           </div>
@@ -654,17 +644,17 @@ export default function IntakeShowcase() {
       </div>
 
       {/* ── Escrow Team (compact row) ── */}
-      <div className="mb-10 intake-animate-in" style={{ animationDelay: "280ms" }}>
-        <p className="text-[10px] uppercase tracking-[0.25em] text-[#2563eb] font-semibold mb-3" style={mono}>Your Escrow Team</p>
+      <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "280ms" }}>
+        <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--accent-blue)] font-semibold mb-3 font-mono">Your Escrow Team</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {ESCROW_OFFICERS.map((officer) => (
-            <div key={officer.name} className="flex items-center gap-2.5 bg-[#131316] rounded-xl border border-white/[0.06] px-4 py-3" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div className="h-8 w-8 rounded-full bg-[#1a1a1f] flex items-center justify-center border border-white/[0.06] flex-shrink-0">
-                <UserCircle className="h-4 w-4 text-[#3f3f46]" />
+            <div key={officer.name} className="flex items-center gap-2.5 bg-[var(--surface-raised)] rounded-xl border border-white/[0.06] px-4 py-3" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+              <div className="h-8 w-8 rounded-full bg-[var(--surface-raised)] flex items-center justify-center border border-white/[0.06] flex-shrink-0">
+                <UserCircle className="h-4 w-4 text-[var(--border-deep)]" />
               </div>
               <div>
-                <p className="text-[12px] text-[#f4f4f5] font-semibold leading-tight" style={body}>{officer.name}</p>
-                <p className="text-[9px] text-[#71717a]" style={body}>{officer.title}</p>
+                <p className="text-[12px] text-[var(--surface-muted)] font-semibold leading-tight">{officer.name}</p>
+                <p className="text-[9px] text-[var(--text-muted)]">{officer.title}</p>
               </div>
             </div>
           ))}
@@ -673,9 +663,9 @@ export default function IntakeShowcase() {
 
       {/* ── CTA -- skinny, bright label ── */}
       <div
-        className="relative rounded-2xl overflow-hidden px-6 sm:px-14 py-8 sm:py-10 text-center intake-animate-in"
+        className="relative rounded-2xl overflow-hidden px-6 sm:px-14 py-8 sm:py-10 text-center animate-fade-in-up"
         style={{
-          background: "linear-gradient(160deg, #131316 0%, #1a1a1f 50%, #131316 100%)",
+          background: "linear-gradient(160deg, var(--surface-raised) 0%, var(--surface-raised) 50%, var(--surface-raised) 100%)",
           animationDelay: "300ms",
           boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
         }}
@@ -683,22 +673,22 @@ export default function IntakeShowcase() {
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse at 20% 50%, rgba(230,53,80,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 50%, rgba(37,99,235,0.10) 0%, transparent 50%)" }} />
 
         <div className="relative">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#e63550] font-bold mb-4" style={mono}>The Promise</p>
-          <h3 className="text-[20px] sm:text-[24px] text-white leading-[1.3] mb-3 max-w-lg mx-auto tracking-[-0.01em]" style={display}>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--accent-red)] font-bold mb-4 font-mono">The Promise</p>
+          <h3 className="text-[20px] sm:text-[24px] text-white leading-[1.3] mb-3 max-w-lg mx-auto tracking-[-0.01em] font-display">
             I make sure the transaction you promised your client is the transaction they experience.
           </h3>
 
           <div className="flex items-center justify-center gap-2 mb-6">
             <Quote className="h-3 w-3 text-white/25" />
-            <p className="text-[11px] text-white/40 italic" style={display}>&ldquo;You are truly part of the 1%&rdquo;</p>
+            <p className="text-[11px] text-white/40 italic font-display">&ldquo;You are truly part of the 1%&rdquo;</p>
             <span className="text-white/15 text-[9px]">&mdash;</span>
-            <p className="text-[10px] text-white/30" style={body}>Kristin Nelson, HomeSmart</p>
+            <p className="text-[10px] text-white/30">Kristin Nelson, HomeSmart</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => setShowDiscovery(true)}
-              className="inline-flex items-center gap-2.5 bg-[#e63550] hover:bg-[#f04060] text-white rounded-xl px-7 py-3 transition-colors w-full sm:w-auto justify-center"
-              style={{ ...body, fontWeight: 600, fontSize: "13px", letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(230,53,80,0.35)" }}
+              className="inline-flex items-center gap-2.5 bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white rounded-xl px-7 py-3 transition-colors w-full sm:w-auto justify-center"
+              style={{fontWeight: 600, fontSize: "13px", letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(230,53,80,0.35)" }}
             >
               <ArrowRight className="h-4 w-4" />
               Get Started
@@ -706,7 +696,7 @@ export default function IntakeShowcase() {
             <a
               href="sms:+14802042983?body=Hey Alex -- I'd like to learn more about working together."
               className="inline-flex items-center gap-2.5 text-white/60 hover:text-white rounded-xl px-7 py-3 border border-white/[0.08] hover:border-white/20 transition-all w-full sm:w-auto justify-center"
-              style={{ ...body, fontWeight: 500, fontSize: "13px", letterSpacing: "0.03em" }}
+              style={{fontWeight: 500, fontSize: "13px", letterSpacing: "0.03em" }}
             >
               <MessageCircle className="h-4 w-4" />
               Text Alex Instead
@@ -716,19 +706,19 @@ export default function IntakeShowcase() {
       </div>
 
       {/* ── Signature + bottom headshot ── */}
-      <div className="mt-10 text-center intake-animate-in" style={{ animationDelay: "340ms" }}>
+      <div className="mt-10 text-center animate-fade-in-up" style={{ animationDelay: "340ms" }}>
         <div className="flex flex-col items-center gap-3 sm:gap-4">
           <div className="h-12 w-12 sm:h-16 sm:w-16">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/alex-bottom.jpg" alt="Alex Hollien" className="h-full w-full object-cover object-top headshot-mask-sm" />
           </div>
           <div
-            className="text-[24px] sm:text-[40px] text-[#f4f4f5]/70"
+            className="text-[24px] sm:text-[40px] text-[var(--surface-muted)]/70"
             style={{ fontFamily: "'Self Deception', cursive" }}
           >
             Alex Hollien
           </div>
-          <p className="text-[9px] sm:text-[10px] text-[#71717a] uppercase tracking-[0.15em]" style={body}>
+          <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] uppercase tracking-[0.15em]">
             (480) 204-2983 &nbsp;&middot;&nbsp; alex@alexhollienco.com
           </p>
         </div>
