@@ -1,17 +1,17 @@
 import { CampaignForm } from "@/components/campaigns/campaign-form";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 export default function NewCampaignPage() {
   return (
-    <div className="max-w-lg space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground font-display">New Campaign</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create a drip sequence or marketing campaign. Add steps after
-          creation.
-        </p>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-lg mx-0">
+      <PageHeader
+        eyebrow="Campaigns"
+        title="New Campaign"
+        subhead="Create a drip sequence or marketing campaign. Add steps after creation."
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       <CampaignForm />
-    </div>
+    </SectionShell>
   );
 }

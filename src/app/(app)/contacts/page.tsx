@@ -12,6 +12,7 @@ import {
 import { ContactFormModal } from "@/components/contacts/contact-form-modal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 // Section order. "untiered" is a synthetic bucket for contacts with tier = null.
 const TIER_ORDER = ["A", "B", "C", "P", "untiered"] as const;
@@ -254,16 +255,18 @@ export default function ContactsPage() {
   const hasUntiered = grouped.untiered.length > 0;
 
   return (
-    <div className="max-w-7xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-foreground font-display">
-          Contacts
-        </h1>
-        <Button onClick={() => setShowForm(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Add contact
-        </Button>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-7xl mx-0">
+      <PageHeader
+        eyebrow="Relationships"
+        title="Contacts"
+        right={
+          <Button onClick={() => setShowForm(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Add contact
+          </Button>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       <ContactFilters
         search={search}
@@ -294,6 +297,6 @@ export default function ContactsPage() {
           queryClient.invalidateQueries({ queryKey: ["contacts"] })
         }
       />
-    </div>
+    </SectionShell>
   );
 }

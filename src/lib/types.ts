@@ -380,6 +380,62 @@ export interface ActionItem {
 // Resend Webhooks
 // ---------------------
 
+// ---------------------
+// Projects (Phase 1.4)
+// ---------------------
+
+export type ProjectType =
+  | "agent_bd"
+  | "home_tour"
+  | "happy_hour"
+  | "campaign"
+  | "listing"
+  | "other";
+
+export type ProjectStatus = "active" | "paused" | "closed";
+
+export type ProjectTouchpointType =
+  | "email"
+  | "event"
+  | "voice_memo"
+  | "contact_note";
+
+export interface Project {
+  id: string;
+  type: ProjectType;
+  title: string;
+  status: ProjectStatus;
+  owner_contact_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface ProjectTouchpoint {
+  id: string;
+  project_id: string;
+  touchpoint_type: ProjectTouchpointType;
+  entity_id: string;
+  entity_table: string;
+  occurred_at: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  agent_bd: "Agent BD",
+  home_tour: "Home Tour",
+  happy_hour: "Happy Hour",
+  campaign: "Campaign",
+  listing: "Listing",
+  other: "Other",
+};
+
+// ---------------------
+// Resend Webhooks
+// ---------------------
+
 export interface ResendWebhookPayload {
   type: "email.sent" | "email.delivered" | "email.opened" | "email.clicked" | "email.bounced" | "email.complained";
   created_at: string;

@@ -8,3 +8,4 @@ export { EditorialHero } from "./editorial-hero";
 export { MonoNumeral, type MonoNumeralSize } from "./mono-numeral";
 export { FilterPill, type FilterPillTone } from "./filter-pill";
 export { useFadeInUp, type FadeInUpVariant } from "./use-fade-in-up";
+export { TodayEvents } from "./today-events";

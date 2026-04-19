@@ -36,6 +36,7 @@ import { QuickActionsWidget } from "@/components/dashboard/quick-actions";
 import { TaskListWidget } from "@/components/dashboard/task-list";
 import { PrintTicketsPanel } from "@/components/dashboard/print-tickets-panel";
 import { CampaignTimelineWidget } from "@/components/dashboard/campaign-timeline";
+import { AccentRule, PageHeader, SectionShell, useFadeInUp } from "@/components/screen";
 import { format } from "date-fns";
 
 export function DashboardClient() {
@@ -121,42 +122,47 @@ export function DashboardClient() {
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
+  const fade = useFadeInUp<HTMLDivElement>({ variant: "workspace" });
+
   return (
-    <div className="max-w-7xl">
-      {/* Top row: Today header (left) + Print Tickets panel (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-1 flex flex-col justify-center">
-          <h1 className="text-2xl font-semibold text-foreground font-display">
-            Today
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 font-mono tracking-wide">
-            {format(new Date(), "EEEE, MMMM d, yyyy")}
-          </p>
-        </div>
-        <div className="lg:col-span-2">
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-7xl mx-0">
+      <div ref={fade.ref} style={fade.style}>
+        <PageHeader
+          eyebrow="Today"
+          title="Dashboard"
+          subhead={
+            <span className="font-mono tracking-wide">
+              {format(new Date(), "EEEE, MMMM d, yyyy")}
+            </span>
+          }
+        />
+        <AccentRule variant="hairline" className="mt-6 mb-6" />
+
+        {/* Print tickets row */}
+        <div className="mb-6">
           <PrintTicketsPanel />
         </div>
-      </div>
 
-      <HealthSummaryBanner contacts={allContacts} />
+        <HealthSummaryBanner contacts={allContacts} />
 
-      {/* Main grid: Action queue (wider) + intelligence column */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left column (2/3) -- the operational hub */}
-        <div className="lg:col-span-2 space-y-4">
-          <TaskListWidget />
-          <CampaignTimelineWidget />
-          <PipelineSnapshotWidget opportunities={opportunities} />
+        {/* Main grid: Action queue (wider) + intelligence column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Left column (2/3) -- the operational hub */}
+          <div className="lg:col-span-2 space-y-4">
+            <TaskListWidget />
+            <CampaignTimelineWidget />
+            <PipelineSnapshotWidget opportunities={opportunities} />
+          </div>
+
+          {/* Right column (1/3) -- intelligence + quick actions */}
+          <div className="space-y-4">
+            <HealthLeadersWidget contacts={hotContacts} />
+            <QuickActionsWidget onRefresh={handleRefresh} />
+            <RelationshipStatsWidget stats={stats} />
+            <RecentInteractionsWidget interactions={recentInteractions} />
+          </div>
         </div>
-
-        {/* Right column (1/3) -- intelligence + quick actions */}
-        <div className="space-y-4">
-          <HealthLeadersWidget contacts={hotContacts} />
-          <QuickActionsWidget onRefresh={handleRefresh} />
-          <RelationshipStatsWidget stats={stats} />
-          <RecentInteractionsWidget interactions={recentInteractions} />
-        </div>
       </div>
-    </div>
+    </SectionShell>
   );
 }

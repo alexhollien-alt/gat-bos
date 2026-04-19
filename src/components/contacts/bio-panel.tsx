@@ -105,8 +105,8 @@ export function BioPanel({
 
       {expanded && (
         <div className="p-4 space-y-4">
-          {/* Identity + Business cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Identity + Business cards (stacked; parent rail is narrow) */}
+          <div className="grid grid-cols-1 gap-4">
             {/* Identity */}
             <div className="space-y-3">
               <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -278,7 +278,7 @@ export function BioPanel({
               <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Marketing Profile
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2.5">
                   <FieldRow
                     icon={Palette}

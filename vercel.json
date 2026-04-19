@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/inbox/scan",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/gmail/sync",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/gmail/sync",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/gmail/sync",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/calendar/sync-in",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+// Phase 1.5 Calendar outbound create. Dashboard creates event locally first,
+// then mirrors to Google Calendar and backfills gcal_event_id.
+// Dashboard is canonical; if gcal_event_id is already populated on the row,
+// do not re-insert (the inbound cron owns subsequent updates).
+// Dual auth: Bearer CRON_SECRET + Supabase session (Alex).
+// Kill switch: ROLLBACK_CAL_WRITE=true returns 503 on outbound write only.
+import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
+import { adminClient } from "@/lib/supabase/admin";
+import { createClient as createServerSupabase } from "@/lib/supabase/server";
+import { insertEvent, type CalendarAttendee } from "@/lib/calendar/client";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 30;
+
+const ROUTE = "/api/calendar/create";
+const ALEX_EMAIL = "alex@alexhollienco.com";
+
+interface CreateBody {
+  title?: string;
+  description?: string;
+  start_at?: string;
+  end_at?: string;
+  location?: string;
+  attendees?: CalendarAttendee[];
+  project_id?: string | null;
+  contact_id?: string | null;
+}
+
+function verifyBearer(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${secret}`;
+  if (auth.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
+async function verifySession(): Promise<boolean> {
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.email?.toLowerCase() === ALEX_EMAIL;
+  } catch {
+    return false;
+  }
+}
+
+async function verifyAuth(request: NextRequest): Promise<boolean> {
+  if (verifyBearer(request)) return true;
+  return verifySession();
+}
+
+async function logError(
+  error_message: string,
+  context: Record<string, unknown>,
+  error_code?: number,
+) {
+  await adminClient
+    .from("error_logs")
+    .insert({ endpoint: ROUTE, error_code: error_code ?? null, error_message, context })
+    .then(() => null, () => null);
+}
+
+export async function POST(request: NextRequest) {
+  if (process.env.ROLLBACK_CAL_WRITE === "true") {
+    return NextResponse.json({ error: "Calendar write disabled" }, { status: 503 });
+  }
+  if (!(await verifyAuth(request))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = (await request.json().catch(() => ({}))) as CreateBody;
+
+  if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
+    return NextResponse.json({ error: "title is required" }, { status: 400 });
+  }
+  if (!body.start_at || !body.end_at) {
+    return NextResponse.json({ error: "start_at and end_at are required (ISO-8601)" }, { status: 400 });
+  }
+  const startAt = new Date(body.start_at);
+  const endAt = new Date(body.end_at);
+  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+    return NextResponse.json({ error: "start_at and end_at must be valid ISO-8601" }, { status: 400 });
+  }
+  if (endAt.getTime() <= startAt.getTime()) {
+    return NextResponse.json({ error: "end_at must be after start_at" }, { status: 400 });
+  }
+
+  const title = body.title.trim();
+
+  // Step 1: insert the local row first. gcal_event_id starts NULL.
+  const { data: localRow, error: insertErr } = await adminClient
+    .from("events")
+    .insert({
+      title,
+      description: body.description ?? null,
+      start_at: startAt.toISOString(),
+      end_at: endAt.toISOString(),
+      location: body.location ?? null,
+      attendees: body.attendees ?? [],
+      project_id: body.project_id ?? null,
+      contact_id: body.contact_id ?? null,
+      source: "dashboard_create",
+    })
+    .select()
+    .single();
+
+  if (insertErr || !localRow) {
+    await logError(`local insert failed: ${insertErr?.message ?? "no row returned"}`, {
+      title,
+      start_at: startAt.toISOString(),
+    });
+    return NextResponse.json(
+      { error: insertErr?.message ?? "Failed to insert event" },
+      { status: 500 },
+    );
+  }
+
+  // Step 2: write to Google Calendar. On failure, keep the local row (null
+  // gcal_event_id) so Alex can see it and retry later via a future reconcile.
+  try {
+    const gcalEvent = await insertEvent({
+      title,
+      description: body.description ?? null,
+      startAt,
+      endAt,
+      location: body.location ?? null,
+      attendees: body.attendees,
+    });
+
+    const { data: updated, error: updateErr } = await adminClient
+      .from("events")
+      .update({
+        gcal_event_id: gcalEvent.gcalEventId,
+        synced_at: new Date().toISOString(),
+      })
+      .eq("id", localRow.id)
+      .select()
+      .single();
+
+    if (updateErr || !updated) {
+      await logError(`gcal_event_id backfill failed: ${updateErr?.message ?? "no row"}`, {
+        event_id: localRow.id,
+        gcal_event_id: gcalEvent.gcalEventId,
+      });
+      return NextResponse.json(
+        {
+          ok: true,
+          warning: "Event created in GCal but local gcal_event_id backfill failed",
+          event: localRow,
+          gcal_event_id: gcalEvent.gcalEventId,
+        },
+        { status: 201 },
+      );
+    }
+
+    return NextResponse.json({ ok: true, event: updated }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "gcal insert failed";
+    await logError(`gcal insert failed: ${message}`, {
+      event_id: localRow.id,
+      title,
+    });
+    return NextResponse.json(
+      {
+        ok: true,
+        warning: "Event stored locally but Google Calendar write failed. Retry will backfill gcal_event_id.",
+        event: localRow,
+        gcal_error: message,
+      },
+      { status: 201 },
+    );
+  }
+}

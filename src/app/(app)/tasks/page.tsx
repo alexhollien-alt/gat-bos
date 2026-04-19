@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -42,26 +43,29 @@ export default function TasksPage() {
   }, [fetchTasks]);
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-foreground font-display">Tasks</h1>
-        <div className="flex items-center gap-2">
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => setShowForm(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add task
-          </Button>
-        </div>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-3xl mx-0">
+      <PageHeader
+        title="Tasks"
+        right={
+          <div className="flex items-center gap-2">
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setShowForm(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add task
+            </Button>
+          </div>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       <div className="space-y-2">
         {tasks.length === 0 ? (
@@ -78,6 +82,6 @@ export default function TasksPage() {
         onOpenChange={setShowForm}
         onSuccess={fetchTasks}
       />
-    </div>
+    </SectionShell>
   );
 }

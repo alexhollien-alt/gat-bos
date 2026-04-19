@@ -1,5 +1,6 @@
 import { Contact } from "@/lib/types";
 import { Flame, Thermometer, Snowflake, Wind } from "lucide-react";
+import { MonoNumeral } from "@/components/screen";
 
 interface TempBucket {
   label: string;
@@ -71,9 +72,9 @@ export function HealthSummaryBanner({
         >
           {b.icon}
           <div>
-            <p className={`text-lg font-mono font-semibold leading-none ${b.color}`}>
+            <MonoNumeral size="md" className={`block font-semibold ${b.color}`}>
               {b.count}
-            </p>
+            </MonoNumeral>
             <p className="text-xs text-muted-foreground mt-0.5">
               {b.label} ({b.range})
             </p>
@@ -83,9 +84,9 @@ export function HealthSummaryBanner({
       <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-card border-border">
         <Thermometer className="h-4 w-4 text-muted-foreground" />
         <div>
-          <p className="text-lg font-mono font-semibold leading-none text-foreground">
+          <MonoNumeral size="md" className="block font-semibold text-foreground">
             {avg}
-          </p>
+          </MonoNumeral>
           <p className="text-xs text-muted-foreground mt-0.5">Avg score</p>
         </div>
       </div>

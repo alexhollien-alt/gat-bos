@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
 import { OpportunityFormModal } from "@/components/opportunities/opportunity-form";
+import { AccentRule, MonoNumeral, PageHeader, SectionShell } from "@/components/screen";
 
 function formatPrice(price: number | null): string {
   if (!price) return "--";
@@ -77,19 +78,19 @@ export default function OpportunitiesPage() {
   }));
 
   return (
-    <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground font-display">Pipeline</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {opportunities.length} opportunities
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setShowForm(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          New Opportunity
-        </Button>
-      </div>
+    <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 max-w-6xl mx-0">
+      <PageHeader
+        eyebrow="Deal flow"
+        title="Pipeline"
+        subhead={`${opportunities.length} opportunit${opportunities.length === 1 ? "y" : "ies"}`}
+        right={
+          <Button size="sm" onClick={() => setShowForm(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            New Opportunity
+          </Button>
+        }
+      />
+      <AccentRule variant="hairline" className="mt-6 mb-6" />
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -109,9 +110,9 @@ export default function OpportunitiesPage() {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold text-foreground">
+                    <MonoNumeral size="lg" className="text-foreground font-semibold">
                       {g.items.length}
-                    </span>
+                    </MonoNumeral>
                     {g.total > 0 && (
                       <span className="text-sm text-muted-foreground">
                         {formatPrice(g.total)}
@@ -230,6 +231,6 @@ export default function OpportunitiesPage() {
         onOpenChange={setShowForm}
         onSuccess={fetchOpportunities}
       />
-    </div>
+    </SectionShell>
   );
 }

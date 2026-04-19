@@ -29,8 +29,20 @@ import { MaterialRequestRow } from "@/components/materials/material-request-row"
 import { MaterialRequestFormModal } from "@/components/materials/material-request-form";
 import { DesignAssetCard } from "@/components/materials/design-asset-card";
 import { DesignAssetFormModal } from "@/components/materials/design-asset-form";
+import { ContactProjectsPanel } from "@/components/contacts/contact-projects-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  PageHeader,
+  StatRail,
+  AccentRule,
+  MonoNumeral,
+} from "@/components/screen";
+import { getAgentAccent } from "@/lib/agent-palette";
+import {
+  CONTACT_TYPE_CONFIG,
+  DESIGN_ASSET_TYPE_LABELS,
+} from "@/lib/constants";
 import {
   Plus,
   Clock,
@@ -271,8 +283,102 @@ export default function ContactDetailPage() {
     );
   }
 
+  const accent = getAgentAccent(contact.palette);
+  const fullName = `${contact.first_name} ${contact.last_name}`;
+  const initials = `${contact.first_name.charAt(0)}${contact.last_name.charAt(0)}`;
+  const typeLabel =
+    (contact.type && CONTACT_TYPE_CONFIG[contact.type]?.label) ?? "Relationship";
+  const subhead = [contact.title, contact.brokerage]
+    .filter((v): v is string => Boolean(v))
+    .join(", ");
+  const topDesigns = designAssets.slice(0, 5);
+
   return (
     <div className="max-w-7xl pb-12">
+      {/* Showcase-in-workspace hero (layered above sticky ContactHeader) */}
+      <section
+        className="relative mb-6 overflow-hidden rounded-xl border border-border/60 bg-secondary/20 p-6 sm:p-8"
+        style={{
+          backgroundImage: `radial-gradient(ellipse at top right, ${accent}1A 0%, transparent 55%)`,
+        }}
+      >
+        <PageHeader
+          size="lg"
+          eyebrow={<span style={{ color: accent }}>{typeLabel}</span>}
+          eyebrowTone="inherit"
+          title={fullName}
+          subhead={subhead || undefined}
+          right={
+            contact.headshot_url ? (
+              <img
+                src={contact.headshot_url}
+                alt={fullName}
+                className="h-32 w-32 object-cover headshot-mask-hero sm:h-36 sm:w-36"
+              />
+            ) : (
+              <div
+                className="flex h-32 w-32 items-center justify-center bg-secondary font-display text-4xl text-muted-foreground sm:h-36 sm:w-36"
+                style={{ color: accent }}
+              >
+                {initials}
+              </div>
+            )
+          }
+        />
+        <StatRail
+          className="mt-8"
+          items={[
+            {
+              stat: <MonoNumeral size="lg">{openTaskCount}</MonoNumeral>,
+              label: "Open Tasks",
+            },
+            {
+              stat: <MonoNumeral size="lg">{pendingFollowUpCount}</MonoNumeral>,
+              label: "Follow-ups",
+            },
+            {
+              stat: <MonoNumeral size="lg">{inFlightMaterialCount}</MonoNumeral>,
+              label: "In Flight",
+            },
+            {
+              stat: <MonoNumeral size="lg">{designAssets.length}</MonoNumeral>,
+              label: "Designs",
+            },
+          ]}
+        />
+        <AccentRule
+          variant="primary"
+          className="mt-6"
+          style={{
+            background: `linear-gradient(90deg, ${accent} 0%, ${accent} 40%, transparent 100%)`,
+          }}
+        />
+        {topDesigns.length > 0 && (
+          <div className="mt-6 -mx-6 sm:-mx-8 px-6 sm:px-8">
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {topDesigns.map((asset) => (
+                <a
+                  key={asset.id}
+                  href={asset.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex-shrink-0 w-44"
+                >
+                  <div className="aspect-[4/3] rounded-md border border-border/50 bg-card/40 flex items-center justify-center transition-colors group-hover:border-border group-hover:bg-card/70">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                      {DESIGN_ASSET_TYPE_LABELS[asset.asset_type]}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-foreground truncate">
+                    {asset.name}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Sticky header */}
       <ContactHeader
         contact={contact}
@@ -397,6 +503,9 @@ export default function ContactDetailPage() {
               Designs{" "}
               <span className="font-mono ml-1">({designAssets.length})</span>
             </TabsTrigger>
+            <TabsTrigger value="projects">
+              Projects
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="notes" className="mt-4 space-y-3">
@@ -466,6 +575,10 @@ export default function ContactDetailPage() {
                 No design assets saved
               </p>
             )}
+          </TabsContent>
+
+          <TabsContent value="projects" className="mt-4">
+            <ContactProjectsPanel contactId={contactId} />
           </TabsContent>
         </Tabs>
         </div>

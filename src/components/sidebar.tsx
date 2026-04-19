@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
+  Sun,
   Users,
   CheckSquare,
   Megaphone,
@@ -16,11 +17,14 @@ import {
   Ticket,
   Zap,
   BarChart3,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
+  { href: "/today", label: "Today", icon: Sun },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/actions", label: "Actions", icon: Zap },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
