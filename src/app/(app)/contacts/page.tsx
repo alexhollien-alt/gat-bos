@@ -11,8 +11,13 @@ import {
 } from "@/components/contacts/contact-filters";
 import { ContactFormModal } from "@/components/contacts/contact-form-modal";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
+import {
+  exportRowsAsCsv,
+  todayStamp,
+  type CsvColumn,
+} from "@/lib/csv-export";
 
 // Section order. "untiered" is a synthetic bucket for contacts with tier = null.
 const TIER_ORDER = ["A", "B", "C", "P", "untiered"] as const;
@@ -197,6 +202,24 @@ export default function ContactsPage() {
     setTierLimits((prev) => ({ ...prev, [key]: prev[key] + PAGE_SIZE }));
   };
 
+  const handleExportCsv = () => {
+    const flat: Contact[] = TIER_ORDER.flatMap((k) => grouped[k]);
+    const columns: CsvColumn<Contact>[] = [
+      { header: "first_name", accessor: (c) => c.first_name },
+      { header: "last_name", accessor: (c) => c.last_name },
+      { header: "tier", accessor: (c) => c.tier ?? "" },
+      { header: "brokerage", accessor: (c) => c.brokerage ?? "" },
+      { header: "email", accessor: (c) => c.email ?? "" },
+      { header: "phone", accessor: (c) => c.phone ?? "" },
+      { header: "health_score", accessor: (c) => c.health_score ?? 0 },
+      {
+        header: "last_touchpoint",
+        accessor: (c) => c.last_touchpoint ?? "",
+      },
+    ];
+    exportRowsAsCsv(flat, columns, `contacts-${todayStamp()}.csv`);
+  };
+
   // Reset pagination when filters change so a search doesn't leave you deep
   // in a stale "show more" state.
   useEffect(() => {
@@ -260,10 +283,26 @@ export default function ContactsPage() {
         eyebrow="Relationships"
         title="Contacts"
         right={
-          <Button onClick={() => setShowForm(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add contact
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleExportCsv}
+              size="sm"
+              variant="outline"
+              disabled={totalMatched === 0}
+              title={
+                totalMatched === 0
+                  ? "No contacts to export"
+                  : `Export ${totalMatched} contact${totalMatched === 1 ? "" : "s"} as CSV`
+              }
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
+            <Button onClick={() => setShowForm(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add contact
+            </Button>
+          </div>
         }
       />
       <AccentRule variant="hairline" className="mt-6 mb-6" />

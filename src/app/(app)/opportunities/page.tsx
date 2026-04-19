@@ -153,7 +153,8 @@ export default function OpportunitiesPage() {
                 {items.map((opp) => (
                   <div
                     key={opp.id}
-                    className="bg-card border border-border rounded-lg p-4 flex items-center gap-4"
+                    id={`opp-${opp.id}`}
+                    className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 scroll-mt-24 target:ring-2 target:ring-primary/40"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

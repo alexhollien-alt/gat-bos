@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Contact } from "@/lib/types";
+import { Contact, Opportunity, Project, Task } from "@/lib/types";
 import {
   CommandDialog,
   CommandInput,
@@ -21,14 +21,51 @@ import {
   UserPlus,
   Search,
   TrendingUp,
+  Briefcase,
+  FolderKanban,
 } from "lucide-react";
+
+type OpportunityRow = Pick<
+  Opportunity,
+  "id" | "property_address" | "property_city" | "stage" | "contact_id"
+>;
+
+type ProjectRow = Pick<
+  Project,
+  "id" | "type" | "title" | "status"
+>;
+
+type TaskRow = Pick<
+  Task,
+  "id" | "title" | "status" | "priority" | "due_date" | "contact_id"
+>;
+
+const ROW_LIMIT = 50;
+
+function stageLabel(stage: string): string {
+  return stage.replace(/_/g, " ");
+}
+
+function dueBadge(dueIso: string | null): string | null {
+  if (!dueIso) return null;
+  const due = new Date(dueIso);
+  const now = new Date();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const dayDiff = Math.round((due.getTime() - now.getTime()) / msPerDay);
+  if (dayDiff < 0) return `${Math.abs(dayDiff)}d overdue`;
+  if (dayDiff === 0) return "due today";
+  if (dayDiff === 1) return "due tomorrow";
+  return `due in ${dayDiff}d`;
+}
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [opportunities, setOpportunities] = useState<OpportunityRow[]>([]);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
   const router = useRouter();
 
-  // Cmd+K listener
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -40,20 +77,49 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Fetch contacts when palette opens
-  const fetchContacts = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("contacts")
-      .select("id, first_name, last_name, brokerage, email, phone, health_score, tier")
-      .order("first_name", { ascending: true })
-      .limit(200);
-    if (data) setContacts(data as Contact[]);
+
+    const [contactsRes, opportunitiesRes, projectsRes, tasksRes] =
+      await Promise.all([
+        supabase
+          .from("contacts")
+          .select(
+            "id, first_name, last_name, brokerage, email, phone, health_score, tier",
+          )
+          .is("deleted_at", null)
+          .order("first_name", { ascending: true })
+          .limit(200),
+        supabase
+          .from("opportunities")
+          .select("id, property_address, property_city, stage, contact_id")
+          .order("updated_at", { ascending: false })
+          .limit(ROW_LIMIT),
+        supabase
+          .from("projects")
+          .select("id, type, title, status")
+          .is("deleted_at", null)
+          .eq("status", "active")
+          .order("updated_at", { ascending: false })
+          .limit(ROW_LIMIT),
+        supabase
+          .from("tasks")
+          .select("id, title, status, priority, due_date, contact_id")
+          .neq("status", "completed")
+          .order("due_date", { ascending: true, nullsFirst: false })
+          .limit(ROW_LIMIT),
+      ]);
+
+    if (contactsRes.data) setContacts(contactsRes.data as Contact[]);
+    if (opportunitiesRes.data)
+      setOpportunities(opportunitiesRes.data as OpportunityRow[]);
+    if (projectsRes.data) setProjects(projectsRes.data as ProjectRow[]);
+    if (tasksRes.data) setTasks(tasksRes.data as TaskRow[]);
   }, []);
 
   useEffect(() => {
-    if (open) fetchContacts();
-  }, [open, fetchContacts]);
+    if (open) fetchAll();
+  }, [open, fetchAll]);
 
   function navigate(path: string) {
     setOpen(false);
@@ -62,7 +128,7 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search contacts, navigate, or take action..." />
+      <CommandInput placeholder="Search contacts, opportunities, projects, tasks..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
@@ -91,7 +157,7 @@ export function CommandPalette() {
           {contacts.map((c) => (
             <CommandItem
               key={c.id}
-              value={`${c.first_name} ${c.last_name} ${c.brokerage || ""} ${c.email || ""}`}
+              value={`contact ${c.first_name} ${c.last_name} ${c.brokerage || ""} ${c.email || ""}`}
               onSelect={() => navigate(`/contacts/${c.id}`)}
             >
               <Users className="mr-2 h-4 w-4" />
@@ -113,6 +179,91 @@ export function CommandPalette() {
             </CommandItem>
           ))}
         </CommandGroup>
+
+        {opportunities.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Opportunities">
+              {opportunities.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={`opportunity ${o.property_address} ${o.property_city || ""} ${o.stage}`}
+                  onSelect={() => navigate(`/opportunities#opp-${o.id}`)}
+                >
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm truncate">
+                      {o.property_address}
+                    </span>
+                    {o.property_city && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {o.property_city}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {stageLabel(o.stage)}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {projects.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Projects">
+              {projects.map((p) => (
+                <CommandItem
+                  key={p.id}
+                  value={`project ${p.title} ${p.type}`}
+                  onSelect={() => navigate(`/projects/${p.id}`)}
+                >
+                  <FolderKanban className="mr-2 h-4 w-4" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm truncate">{p.title}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {p.type.replace(/_/g, " ")}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {tasks.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Tasks">
+              {tasks.map((t) => {
+                const badge = dueBadge(t.due_date);
+                return (
+                  <CommandItem
+                    key={t.id}
+                    value={`task ${t.title} ${t.priority}`}
+                    onSelect={() =>
+                      navigate(
+                        t.contact_id ? `/contacts/${t.contact_id}` : "/tasks",
+                      )
+                    }
+                  >
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm truncate">{t.title}</span>
+                    </div>
+                    {badge && (
+                      <span className="text-xs text-muted-foreground">
+                        {badge}
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
+        )}
 
         <CommandSeparator />
 
