@@ -82,3 +82,16 @@ Showcase tier: full motion system per `digital-aesthetic.md`.
 
 - WebP format preferred for all web images (not for email).
 - Every landing page: JSON-LD schema markup + Open Graph meta tags.
+
+---
+
+## GSD Protocol (CRM only)
+
+Inside `~/crm/`, GSD (`get-shit-done`) replaces `/lock` as the execution protocol. Outside `~/crm/`, `/lock` still owns every path.
+
+- Use `/gsd-plan-phase` instead of `/lock`. It emits a phase plan block.
+- After the plan block prints, stop. Wait for Alex to type "lock it" or "go" before running `/gsd-execute-phase`. This is the Rule 5 gate inside GSD.
+- `.planning/config.json` sets `mode: interactive` and `workflow.auto_advance: false` so every phase transition requires explicit Alex approval.
+- Do not run `/gsd-new-project` until Gmail MVP 1.3.1 ships. The plan at `~/.claude/plans/gat-bos-1.3.1-gmail-mvp.md` is the current active plan and GSD project bootstrap would collide with it.
+- Design deliverables (re-print-design, re-email-design, re-landing-page, re-listing-presentation, listing-pipeline, canva-handoff) keep three-draft gates per Rule 6 and stay outside GSD. Those skills do not fire inside `~/crm/` anyway.
+- Rollback: `cd ~/crm && git reset --hard pre-gsd-2026-04-19` plus `rm -rf ~/crm/.planning ~/crm/.claude/get-shit-done ~/crm/.claude/hooks/gsd-*` and settings.json revert.

@@ -1,0 +1,14 @@
+{
+  "mode": "interactive",
+  "granularity": "standard",
+  "workflow": {
+    "auto_advance": false,
+    "verifier": true,
+    "plan_check": true
+  },
+  "git": { "branching": "phase" },
+  "profile": "inherit",
+  "hooks": {
+    "context_warnings": false
+  }
+}
