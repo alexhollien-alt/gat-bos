@@ -64,8 +64,10 @@ export async function scoreThread(params: {
       matched_rules: Array.isArray(parsed.matched_rules) ? parsed.matched_rules : [],
       needs_reply: typeof parsed.needs_reply === "boolean" ? parsed.needs_reply : false,
     };
-  } catch {
-    // Scoring failure = silent skip, not a crash. Thread will be re-evaluated next scan.
+  } catch (err) {
+    // Scoring failure = skip this pass, not a crash. Thread re-evaluates next scan.
+    // Log so recurring failures (API outage, schema drift, quota) are diagnosable.
+    console.error("scoreThread failed", err instanceof Error ? err.message : err);
     return { score: 0, matched_rules: [], needs_reply: false };
   }
 }

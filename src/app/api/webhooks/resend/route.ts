@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { logError } from "@/lib/error-log";
+
+const ROUTE = "/api/webhooks/resend";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,7 +140,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, contact_id: contact.id, bump });
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "webhook processing failed";
+    await logError(ROUTE, `webhook processing failed: ${message}`, {});
     return NextResponse.json({ error: "webhook processing failed" }, { status: 500 });
   }
 }
