@@ -7,16 +7,14 @@ import { fetchMessage, listUnreadSince } from "@/lib/gmail/sync-client";
 import { classifyEmail, extractDomain } from "@/lib/gmail/filter";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
+import type { Contact } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const DEFAULT_SINCE_HOURS = 4;
 
-interface ContactRow {
-  id: string;
-  email: string | null;
-}
+type ContactRow = Pick<Contact, "id" | "email">;
 
 async function loadContactMap(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
