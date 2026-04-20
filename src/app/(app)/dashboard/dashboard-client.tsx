@@ -36,6 +36,10 @@ import { QuickActionsWidget } from "@/components/dashboard/quick-actions";
 import { TaskListWidget } from "@/components/dashboard/task-list";
 import { PrintTicketsPanel } from "@/components/dashboard/print-tickets-panel";
 import { CampaignTimelineWidget } from "@/components/dashboard/campaign-timeline";
+import { TileFilesInFlight } from "@/components/dashboard/tile-files-in-flight";
+import { TileFilesClosedThisMonth } from "@/components/dashboard/tile-files-closed-this-month";
+import { TileNewListings7d } from "@/components/dashboard/tile-new-listings-7d";
+import { TileColdAgentsAlert } from "@/components/dashboard/tile-cold-agents-alert";
 import { AccentRule, PageHeader, SectionShell, useFadeInUp } from "@/components/screen";
 import { format } from "date-fns";
 
@@ -144,6 +148,14 @@ export function DashboardClient() {
         </div>
 
         <HealthSummaryBanner contacts={allContacts} />
+
+        {/* Phase B2: title-specific KPI tiles */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <TileFilesInFlight />
+          <TileFilesClosedThisMonth />
+          <TileNewListings7d />
+          <TileColdAgentsAlert />
+        </div>
 
         {/* Main grid: Action queue (wider) + intelligence column */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
