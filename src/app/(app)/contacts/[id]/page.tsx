@@ -60,7 +60,7 @@ export default function ContactDetailPage() {
   // catch-all routes or a null first-render so we never cast undefined -> string.
   const rawId = params?.id;
   const contactId = typeof rawId === "string" ? rawId : "";
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -116,7 +116,7 @@ export default function ContactDetailPage() {
       .eq("contact_id", contactId)
       .order("occurred_at", { ascending: false });
     if (data) setInteractions(data);
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   const fetchNotes = useCallback(async () => {
     const { data } = await supabase
@@ -125,7 +125,7 @@ export default function ContactDetailPage() {
       .eq("contact_id", contactId)
       .order("created_at", { ascending: false });
     if (data) setNotes(data);
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   const fetchTasks = useCallback(async () => {
     const { data } = await supabase
@@ -134,7 +134,7 @@ export default function ContactDetailPage() {
       .eq("contact_id", contactId)
       .order("due_date", { ascending: true });
     if (data) setTasks(data);
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   const fetchFollowUps = useCallback(async () => {
     const { data } = await supabase
@@ -143,7 +143,7 @@ export default function ContactDetailPage() {
       .eq("contact_id", contactId)
       .order("due_date", { ascending: true });
     if (data) setFollowUps(data);
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   const fetchMaterialRequests = useCallback(async () => {
     const { data } = await supabase
@@ -160,7 +160,7 @@ export default function ContactDetailPage() {
         })) as MaterialRequest[]
       );
     }
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   const fetchDesignAssets = useCallback(async () => {
     const { data } = await supabase
@@ -170,7 +170,7 @@ export default function ContactDetailPage() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (data) setDesignAssets(data);
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   useEffect(() => {
     fetchContact();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Megaphone } from "lucide-react";
@@ -28,7 +28,7 @@ interface SummaryStats {
 const ACCENT = "var(--accent-red)";
 
 export function CampaignTimelineWidget() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [stats, setStats] = useState<SummaryStats>({
     activeCampaigns: 0,
@@ -91,7 +91,7 @@ export function CampaignTimelineWidget() {
     );
 
     setLoading(false);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     fetchData();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Tag } from "@/lib/types";
 import { TagChip } from "./tag-chip";
@@ -23,7 +23,7 @@ export function TagPicker({
 }) {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [open, setOpen] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function fetchTags() {
@@ -34,7 +34,7 @@ export function TagPicker({
       if (data) setAllTags(data);
     }
     fetchTags();
-  }, []);
+  }, [supabase]);
 
   const availableTags = allTags.filter(
     (t) => !selectedTags.some((st) => st.id === t.id)

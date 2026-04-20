@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Opportunity, OpportunityStage } from "@/lib/types";
 import { OPPORTUNITY_STAGE_CONFIG } from "@/lib/constants";
@@ -40,7 +40,7 @@ const PIPELINE_STAGES: OpportunityStage[] = [
 ];
 
 export default function OpportunitiesPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useOpportunityView();
@@ -51,7 +51,7 @@ export default function OpportunitiesPage() {
       .select("*, contacts(id, first_name, last_name)")
       .order("created_at", { ascending: false });
     if (data) setOpportunities(data);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     fetchOpportunities();

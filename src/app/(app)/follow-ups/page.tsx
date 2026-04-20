@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { FollowUp } from "@/lib/types";
 import { FollowUpRow } from "@/components/follow-ups/follow-up-list";
@@ -20,7 +20,7 @@ export default function FollowUpsPage() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [filter, setFilter] = useState("pending");
   const [showForm, setShowForm] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchFollowUps = useCallback(async () => {
     let query = supabase
@@ -34,7 +34,7 @@ export default function FollowUpsPage() {
 
     const { data } = await query;
     if (data) setFollowUps(data);
-  }, [filter]);
+  }, [filter, supabase]);
 
   useEffect(() => {
     fetchFollowUps();

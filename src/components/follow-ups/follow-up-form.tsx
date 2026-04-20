@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
@@ -40,7 +40,7 @@ export function FollowUpFormModal({
   const [contacts, setContacts] = useState<
     Pick<Contact, "id" | "first_name" | "last_name">[]
   >([]);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const {
     register,
@@ -67,7 +67,7 @@ export function FollowUpFormModal({
           if (data) setContacts(data);
         });
     }
-  }, [contactId]);
+  }, [contactId, supabase]);
 
   async function onSubmit(data: FollowUpFormData) {
     setLoading(true);

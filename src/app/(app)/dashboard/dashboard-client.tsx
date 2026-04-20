@@ -101,7 +101,10 @@ export function DashboardClient() {
     staleTime: 30 * 1000,
   });
 
-  const allContacts = allContactsQuery.data ?? [];
+  const allContacts = useMemo(
+    () => allContactsQuery.data ?? [],
+    [allContactsQuery.data],
+  );
   const hotContacts = hotContactsQuery.data ?? [];
   const opportunities = opportunitiesQuery.data ?? [];
   const recentInteractions = recentInteractionsQuery.data ?? [];

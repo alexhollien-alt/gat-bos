@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function EnrollDialog({
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchContacts = useCallback(async () => {
     const { data } = await supabase
@@ -47,7 +47,7 @@ export function EnrollDialog({
       .select("id, first_name, last_name, company")
       .order("last_name");
     if (data) setContacts(data);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (open) {

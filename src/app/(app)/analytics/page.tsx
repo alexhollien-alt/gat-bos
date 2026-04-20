@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   BarChart,
@@ -554,7 +554,7 @@ function CampaignTableView({ campaigns }: { campaigns: CampaignRow[] }) {
 // Main page
 // ---------------------
 export default function AnalyticsPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Q1: Health Score
   const [tempContacts, setTempContacts] = useState<TempContact[]>([]);
@@ -816,7 +816,7 @@ export default function AnalyticsPage() {
 
     setCampaignRows(rows);
     setLoading(false);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     fetchAll();

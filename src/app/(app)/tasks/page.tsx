@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Task } from "@/lib/types";
 import { TaskRow } from "@/components/tasks/task-list";
@@ -20,7 +20,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchTasks = useCallback(async () => {
     let query = supabase
@@ -36,7 +36,7 @@ export default function TasksPage() {
 
     const { data } = await query;
     if (data) setTasks(data);
-  }, [filter]);
+  }, [filter, supabase]);
 
   useEffect(() => {
     fetchTasks();
