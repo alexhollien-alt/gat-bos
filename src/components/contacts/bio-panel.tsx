@@ -321,6 +321,10 @@ export function BioPanel({
                   </p>
                   <div className="flex items-center gap-3">
                     {contact.brokerage_logo_url ? (
+                      // Logos are user-pasted URLs from arbitrary external
+                      // domains (brokerage sites, brand kits). next/image
+                      // remotePatterns allowlist would break existing data.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={contact.brokerage_logo_url}
                         alt="Brokerage logo"
@@ -336,6 +340,8 @@ export function BioPanel({
                       </button>
                     )}
                     {contact.agent_logo_url ? (
+                      // See brokerage_logo_url above -- same user-paste constraint.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={contact.agent_logo_url}
                         alt="Agent logo"

@@ -79,6 +79,10 @@ export function ContactHeader({
         >
           <div className="flex items-center gap-3 min-w-0">
             {contact.headshot_url ? (
+              // Headshots are user-pasted URLs from arbitrary external domains
+              // (agent sites, LinkedIn, Dropbox). next/image remotePatterns
+              // allowlist would break existing contact data.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={contact.headshot_url}
                 alt={`${contact.first_name} ${contact.last_name}`}

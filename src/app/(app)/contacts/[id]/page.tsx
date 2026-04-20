@@ -310,6 +310,9 @@ export default function ContactDetailPage() {
           subhead={subhead || undefined}
           right={
             contact.headshot_url ? (
+              // Headshots are user-pasted URLs from arbitrary external domains.
+              // next/image remotePatterns would break existing contact data.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={contact.headshot_url}
                 alt={fullName}
