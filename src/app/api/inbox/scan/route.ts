@@ -4,6 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { fetchUnreadThreads } from "@/lib/gmail/client";
 import { scoreThread } from "@/lib/inbox/scorer";
 import { verifyCronSecret } from "@/lib/api-auth";
+import { logError } from "@/lib/error-log";
+
+const ROUTE = "/api/inbox/scan";
 
 // Service-role client -- bypasses RLS so the cron can write for any user
 const supabase = createClient(
@@ -27,6 +30,11 @@ export async function GET(request: NextRequest) {
   const { data: authUsers, error: userErr } = await supabase.auth.admin.listUsers({ perPage: 1000 });
   const matched = authUsers?.users?.find((u) => u.email === userEmail);
   if (userErr || !matched) {
+    await logError(
+      ROUTE,
+      `user lookup failed: ${userErr?.message ?? "no user matched"}`,
+      { email: userEmail },
+    );
     return NextResponse.json(
       { error: `No Supabase user found for ${userEmail}` },
       { status: 500 }
@@ -39,6 +47,7 @@ export async function GET(request: NextRequest) {
     threads = await fetchUnreadThreads(50);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Gmail fetch failed";
+    await logError(ROUTE, `gmail fetch failed: ${msg}`, {});
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
@@ -109,7 +118,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (insertErr) {
-      console.error("inbox insert failed", insertErr.message, thread.threadId);
+      await logError(ROUTE, `inbox_items insert failed: ${insertErr.message}`, {
+        thread_id: thread.threadId,
+      });
       continue;
     }
 
