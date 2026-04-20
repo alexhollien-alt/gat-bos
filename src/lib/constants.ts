@@ -179,8 +179,8 @@ export const OPPORTUNITY_STAGE_CONFIG: Record<
   { label: string; color: string; bgColor: string; textColor: string }
 > = {
   prospect: { label: "Prospect", color: "#6b7280", bgColor: "bg-zinc-500/10", textColor: "text-zinc-400" },
-  under_contract: { label: "Under Contract", color: "#eab308", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
-  in_escrow: { label: "In Escrow", color: "#3b82f6", bgColor: "bg-blue-500/10", textColor: "text-blue-400" },
+  under_contract: { label: "Under Contract", color: "#b31a35", bgColor: "bg-[#b31a35]/10", textColor: "text-[#b31a35]" },
+  in_escrow: { label: "In Escrow", color: "#003087", bgColor: "bg-[#003087]/10", textColor: "text-[#003087]" },
   closed: { label: "Closed", color: "#22c55e", bgColor: "bg-green-500/10", textColor: "text-green-400" },
   fell_through: { label: "Fell Through", color: "#ef4444", bgColor: "bg-red-500/10", textColor: "text-red-400" },
 };

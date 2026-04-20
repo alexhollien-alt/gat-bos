@@ -19,6 +19,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { OpportunityFormModal } from "@/components/opportunities/opportunity-form";
 import { AccentRule, MonoNumeral, PageHeader, SectionShell } from "@/components/screen";
+import { KanbanView } from "./kanban-view";
+import { ViewToggle, useOpportunityView } from "./view-toggle";
 
 function formatPrice(price: number | null): string {
   if (!price) return "--";
@@ -41,6 +43,7 @@ export default function OpportunitiesPage() {
   const supabase = createClient();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [viewMode, setViewMode] = useOpportunityView();
 
   const fetchOpportunities = useCallback(async () => {
     const { data } = await supabase
@@ -87,10 +90,13 @@ export default function OpportunitiesPage() {
         title="Pipeline"
         subhead={`${opportunities.length} opportunit${opportunities.length === 1 ? "y" : "ies"}`}
         right={
-          <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            New Opportunity
-          </Button>
+          <div className="flex items-center gap-2">
+            <ViewToggle mode={viewMode} onModeChange={setViewMode} />
+            <Button size="sm" onClick={() => setShowForm(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              New Opportunity
+            </Button>
+          </div>
         }
       />
       <AccentRule variant="hairline" className="mt-6 mb-6" />
@@ -130,6 +136,9 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Pipeline columns */}
+      {viewMode === "kanban" ? (
+        <KanbanView opportunities={opportunities} onStageChange={updateStage} />
+      ) : (
       <div className="space-y-6">
         {grouped.map(({ stage, config, items, total }) => (
           <div key={stage}>
@@ -229,6 +238,7 @@ export default function OpportunitiesPage() {
           </div>
         ))}
       </div>
+      )}
 
       <OpportunityFormModal
         open={showForm}
