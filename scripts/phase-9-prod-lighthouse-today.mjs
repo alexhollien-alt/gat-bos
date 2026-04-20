@@ -8,7 +8,7 @@
  *   - State cache at /tmp/phase-9-prod-auth-state.json (separate from local).
  *   - Reports written to ~/Desktop/phase-9-prod-lighthouse-today.{json,html}.
  */
-import { ensureAuthState, loadEnv } from './phase-9-prod-auth-helper.mjs';
+import { ensureAuthState, loadEnv, bypassHeaders } from './phase-9-prod-auth-helper.mjs';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { tmpdir, homedir } from 'node:os';
@@ -46,7 +46,7 @@ try {
     output: ['json', 'html'],
     logLevel: 'error',
     onlyCategories: ['performance'],
-    extraHeaders: { Cookie: cookieHeader },
+    extraHeaders: { Cookie: cookieHeader, ...bypassHeaders() },
     formFactor: 'desktop',
     screenEmulation: { mobile: false, width: 1440, height: 900, deviceScaleFactor: 1, disabled: false },
     throttlingMethod: 'simulate',

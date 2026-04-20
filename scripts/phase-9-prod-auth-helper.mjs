@@ -30,7 +30,14 @@ export function loadEnv() {
   const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!URL || !ANON || !SERVICE) throw new Error('Missing Supabase env vars in ~/crm/.env.local');
-  return { URL, ANON, SERVICE, SITE: PROD_SITE };
+  const SITE = process.env.SITE || PROD_SITE;
+  const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || null;
+  return { URL, ANON, SERVICE, SITE, BYPASS };
+}
+
+export function bypassHeaders() {
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  return secret ? { 'x-vercel-protection-bypass': secret } : {};
 }
 
 const ALEX_EMAIL = 'alex@alexhollienco.com';
@@ -41,8 +48,9 @@ export async function ensureAuthState(statePath) {
     const ageMs = Date.now() - statSync(statePath).mtimeMs;
     if (ageMs < AUTH_MAX_AGE_MS) return statePath;
   }
-  const { URL, ANON, SERVICE, SITE } = loadEnv();
+  const { URL, ANON, SERVICE, SITE, BYPASS } = loadEnv();
   const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+  const extraHTTPHeaders = BYPASS ? { 'x-vercel-protection-bypass': BYPASS } : undefined;
 
   const { data: listed, error: listErr } = await admin.auth.admin.listUsers({ perPage: 200 });
   if (listErr) throw new Error(`listUsers failed: ${listErr.message}`);
@@ -60,7 +68,7 @@ export async function ensureAuthState(statePath) {
   const hashedToken = link.properties.hashed_token;
 
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  const context = await browser.newContext(extraHTTPHeaders ? { extraHTTPHeaders } : {});
   const page = await context.newPage();
 
   await page.goto(`${SITE}/login`, { waitUntil: 'domcontentloaded' });

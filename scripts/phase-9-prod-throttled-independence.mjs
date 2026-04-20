@@ -8,7 +8,7 @@
  *   - Same Supabase REST host pattern, so the route intercept selector still hits.
  */
 import { chromium } from 'playwright';
-import { ensureAuthState, loadEnv } from './phase-9-prod-auth-helper.mjs';
+import { ensureAuthState, loadEnv, bypassHeaders } from './phase-9-prod-auth-helper.mjs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -22,7 +22,11 @@ console.log('[gate-3-prod] Ensuring alex session...');
 await ensureAuthState(STATE);
 
 const browser = await chromium.launch({ headless: true });
-const ctx = await browser.newContext({ storageState: STATE });
+const extraHTTPHeaders = bypassHeaders();
+const ctxOpts = Object.keys(extraHTTPHeaders).length
+  ? { storageState: STATE, extraHTTPHeaders }
+  : { storageState: STATE };
+const ctx = await browser.newContext(ctxOpts);
 const page = await ctx.newPage();
 
 await page.route('**/rest/v1/email_drafts*', async (route) => {

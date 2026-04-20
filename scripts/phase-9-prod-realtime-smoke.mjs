@@ -10,7 +10,7 @@
  */
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
-import { ensureAuthState, loadEnv } from './phase-9-prod-auth-helper.mjs';
+import { ensureAuthState, loadEnv, bypassHeaders } from './phase-9-prod-auth-helper.mjs';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -29,8 +29,12 @@ await ensureAuthState(STATE);
 
 console.log('[gate-2-prod] Launching two Playwright contexts...');
 const browser = await chromium.launch({ headless: true });
-const ctxA = await browser.newContext({ storageState: STATE });
-const ctxB = await browser.newContext({ storageState: STATE });
+const extraHTTPHeaders = bypassHeaders();
+const ctxOpts = Object.keys(extraHTTPHeaders).length
+  ? { storageState: STATE, extraHTTPHeaders }
+  : { storageState: STATE };
+const ctxA = await browser.newContext(ctxOpts);
+const ctxB = await browser.newContext(ctxOpts);
 const pageA = await ctxA.newPage();
 const pageB = await ctxB.newPage();
 
