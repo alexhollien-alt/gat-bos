@@ -52,6 +52,9 @@ export default function OpportunitiesPage() {
 
   useEffect(() => {
     fetchOpportunities();
+    const onFocus = () => fetchOpportunities();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [fetchOpportunities]);
 
   async function updateStage(id: string, stage: OpportunityStage) {
