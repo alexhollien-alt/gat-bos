@@ -8,13 +8,12 @@
 // Rejects expired or already-sent drafts with 409.
 // Every action appends an event to email_drafts.audit_log.event_sequence.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
-import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { sendDraft } from "@/lib/resend/client";
 import { createGmailDraft } from "@/lib/gmail/sync-client";
-
-const ALEX_EMAIL = "alex@alexhollienco.com";
+import { verifyBearerOrSession } from "@/lib/api-auth";
+import { logError } from "@/lib/error-log";
+import { ALEX_EMAIL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -61,48 +60,6 @@ interface AuditEvent {
 interface AuditLog {
   event_sequence: AuditEvent[];
   metadata: Record<string, unknown>;
-}
-
-function verifyBearer(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-async function verifySession(): Promise<boolean> {
-  try {
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.email?.toLowerCase() === ALEX_EMAIL;
-  } catch {
-    return false;
-  }
-}
-
-async function verifyAuth(request: NextRequest): Promise<boolean> {
-  if (verifyBearer(request)) return true;
-  return verifySession();
-}
-
-async function logError(
-  endpoint: string,
-  error_message: string,
-  context: Record<string, unknown>,
-  error_code?: number,
-) {
-  await adminClient
-    .from("error_logs")
-    .insert({ endpoint, error_code: error_code ?? null, error_message, context })
-    .then(() => null, () => null);
 }
 
 function appendAuditEvent(audit: AuditLog | null, event: AuditEvent): AuditLog {
@@ -155,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!(await verifyAuth(request))) {
+  if (!(await verifyBearerOrSession(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -293,7 +250,7 @@ export async function POST(request: NextRequest) {
         subject,
         html,
         text,
-        replyTo: "alex@alexhollienco.com",
+        replyTo: ALEX_EMAIL,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "resend send failed";
@@ -326,7 +283,7 @@ export async function POST(request: NextRequest) {
         sent_at: sentAt,
         sent_via: "resend",
         approved_at: sentAt,
-        approved_by: "alex@alexhollienco.com",
+        approved_by: ALEX_EMAIL,
         audit_log: sentAudit,
       })
       .eq("id", draftId);
@@ -410,7 +367,7 @@ export async function POST(request: NextRequest) {
         sent_at: sentAt,
         sent_via: "gmail_draft",
         approved_at: sentAt,
-        approved_by: "alex@alexhollienco.com",
+        approved_by: ALEX_EMAIL,
         created_in_gmail_draft_id: result.draftId,
         audit_log: draftAudit,
       })

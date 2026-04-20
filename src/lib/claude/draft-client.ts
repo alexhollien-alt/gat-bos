@@ -1,13 +1,11 @@
 // Phase 1.3.1 Phase 4 -- Claude draft generation client.
-// Model: claude-sonnet-4-6. max_tokens: 800. 10s timeout, 2 retries (1s, 2s).
+// Model: claude-sonnet-4-6. max_tokens: 800.
 // System prompt is static and cached via cache_control: ephemeral.
 import Anthropic from "@anthropic-ai/sdk";
+import { withRetry } from "@/lib/retry";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 800;
-const TIMEOUT_MS = 10_000;
-const MAX_RETRIES = 2;
-const RETRY_DELAYS_MS = [1000, 2000];
 
 export const PROMPT_VERSION = "v1";
 
@@ -114,32 +112,6 @@ function buildSubject(originalSubject: string): string {
   return `RE: ${trimmed}`;
 }
 
-async function withTimeoutAndRetry<T>(
-  fn: () => Promise<T>,
-  label: string,
-): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await Promise.race([
-        fn(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${label} timed out after ${TIMEOUT_MS}ms`)),
-            TIMEOUT_MS,
-          ),
-        ),
-      ]);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-      }
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error(`${label} failed`);
-}
-
 export async function generateDraft(
   email: DraftEmailInput,
   context: DraftContext,
@@ -151,7 +123,7 @@ export async function generateDraft(
 
   const userMessage = buildUserMessage(email, context);
 
-  const response = await withTimeoutAndRetry(
+  const response = await withRetry(
     () =>
       client.messages.create({
         model: MODEL,

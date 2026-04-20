@@ -9,10 +9,9 @@ import { headers } from "next/headers";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { DraftsClient, type DraftRow } from "./drafts-client";
 import { redirect } from "next/navigation";
+import { ALEX_EMAIL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
-
-const ALEX_EMAIL = "alex@alexhollienco.com";
 
 async function fetchDraftsServer(): Promise<DraftRow[]> {
   const h = await headers();

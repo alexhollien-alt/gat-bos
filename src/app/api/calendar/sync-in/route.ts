@@ -3,58 +3,24 @@
 // GCal wins on conflict: every field is overwritten from the inbound payload.
 // Dual auth: Bearer CRON_SECRET for cron + Supabase session (Alex) for manual trigger.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
-import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { listEvents, type CalendarEventOutput } from "@/lib/calendar/client";
+import { verifyBearerOrSession } from "@/lib/api-auth";
+import { logError as sharedLogError } from "@/lib/error-log";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const ROUTE = "/api/calendar/sync-in";
-const ALEX_EMAIL = "alex@alexhollienco.com";
 const PULL_WINDOW_HOURS_BACK = 1;
 const PULL_WINDOW_DAYS_FORWARD = 7;
-
-function verifyBearer(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-async function verifySession(): Promise<boolean> {
-  try {
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.email?.toLowerCase() === ALEX_EMAIL;
-  } catch {
-    return false;
-  }
-}
-
-async function verifyAuth(request: NextRequest): Promise<boolean> {
-  if (verifyBearer(request)) return true;
-  return verifySession();
-}
 
 async function logError(
   error_message: string,
   context: Record<string, unknown>,
   error_code?: number,
 ) {
-  await adminClient
-    .from("error_logs")
-    .insert({ endpoint: ROUTE, error_code: error_code ?? null, error_message, context })
-    .then(() => null, () => null);
+  await sharedLogError(ROUTE, error_message, context, error_code);
 }
 
 interface SyncResult {
@@ -131,7 +97,7 @@ export async function GET(request: NextRequest) {
   if (process.env.ROLLBACK_CAL_SYNC === "true") {
     return NextResponse.json({ error: "Calendar sync disabled" }, { status: 503 });
   }
-  if (!(await verifyAuth(request))) {
+  if (!(await verifyBearerOrSession(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -148,7 +114,7 @@ export async function POST(request: NextRequest) {
   if (process.env.ROLLBACK_CAL_SYNC === "true") {
     return NextResponse.json({ error: "Calendar sync disabled" }, { status: 503 });
   }
-  if (!(await verifyAuth(request))) {
+  if (!(await verifyBearerOrSession(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { sendEmail } from "@/lib/resend";
+import { sendDraft } from "@/lib/resend/client";
+import { ALEX_EMAIL } from "@/lib/constants";
 
 // Dev-only smoke test for Resend wiring. Returns 404 in production so the
 // endpoint does not exist as far as external callers can tell, and so an
@@ -10,8 +11,8 @@ export async function POST() {
   }
 
   try {
-    const data = await sendEmail({
-      to: "alex@alexhollienco.com",
+    const data = await sendDraft({
+      to: ALEX_EMAIL,
       subject: "Hello World",
       html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
     });

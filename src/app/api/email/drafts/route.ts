@@ -1,41 +1,13 @@
 // Phase 1.3.1 Phase 5 -- list active drafts for the /drafts dashboard.
 // GET only. Auth: Supabase session (alex@alexhollienco.com) OR Bearer CRON_SECRET.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
-import { createClient as createServerSupabase } from "@/lib/supabase/server";
+import { verifyBearerOrSession } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
-const ALEX_EMAIL = "alex@alexhollienco.com";
-
-function verifyBearer(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-async function verifySession(): Promise<boolean> {
-  try {
-    const supabase = await createServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.email?.toLowerCase() === ALEX_EMAIL;
-  } catch {
-    return false;
-  }
-}
-
 export async function GET(request: NextRequest) {
-  const ok = verifyBearer(request) || (await verifySession());
+  const ok = await verifyBearerOrSession(request);
   if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);

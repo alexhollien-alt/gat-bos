@@ -2,8 +2,9 @@
 // POST only. Bearer CRON_SECRET. ROLLBACK_DRAFT_GEN gates 503.
 // Idempotent: if a non-discarded draft exists for email_id, return it unchanged.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
+import { verifyCronSecret } from "@/lib/api-auth";
+import { logError } from "@/lib/error-log";
 import {
   detectEscalation,
   generateDraft,
@@ -18,31 +19,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const ROUTE = "/api/email/generate-draft";
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-async function logError(
-  endpoint: string,
-  error_message: string,
-  context: Record<string, unknown>,
-  error_code?: number,
-) {
-  await adminClient
-    .from("error_logs")
-    .insert({ endpoint, error_code: error_code ?? null, error_message, context })
-    .then(() => null, () => null);
-}
 
 interface EmailRow {
   id: string;

@@ -5,14 +5,10 @@
 // Contract:
 //   listEvents(timeMin, timeMax) -- inbound cron pull; GCal wins on merge.
 //   insertEvent(input)           -- outbound write from dashboard; returns gcal_event_id.
-//
-// Retry/timeout match sync-client.ts: 10s timeout, 2 retries @ 1s/2s.
 import { google, type calendar_v3 } from "googleapis";
 import { getOAuth2Client, loadTokens, saveTokens, touchLastUsed } from "@/lib/gmail/oauth";
+import { withRetry } from "@/lib/retry";
 
-const DEFAULT_TIMEOUT_MS = 10_000;
-const MAX_RETRIES = 2;
-const RETRY_DELAYS_MS = [1000, 2000];
 const CALENDAR_ID = "primary";
 
 export interface CalendarAttendee {
@@ -61,29 +57,6 @@ async function getAuthedClient() {
     void saveTokens(t);
   });
   return oauth2;
-}
-
-async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await Promise.race([
-        fn(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${label} timed out after ${DEFAULT_TIMEOUT_MS}ms`)),
-            DEFAULT_TIMEOUT_MS,
-          ),
-        ),
-      ]);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-      }
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error(`${label} failed`);
 }
 
 function parseTimestamp(ts: calendar_v3.Schema$EventDateTime | undefined): Date | null {

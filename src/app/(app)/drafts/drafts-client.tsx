@@ -31,8 +31,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-
-const ALEX_EMAIL = "alex@alexhollienco.com";
+import { ALEX_EMAIL } from "@/lib/constants";
 
 export interface EmailRow {
   id: string;

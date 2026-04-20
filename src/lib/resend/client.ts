@@ -1,11 +1,8 @@
 // Phase 1.3.1 Phase 5 -- Resend send wrapper for draft approval flow.
-// 10s timeout, 2 retries with exponential backoff (1s, 2s).
 // Honors RESEND_SAFE_RECIPIENT to redirect all mail during test/staging.
 import { Resend } from "resend";
+import { withRetry } from "@/lib/retry";
 
-const DEFAULT_TIMEOUT_MS = 10_000;
-const MAX_RETRIES = 2;
-const RETRY_DELAYS_MS = [1000, 2000];
 const DEFAULT_FROM = "Alex Hollien <alex@alexhollienco.com>";
 
 export interface SendDraftInput {
@@ -22,29 +19,6 @@ export interface SendDraftResult {
   messageId: string;
   redirectedTo: string | null;
   originalTo: string;
-}
-
-async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await Promise.race([
-        fn(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${label} timed out after ${DEFAULT_TIMEOUT_MS}ms`)),
-            DEFAULT_TIMEOUT_MS,
-          ),
-        ),
-      ]);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-      }
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error(`${label} failed`);
 }
 
 export async function sendDraft(input: SendDraftInput): Promise<SendDraftResult> {

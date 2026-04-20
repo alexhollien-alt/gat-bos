@@ -1,11 +1,8 @@
-// Phase 1.3.1 Gmail sync client. DB-backed tokens, 10s timeout, 2 retries (1s, 2s).
+// Phase 1.3.1 Gmail sync client. DB-backed tokens.
 // Separate from legacy src/lib/gmail/client.ts which powers /api/inbox/scan on GOOGLE_* env vars.
 import { google, type gmail_v1 } from "googleapis";
 import { getOAuth2Client, loadTokens, saveTokens, touchLastUsed } from "./oauth";
-
-const DEFAULT_TIMEOUT_MS = 10_000;
-const MAX_RETRIES = 2;
-const RETRY_DELAYS_MS = [1000, 2000];
+import { withRetry } from "@/lib/retry";
 
 export interface SyncMessage {
   gmailId: string;
@@ -36,29 +33,6 @@ async function getAuthedClient() {
     void saveTokens(t);
   });
   return oauth2;
-}
-
-async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await Promise.race([
-        fn(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${label} timed out after ${DEFAULT_TIMEOUT_MS}ms`)),
-            DEFAULT_TIMEOUT_MS,
-          ),
-        ),
-      ]);
-    } catch (err) {
-      lastErr = err;
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
-      }
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error(`${label} failed`);
 }
 
 function decodeBody(data?: string | null): string {

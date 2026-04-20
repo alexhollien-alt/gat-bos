@@ -2,28 +2,16 @@
 // GET: cron (requires Bearer CRON_SECRET). POST: manual trigger.
 // Fire-and-forget trigger to /api/email/generate-draft (Phase 4) for each included email.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
 import { fetchMessage, listUnreadSince } from "@/lib/gmail/sync-client";
 import { classifyEmail, extractDomain } from "@/lib/gmail/filter";
+import { verifyCronSecret } from "@/lib/api-auth";
+import { logError } from "@/lib/error-log";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const DEFAULT_SINCE_HOURS = 4;
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
 
 interface ContactRow {
   id: string;
@@ -41,18 +29,6 @@ async function loadContactMap(): Promise<Map<string, string>> {
     if (row.email) map.set(row.email.trim().toLowerCase(), row.id);
   }
   return map;
-}
-
-async function logError(
-  endpoint: string,
-  error_message: string,
-  context: Record<string, unknown>,
-  error_code?: number,
-) {
-  await adminClient
-    .from("error_logs")
-    .insert({ endpoint, error_code: error_code ?? null, error_message, context })
-    .then(() => null, () => null);
 }
 
 const ROUTE = "/api/gmail/sync";

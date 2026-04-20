@@ -1,26 +1,25 @@
 // src/lib/api-auth.ts
-// Bearer-token gate for internal API routes. Skills and other trusted
-// callers must send `Authorization: Bearer <INTERNAL_API_TOKEN>`.
-// Browser code should not call these routes; it queries Supabase directly.
+// Auth helpers for internal API routes.
+//
+// requireApiToken -- Bearer INTERNAL_API_TOKEN gate. Returns NextResponse 401
+//   (or 500 if misconfigured) on failure, null on success. Used by
+//   skill/integration callers.
+//
+// verifyCronSecret -- Bearer CRON_SECRET check. Returns boolean; callers choose
+//   their own 401 response shape. Used by Vercel cron + manual route triggers.
+//
+// verifyAlexSession -- Supabase session gate; true iff signed in as ALEX_EMAIL.
+//
+// verifyBearerOrSession -- combined cron OR session check for dual-auth routes.
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
+import { timingSafeEqual } from "node:crypto";
+import { createClient as createServerSupabase } from "@/lib/supabase/server";
+import { ALEX_EMAIL } from "@/lib/constants";
 
 const TOKEN = process.env.INTERNAL_API_TOKEN;
 
-/**
- * Returns a 401 NextResponse if the request lacks a valid bearer token.
- * Returns null if the request is authorized -- caller proceeds.
- *
- * Usage:
- *   export async function GET(request: NextRequest) {
- *     const unauth = requireApiToken(request);
- *     if (unauth) return unauth;
- *     // ... rest of handler
- *   }
- */
 export function requireApiToken(request: Request): NextResponse | null {
   if (!TOKEN) {
-    // Server is misconfigured. Fail closed.
     return NextResponse.json(
       { error: "Server misconfigured: INTERNAL_API_TOKEN not set" },
       { status: 500 }
@@ -37,7 +36,6 @@ export function requireApiToken(request: Request): NextResponse | null {
   }
 
   const provided = match[1];
-  // Length check first -- timingSafeEqual throws on mismatched lengths.
   if (provided.length !== TOKEN.length) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -48,4 +46,34 @@ export function requireApiToken(request: Request): NextResponse | null {
   }
 
   return null;
+}
+
+export function verifyCronSecret(request: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const auth = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${secret}`;
+  if (auth.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyAlexSession(): Promise<boolean> {
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.email?.toLowerCase() === ALEX_EMAIL;
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyBearerOrSession(request: Request): Promise<boolean> {
+  if (verifyCronSecret(request)) return true;
+  return verifyAlexSession();
 }

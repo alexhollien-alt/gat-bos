@@ -2,39 +2,15 @@
 // POST { email_id }. Bearer CRON_SECRET. Looks up gmail_id from emails row,
 // removes UNREAD + INBOX labels via Gmail API, flips emails.is_unread=false.
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
 import { markReadAndArchive } from "@/lib/gmail/sync-client";
+import { verifyCronSecret } from "@/lib/api-auth";
+import { logError } from "@/lib/error-log";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const ROUTE = "/api/gmail/mark-read";
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-  } catch {
-    return false;
-  }
-}
-
-async function logError(
-  endpoint: string,
-  error_message: string,
-  context: Record<string, unknown>,
-  error_code?: number,
-) {
-  await adminClient
-    .from("error_logs")
-    .insert({ endpoint, error_code: error_code ?? null, error_message, context })
-    .then(() => null, () => null);
-}
 
 export async function POST(request: NextRequest) {
   if (!verifyCronSecret(request)) {

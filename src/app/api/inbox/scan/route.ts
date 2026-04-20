@@ -1,24 +1,15 @@
 // src/app/api/inbox/scan/route.ts
-import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchUnreadThreads } from "@/lib/gmail/client";
 import { scoreThread } from "@/lib/inbox/scorer";
+import { verifyCronSecret } from "@/lib/api-auth";
 
 // Service-role client -- bypasses RLS so the cron can write for any user
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  if (auth.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(auth), Buffer.from(expected));
-}
 
 export async function GET(request: NextRequest) {
   if (!verifyCronSecret(request)) {
