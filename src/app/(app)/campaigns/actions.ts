@@ -23,8 +23,6 @@ export async function createCampaign(formData: unknown) {
 
   const data = parsed.data;
 
-  console.log("[createCampaign] user:", user.id, "data:", data);
-
   const { data: campaign, error } = await supabase
     .from("campaigns")
     .insert({

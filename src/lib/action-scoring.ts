@@ -32,7 +32,7 @@ const STALE_THRESHOLD_DAYS: Record<NonNullable<ContactTier>, number> = {
 // Core scorer
 // ---------------------
 
-export function scoreAction(item: Pick<ActionItem, "type" | "contactTier" | "contactHealthScore" | "daysOverdue">): number {
+function scoreAction(item: Pick<ActionItem, "type" | "contactTier" | "contactHealthScore" | "daysOverdue">): number {
   const typeScore = TYPE_WEIGHT[item.type];
   const tierScore = item.contactTier ? TIER_WEIGHT[item.contactTier] : 0;
   const overdueBonus = Math.min(item.daysOverdue * 2, 20);

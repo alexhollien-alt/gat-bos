@@ -769,11 +769,6 @@ export default function AnalyticsPage() {
     const campaigns = campaignsRes.data || [];
     const completions = completionsRes.data || [];
 
-    // Build enrollment -> campaign map via step -> campaign
-    // We have completions with step_id. We need to join via enrollments to get campaign_id.
-    // Since we don't have that relation here, we proxy by counting per campaign using
-    // enrolled_count from campaigns plus completions that have email_sent_at.
-    // More accurate: fetch enrollments and join.
     const enrollmentsRes = await supabase
       .from("campaign_enrollments")
       .select("id, campaign_id")
@@ -781,13 +776,11 @@ export default function AnalyticsPage() {
 
     const enrollments = enrollmentsRes.data || [];
 
-    // Map enrollment_id -> campaign_id
     const enrollmentToCampaign = new Map<string, string>();
     enrollments.forEach((e) => {
       enrollmentToCampaign.set(e.id, e.campaign_id);
     });
 
-    // Per campaign: count email completions (sent) and opens
     const campaignStats = new Map<
       string,
       { sent: number; opened: number }
