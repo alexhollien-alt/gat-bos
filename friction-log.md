@@ -26,7 +26,11 @@
 **Owner:** Alex
 **Context:** System audit flagged this as pending. **Parked 2026-04-20 per Alex.**
 
----
+### D10. GSD SDK gap: import-existing-plan workflow
+**Question:** Should GSD grow a first-class "import existing plan as a milestone/phase set" command, or do we keep manual execution as the escape hatch when a plan predates GSD bootstrap?
+**Blocker for:** Use of `/gsd-plan-phase` + `/gsd-execute-phase` on plans authored outside `.planning/`.
+**Owner:** Alex
+**Context:** Phase 1.3.2 plan was authored in `~/.claude/plans/phase-1.3.2.md` per the project-wide plan convention, but the CRM is GSD-scoped per `~/crm/CLAUDE.md`. `/gsd-new-project` is explicitly disallowed until 1.3.1 ships (now shipped 2026-04-19), and even with that constraint lifted there is no GSD command that ingests an approved external plan into `~/crm/.planning/` as a structured milestone with phases, success criteria, and acceptance gates. Workarounds: (1) re-author the plan inside GSD via `/gsd-new-milestone`, doubling effort and risking drift between the canonical plan and the GSD copy; (2) run the plan manually using the same Plan/Lock/Execute semantics `/lock` provides outside `~/crm/`. Phase 1.3.2 takes Option B (manual, no GSD) for that reason. Each phase still respects the Rule 5 gate: plan block prints, wait for "lock it" or "go", then execute. Once a real import workflow exists, future plans of this shape can move into `.planning/`.
 
 ## Known issues
 
