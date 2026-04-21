@@ -6,23 +6,17 @@ What we're building. Read at session start alongside `BLOCKERS.md`. Update at se
 
 ## Currently Building
 
-**Agent landing pages at `/agents/[slug]`** -- starting with Julie Jarmiolowski.
+**Session 3 -- Fiona Bigbee + one more A-tier agent on the same `/agents/[slug]` pattern.**
 
-Next step: scaffold the dynamic route, public layout, hero + gallery + contact + referral footer, and ship Julie live on Vercel. Pattern then extends to Fiona Bigbee and one more A-tier agent before the Resend announcement email.
+Next step: pick the third A-tier agent, add their records to the hardcoded `AGENTS` const in `src/app/agents/[slug]/page.tsx` (alongside Julie), drop their headshots into `/public/agents/`, and verify both pages render locally. Referral footer stays Option B (agent-forward) unless Alex flips it. After Session 3, Session 4 builds the Resend announcement email linking to the three live pages.
 
-Session shape:
-1. **Session 1** -- install Build vs Plumbing Protocol, create `BUILD.md` + `BLOCKERS.md`. _(this session)_
-2. **Session 2** -- `/agents/[slug]` route + Julie live.
-3. **Session 3** -- Fiona + one more A-tier agent on the same pattern.
-4. **Session 4** -- Resend announcement email linking to the three live pages.
-
-Pre-session-2 decisions pending:
-- Referral footer copy: option A (verbatim handle) / B (agent-forward, recommended) / C (omit).
-- Julie photo file to drop at `/public/agents/julie-jarmiolowski.jpg`.
-- Julie tagline (or `[PLACEHOLDER]` -> logged to `BLOCKERS.md`).
+Pre-session-3 decisions pending:
+- Third A-tier agent pick (Amber? Denise? Chase?).
+- Whether to resolve Blocker #1 (`contacts.slug/photo_url/tagline` migration) before Session 3 so Fiona + #3 ship DB-backed, OR keep hardcoding and batch the migration as plumbing after Session 4.
 
 ---
 
 ## Built
 
 - [2026-04-21] Build vs Plumbing Protocol installed in `CLAUDE.md`. `BUILD.md` + `BLOCKERS.md` seeded at repo root.
+- [2026-04-21] **Session 2** -- `/agents/[slug]` dynamic route live locally. Middleware public-route bypass extended to `/agents/`. Layout at `src/app/agents/[slug]/layout.tsx` (GAT-wrapped public shell, Kit Screen fonts, dark screen palette). Page at `src/app/agents/[slug]/page.tsx` renders hero + about + gallery-empty-state + contact + referral footer (Option B, agent-forward). Julie hardcoded in `AGENTS` const with temp headshot fallback + `[PLACEHOLDER]` tagline. JSON-LD RealEstateAgent schema + Open Graph metadata wired per SEO minimum. `pnpm typecheck` PASS, `pnpm build` PASS with `/agents/[slug]` prerendered as SSG at `/agents/julie-jarmiolowski`. Three blockers logged (see `BLOCKERS.md`).

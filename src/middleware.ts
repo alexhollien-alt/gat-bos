@@ -35,7 +35,8 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute =
     request.nextUrl.pathname.startsWith("/api/") ||
-    request.nextUrl.pathname.startsWith("/intake");
+    request.nextUrl.pathname.startsWith("/intake") ||
+    request.nextUrl.pathname.startsWith("/agents/");
 
   // Public routes skip auth (API uses service-role key, intake is shareable)
   if (isPublicRoute) {
