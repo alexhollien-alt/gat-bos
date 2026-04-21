@@ -38,10 +38,9 @@ const AGENTS: Record<string, AgentRecord> = {
     email: "julie@kay-grant.com",
     website: "kay-grant.com/julie",
     websiteHref: "https://www.kay-grant.com/julie",
-    // BLOCKER #3: temp fallback -- real Julie headshot not yet in /public/agents/.
-    photoUrl: "/portfolio/andrea-garcia-brochure.png",
-    // BLOCKER #2: [PLACEHOLDER] -- Julie tagline pending copy approval.
-    tagline: "[PLACEHOLDER: Julie tagline pending]",
+    photoUrl: "/agents/julie-jarmiolowski.jpg",
+    tagline:
+      "Optima Camelview resident and realtor, guiding neighbors through one of the Valley's most architectural addresses.",
     bio: "Scottsdale luxury advisor with a decade focused inside Optima Camelview Village. Julie represents buyers and sellers who want a specialist, not a generalist -- someone who knows which floor lines, tower, and view orientation actually trades, and at what price.",
     meta: {
       title: "Julie Jarmiolowski · Optima Camelview Specialist",
@@ -63,8 +62,8 @@ const AGENTS: Record<string, AgentRecord> = {
     website: null,
     websiteHref: null,
     photoUrl: "/agents/fiona-bigbee.jpg",
-    // BLOCKER #5: [PLACEHOLDER] -- Fiona tagline pending copy approval.
-    tagline: "[PLACEHOLDER: Fiona tagline pending]",
+    tagline:
+      "85258 is my backyard. Your next move starts with the agent who knows every block.",
     bio: "Scottsdale agent with Coldwell Banker Realty, focused on the 85258 zip in North Scottsdale. Fiona runs a direct-mail farming program on her territory, representing buyers and sellers who want a neighborhood specialist paying close attention to one market, its resale patterns, and its pricing rhythm.",
     meta: {
       title: "Fiona Bigbee · North Scottsdale Specialist",
@@ -86,8 +85,8 @@ const AGENTS: Record<string, AgentRecord> = {
     website: null,
     websiteHref: null,
     photoUrl: "/agents/denise-van-den-bossche.jpg",
-    // BLOCKER #5: [PLACEHOLDER] -- Denise tagline pending copy approval.
-    tagline: "[PLACEHOLDER: Denise tagline pending]",
+    tagline:
+      "Paradise Valley and Scottsdale, handled quietly. Discretion is the service.",
     bio: "Paradise Valley and Scottsdale advisor with the Exec-Elite team at Realty Executives Arizona Territory. Denise represents sellers who need discrete, tailored marketing and buyers who want a long view on neighborhood-specific trades. Partnered with Norm Hampton on select listings.",
     meta: {
       title: "Denise van den Bossche · Paradise Valley + Scottsdale Advisor",
@@ -288,9 +287,5 @@ export default async function AgentLandingPage({
 }
 
 // Remaining placeholders (logged to BLOCKERS.md):
-// - [PLACEHOLDER: Julie tagline pending] in AGENTS["julie-jarmiolowski"].tagline  (Blocker #2)
-// - [PLACEHOLDER: Fiona tagline pending] in AGENTS["fiona-bigbee"].tagline  (Blocker #5)
-// - [PLACEHOLDER: Denise tagline pending] in AGENTS["denise-van-den-bossche"].tagline  (Blocker #5)
-// - Temp hero photo (/portfolio/andrea-garcia-brochure.png); real Julie headshot TBD at /public/agents/julie-jarmiolowski.jpg  (Blocker #3)
 // - Fiona + Denise phone/website fields null; CONTACT.md source does not have them  (Blocker #4)
 // - contacts table slug/photo_url/tagline columns TBD; agent records hardcoded until migration lands  (Blocker #1)
