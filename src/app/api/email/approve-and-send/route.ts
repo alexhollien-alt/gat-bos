@@ -38,6 +38,7 @@ interface DraftRow {
   status: string;
   expires_at: string;
   revisions_count: number;
+  escalation_flag: "marlene" | "agent_followup" | null;
   audit_log: AuditLog | null;
   metadata: Record<string, unknown> | null;
 }
@@ -67,6 +68,23 @@ function appendAuditEvent(audit: AuditLog | null, event: AuditEvent): AuditLog {
   return {
     event_sequence: [...(base.event_sequence ?? []), event],
     metadata: base.metadata ?? {},
+  };
+}
+
+// Phase 1.3.2-A: produce the escalation lifecycle event for an action on a
+// flagged draft. Discard clears the escalation; everything else acknowledges
+// it. Returns null on un-flagged drafts so callers can skip the prepend.
+function escalationLifecycleEvent(
+  flag: DraftRow["escalation_flag"],
+  action: Action,
+  timestamp: string,
+): AuditEvent | null {
+  if (!flag) return null;
+  return {
+    timestamp,
+    event: action === "discard" ? "escalation_cleared" : "escalation_acknowledged",
+    escalation_flag: flag,
+    action,
   };
 }
 
@@ -135,7 +153,7 @@ export async function POST(request: NextRequest) {
   const { data: draft, error: draftErr } = await adminClient
     .from("email_drafts")
     .select(
-      "id, email_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, audit_log, metadata",
+      "id, email_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, escalation_flag, audit_log, metadata",
     )
     .eq("id", draftId)
     .maybeSingle<DraftRow>();
@@ -162,8 +180,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "discard") {
-    const audit = appendAuditEvent(draft.audit_log, {
-      timestamp: now.toISOString(),
+    const ts = now.toISOString();
+    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
+    const baseAudit = escalationEvent
+      ? appendAuditEvent(draft.audit_log, escalationEvent)
+      : draft.audit_log;
+    const audit = appendAuditEvent(baseAudit, {
+      timestamp: ts,
       event: "user_discarded",
     });
     const { error: updErr } = await adminClient
@@ -184,8 +207,13 @@ export async function POST(request: NextRequest) {
     }
     const newSubject = body.revised_subject?.trim() || draft.draft_subject;
     const newExpiresAt = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
-    const audit = appendAuditEvent(draft.audit_log, {
-      timestamp: now.toISOString(),
+    const ts = now.toISOString();
+    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
+    const baseAudit = escalationEvent
+      ? appendAuditEvent(draft.audit_log, escalationEvent)
+      : draft.audit_log;
+    const audit = appendAuditEvent(baseAudit, {
+      timestamp: ts,
       event: "user_revised",
       previous_body: draft.draft_body_plain,
       previous_subject: draft.draft_subject,
@@ -237,8 +265,13 @@ export async function POST(request: NextRequest) {
   const text = draft.draft_body_plain ?? htmlToPlain(html);
 
   if (action === "send_now") {
-    const approvedAudit = appendAuditEvent(draft.audit_log, {
-      timestamp: now.toISOString(),
+    const ts = now.toISOString();
+    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
+    const baseAudit = escalationEvent
+      ? appendAuditEvent(draft.audit_log, escalationEvent)
+      : draft.audit_log;
+    const approvedAudit = appendAuditEvent(baseAudit, {
+      timestamp: ts,
       event: "user_approved",
       action: "send_now",
     });
@@ -322,8 +355,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "create_gmail_draft") {
-    const approvedAudit = appendAuditEvent(draft.audit_log, {
-      timestamp: now.toISOString(),
+    const ts = now.toISOString();
+    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
+    const baseAudit = escalationEvent
+      ? appendAuditEvent(draft.audit_log, escalationEvent)
+      : draft.audit_log;
+    const approvedAudit = appendAuditEvent(baseAudit, {
+      timestamp: ts,
       event: "user_approved",
       action: "create_gmail_draft",
     });

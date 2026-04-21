@@ -114,10 +114,21 @@ function useCountdown(targetIso: string) {
   };
 }
 
+// Escalation badge colors pull from globals.css Kit Screen tokens.
+// --status-warning (#eab308 amber) for Marlene escrow surfacing.
+// --status-info (#3b82f6 sky) for BD prospect surfacing.
+// Badges use outline variant + bordered foreground tint so the alert reads
+// without the heavy fill of the destructive variant.
+type EscalationTone = "warning" | "info";
+const ESCALATION_BADGE_CLASS: Record<EscalationTone, string> = {
+  warning:
+    "border-[var(--status-warning)] text-[var(--status-warning)] bg-[var(--status-warning)]/10",
+  info: "border-[var(--status-info)] text-[var(--status-info)] bg-[var(--status-info)]/10",
+};
+
 function escalationLabel(flag: DraftRow["escalation_flag"]) {
-  if (flag === "marlene") return { text: "Marlene escalation", tone: "danger" as const };
-  if (flag === "agent_followup")
-    return { text: "Agent follow-up", tone: "info" as const };
+  if (flag === "marlene") return { text: "Marlene escrow", tone: "warning" as const };
+  if (flag === "agent_followup") return { text: "BD prospect", tone: "info" as const };
   return null;
 }
 
@@ -318,10 +329,10 @@ function DraftListItem({
       {escalation ? (
         <div className="mt-2">
           <Badge
-            variant={escalation.tone === "danger" ? "destructive" : "secondary"}
-            className="text-[10px]"
+            variant="outline"
+            className={`text-[10px] ${ESCALATION_BADGE_CLASS[escalation.tone]}`}
           >
-            {escalation.tone === "danger" ? (
+            {escalation.tone === "warning" ? (
               <AlertTriangle className="h-3 w-3 mr-1" />
             ) : (
               <Briefcase className="h-3 w-3 mr-1" />
@@ -400,8 +411,8 @@ function DraftDetail({
             {escalation ? (
               <div className="mt-1">
                 <Badge
-                  variant={escalation.tone === "danger" ? "destructive" : "secondary"}
-                  className="text-[10px]"
+                  variant="outline"
+                  className={`text-[10px] ${ESCALATION_BADGE_CLASS[escalation.tone]}`}
                 >
                   {escalation.text}
                 </Badge>

@@ -195,6 +195,20 @@ async function handleGenerate(request: NextRequest) {
     escalation_matched_labels: escalation.matched_labels,
   };
 
+  // Phase 1.3.2-A: emit escalation_surfaced once per draft, at the moment the
+  // flag stamps onto the row. The /drafts dashboard renders the badge from the
+  // first realtime push, so the draft row's existence == surfaced.
+  const eventSequence: Array<Record<string, unknown>> = [auditEvent];
+  if (escalation.flag) {
+    eventSequence.push({
+      timestamp: generatedAt,
+      event: "escalation_surfaced",
+      escalation_flag: escalation.flag,
+      escalation_reason: escalation.reason,
+      escalation_matched_labels: escalation.matched_labels,
+    });
+  }
+
   const auditMetadata = {
     original_email_id: email.id,
     original_from: email.from_email,
@@ -217,7 +231,7 @@ async function handleGenerate(request: NextRequest) {
       generated_at: generatedAt,
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       audit_log: {
-        event_sequence: [auditEvent],
+        event_sequence: eventSequence,
         metadata: auditMetadata,
       },
       metadata: {
