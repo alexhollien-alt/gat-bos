@@ -8,46 +8,23 @@
 
 ## Open decisions
 
-### D3. contact_tags table design
-**Question:** Many-to-many table with FK to contacts + tags, or JSON array column on contacts with GIN index?
-**Blocker for:** Contact filtering, segmentation, campaign targeting
-**Owner:** Alex
-**Context:** Deferred during Phase 1.2 pending proper design
-
 ### D4. Obsidian vault consolidation
 **Question:** Single vault at ~/Documents/Alex Hub(Obs)/ with Supabase as durable write layer, or keep dual-vault (.claude/knowledge-base + Alex Hub)?
 **Blocker for:** RAG wiki stability, knowledge base reliability
 **Owner:** Alex
-**Context:** Two vaults currently exist. Recommended consolidation pending.
-
-### D5. Phase 1.3.2 auto-send vs approval-required agents
-**Question:** Which A-tier agents are pre-designated auto-send candidates (skip approval gate) vs always-require-approval?
-**Blocker for:** Phase 1.3.2 escalation flag logic
-**Owner:** Alex
-**Context:** Currently spec says all drafts require approval. Auto-send tier is a Phase 2 question but worth deciding before 1.3.2 ships.
-
-### D6. Voice memo storage
-**Question:** Store raw audio in Supabase Storage, or transcribe immediately and discard audio?
-**Blocker for:** Phase 2.3 voice memo capture
-**Owner:** Alex
-**Context:** Privacy and cost implications on both sides.
-
-### D7. Agent portal auth model
-**Question:** Supabase Auth with magic link, or separate auth tier (Clerk, Auth0) for agent-facing surface?
-**Blocker for:** Phase 3.3 agent portal go-live
-**Owner:** Alex
+**Context:** Two vaults currently exist. Recommended consolidation pending. **Parked 2026-04-20 per Alex.**
 
 ### D8. Title file Kanban scope
 **Question:** Build a title file lifecycle Kanban (contract received through recorded) inside GAT-BOS, or keep that in SoftPro/Qualia and only pull summary data in?
 **Blocker for:** Phase 2 or Phase 3 scope decision
 **Owner:** Alex
-**Context:** Title runs on files not deals. Current schema doesn't model files as a first-class entity.
+**Context:** Title runs on files not deals. Current schema doesn't model files as a first-class entity. **Parked 2026-04-20 per Alex.**
 
 ### D9. Workspace forks handling
 **Question:** Fold all workspace forks into parent skills as evals/ subdirectories, or keep them separate?
 **Blocker for:** Skill system audit cleanup
 **Owner:** Alex
-**Context:** System audit flagged this as pending.
+**Context:** System audit flagged this as pending. **Parked 2026-04-20 per Alex.**
 
 ---
 
@@ -84,6 +61,14 @@
 D1. DI trial outcome. Resolved 2026-04-20. Decision: extended through 2026-05-28 per update logged 2026-04-16 in project_di_trial.md. /tmp/di-build/ clones retained through new review date.
 
 D2. ESLint exhaustive-deps strategy. Resolved 2026-04-20. Decision: all warnings fixed via Bucket B (useMemo stabilization) in cleanup passes 9-10 (commits 2feb16e, 2d59f61). No suppressions added. pnpm lint clean.
+
+D3. contact_tags table design. Resolved 2026-04-20. Decision: JSON array column on contacts + GIN index at current scale. Revisit when tag-filtered queries become a measurable bottleneck (slow segmentation scans or campaign target queries).
+
+D6. Voice memo storage. Resolved 2026-04-20. Decision: transcribe immediately and discard raw audio. Retain audio only when replay is ever needed (not currently a requirement). Keeps storage cost and privacy surface minimal.
+
+D7. Agent portal auth model. Resolved 2026-04-20. Decision: Supabase Auth with magic link. Simpler, no added vendor, consistent with existing CRM auth stack.
+
+D5. Phase 1.3.2 auto-send vs approval-required agents. Resolved 2026-04-20. Decision: no one gets auto-send in 1.3.2. Approval gate stays on for every agent through one full cycle so we can observe where AI drafts actually land under volume. Auto-send promotion is a 1.3.3 decision, made per-agent after the observation window. Pre-named promotion candidates (for 1.3.3 evaluation, not yet active): Julie Jarmiolowski, Joey Hollien, Amber Hollien. Fiona Bigbee stays gated indefinitely because EDDM-focused sends are campaign-specific rather than routine. Phase 1.3.2 spec (to be written in its own plan) inherits this: escalation flag logic assumes approval-required for all; no auto-send branch in 1.3.2 code path.
 
 ---
 

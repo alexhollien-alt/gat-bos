@@ -9,8 +9,8 @@
 ## Hot queue (next 30 days)
 
 - [ ] ESLint exhaustive-deps warnings resolved before production push
-- [ ] Phase 1.3.1 Gmail OAuth app created in GCP
-- [ ] Phase 1.3.1 endpoints built and tested end-to-end
+- [x] Phase 1.3.1 Gmail OAuth app created in GCP
+- [x] Phase 1.3.1 endpoints built and tested end-to-end
 - [ ] DI trial review decision locked (commit, rollback, or extend)
 - [ ] re-email-design skill Mailerlite references stripped
 - [ ] re-email-design skill #C8102E replaced with canonical #b31a35
