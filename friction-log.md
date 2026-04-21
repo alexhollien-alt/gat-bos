@@ -8,18 +8,6 @@
 
 ## Open decisions
 
-### D1. DI trial outcome
-**Question:** After April 28, do I commit the DI integration to individual skills permanently, roll back to pre-trial state using /tmp/di-build/ clones, or extend the trial?
-**Blocker for:** Skill system stability, future skill rewrites
-**Owner:** Alex
-**Target decision date:** April 28, 2026
-
-### D2. ESLint exhaustive-deps strategy
-**Question:** Fix all warnings before production push, or suppress known-safe ones with eslint-disable-next-line and document them?
-**Blocker for:** Phase 1.2 production deployment
-**Owner:** Alex
-**Target decision date:** April 27, 2026
-
 ### D3. contact_tags table design
 **Question:** Many-to-many table with FK to contacts + tags, or JSON array column on contacts with GIN index?
 **Blocker for:** Contact filtering, segmentation, campaign targeting
@@ -93,7 +81,9 @@
 
 ## Resolved
 
-(Items move here when decided. Include date + decision.)
+D1. DI trial outcome. Resolved 2026-04-20. Decision: extended through 2026-05-28 per update logged 2026-04-16 in project_di_trial.md. /tmp/di-build/ clones retained through new review date.
+
+D2. ESLint exhaustive-deps strategy. Resolved 2026-04-20. Decision: all warnings fixed via Bucket B (useMemo stabilization) in cleanup passes 9-10 (commits 2feb16e, 2d59f61). No suppressions added. pnpm lint clean.
 
 ---
 

@@ -9,7 +9,7 @@
 
 ## Current Phase
 
-**Phase 1.3.1** — Gmail integration build. Spec complete, implementation pending. Deadline pressure: DI trial ends April 28.
+**Phase 1.3.1** -- Gmail integration build. Spec complete, implementation pending. Deadline pressure: DI trial ends April 28.
 
 ---
 
@@ -30,17 +30,37 @@
 - [x] Today View code-complete
 - [x] Task 13 Contacts UX Polish merged
 - [x] Contacts page grouped by tier (25 rows per section, Untiered at bottom)
-- [ ] Deployed to production (blocked by ESLint warnings)
+- [x] Deployed to production (2026-04-20)
 
 ### 1.3 Gmail Integration
+_Shipped end-to-end on 2026-04-19 (commit 85bf0ef)._
+
 - [x] Phase 1.3.1 spec locked (ultraplan review complete)
-- [ ] Gmail OAuth credentials configured
-- [ ] /api/email/sync endpoint built
-- [ ] /api/email/generate-draft endpoint built
-- [ ] /api/email/approve-and-send endpoint built
-- [ ] Audit log writing verified
+- [x] Gmail OAuth credentials configured
+- [x] /api/email/sync endpoint built
+- [x] /api/email/generate-draft endpoint built
+- [x] /api/email/approve-and-send endpoint built
+- [x] Audit log writing verified
 - [ ] Phase 1.3.2 escalation flags (Marlene routing, agent prospect flag)
 - [ ] Phase 1.3.3 manual approval dashboard UI
+
+### 1.4 Projects Data Model
+- [x] projects + project_touchpoints tables with soft-delete
+- [x] RLS verified via negative-user test (2026-04-18)
+- [x] /api/projects/* routes live
+- [x] Dashboard tile: files-in-flight, files-closed
+
+### 1.5 Calendar Foundation
+- [x] Two-way Google Calendar sync shipped (Phase 7, 2026-04-18)
+- [x] Events table wired
+- [ ] Event push to agents (deferred to Phase 2.4)
+
+### 1.6 Dashboard + Realtime
+- [x] Unified dashboard cards (drafts-pending, projects-active, touchpoints-due)
+- [x] Dashboard tiles: cold-agents, new-listings
+- [x] Supabase Realtime wired on email_drafts
+- [x] Lighthouse 100/100 on /today
+- [x] Phase 9 prod acceptance gates PASS
 
 ---
 
@@ -72,8 +92,10 @@
 - [ ] Claude processing + review + approve flow
 
 ### 2.4 Calendar Sync
+_Shipped Phase 7, 2026-04-18._
+
 - [x] Google Calendar MCP authenticated
-- [ ] Two-way sync with GAT-BOS events table
+- [x] Two-way sync with GAT-BOS events table
 - [ ] Event push to agents (open house, BNI invites)
 
 ---
@@ -107,9 +129,9 @@ Deferred until Phases 1 through 3 are fully live. Candidates include ambient Cla
 
 | Date | Item | Status |
 |---|---|---|
-| April 28, 2026 | DI trial review — commit or rollback | [CHECK] |
-| April 28, 2026 | ESLint exhaustive-deps warnings cleared | [CHECK] |
-| April 28, 2026 | Phase 1 contacts deployed to production | [CHECK] |
+| April 28, 2026 | DI trial review, commit or rollback | [x] Extended to 2026-05-28 on 2026-04-16 |
+| April 28, 2026 | ESLint exhaustive-deps warnings cleared | [x] Cleared via cleanup passes 9-10 (commits 2feb16e, 2d59f61) |
+| April 28, 2026 | Phase 1 contacts deployed to production | [x] Deployed 2026-04-20, aliased to gat-bos.vercel.app |
 
 ---
 
@@ -117,7 +139,7 @@ Deferred until Phases 1 through 3 are fully live. Candidates include ambient Cla
 
 | Phase | Target |
 |---|---|
-| 1.3.1 Gmail MVP | Early May 2026 |
+| 1.3.1 Gmail MVP | Shipped 2026-04-19 (target was early May) |
 | 1.3.2 Escalation + dashboard | Mid May 2026 |
 | 2.2 First Weekly Edge live | [PLACEHOLDER: needs confirm] |
 | 2.3 Voice memo capture | [PLACEHOLDER: needs confirm] |
@@ -132,3 +154,9 @@ Deferred until Phases 1 through 3 are fully live. Candidates include ambient Cla
 2. Never delete a phase. Move to a "Deferred" section if dropped.
 3. If a new item comes up mid-phase, add it to BACKLOG.md first. Promote to ROADMAP only when scheduled.
 4. No em dashes.
+
+---
+
+## Remaining placeholders
+
+Four unresolved placeholder markers remain in the Ship Target Dates table (rows for Phase 2.2 First Weekly Edge live, 2.3 Voice memo capture, 2.4 Calendar two-way sync, 3.3 Agent portal v1 live). All four are pending Alex's confirmation of ship dates.
