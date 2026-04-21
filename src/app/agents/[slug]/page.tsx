@@ -9,11 +9,11 @@ type AgentRecord = {
   title: string;
   specialty: string;
   market: string;
-  phone: string;
-  phoneHref: string;
+  phone: string | null;
+  phoneHref: string | null;
   email: string;
-  website: string;
-  websiteHref: string;
+  website: string | null;
+  websiteHref: string | null;
   photoUrl: string;
   tagline: string;
   bio: string;
@@ -47,6 +47,52 @@ const AGENTS: Record<string, AgentRecord> = {
       title: "Julie Jarmiolowski · Optima Camelview Specialist",
       description:
         "Scottsdale luxury advisor specializing in Optima Camelview Village and Old Town Scottsdale condos. My Home Group (Kay-Grant Group).",
+    },
+  },
+  "fiona-bigbee": {
+    slug: "fiona-bigbee",
+    name: "Fiona Bigbee",
+    brokerage: "Coldwell Banker Realty",
+    title: "Real Estate Agent",
+    specialty: "North Scottsdale · 85258",
+    market: "Scottsdale",
+    // BLOCKER #4: Fiona phone + website not in CONTACT.md source.
+    phone: null,
+    phoneHref: null,
+    email: "fiona.bigbee@gmail.com",
+    website: null,
+    websiteHref: null,
+    photoUrl: "/agents/fiona-bigbee.jpg",
+    // BLOCKER #5: [PLACEHOLDER] -- Fiona tagline pending copy approval.
+    tagline: "[PLACEHOLDER: Fiona tagline pending]",
+    bio: "Scottsdale agent with Coldwell Banker Realty, focused on the 85258 zip in North Scottsdale. Fiona runs a direct-mail farming program on her territory, representing buyers and sellers who want a neighborhood specialist paying close attention to one market, its resale patterns, and its pricing rhythm.",
+    meta: {
+      title: "Fiona Bigbee · North Scottsdale Specialist",
+      description:
+        "North Scottsdale real estate agent focused on the 85258 zip. Coldwell Banker Realty.",
+    },
+  },
+  "denise-van-den-bossche": {
+    slug: "denise-van-den-bossche",
+    name: "Denise van den Bossche",
+    brokerage: "Realty Executives Arizona Territory -- Exec-Elite",
+    title: "Real Estate Advisor",
+    specialty: "Paradise Valley · Scottsdale · Arcadia",
+    market: "Paradise Valley · Scottsdale · Arcadia",
+    // BLOCKER #4: Denise phone + website not in CONTACT.md source.
+    phone: null,
+    phoneHref: null,
+    email: "denisevdb@exec-elite.com",
+    website: null,
+    websiteHref: null,
+    photoUrl: "/agents/denise-van-den-bossche.jpg",
+    // BLOCKER #5: [PLACEHOLDER] -- Denise tagline pending copy approval.
+    tagline: "[PLACEHOLDER: Denise tagline pending]",
+    bio: "Paradise Valley and Scottsdale advisor with the Exec-Elite team at Realty Executives Arizona Territory. Denise represents sellers who need discrete, tailored marketing and buyers who want a long view on neighborhood-specific trades. Partnered with Norm Hampton on select listings.",
+    meta: {
+      title: "Denise van den Bossche · Paradise Valley + Scottsdale Advisor",
+      description:
+        "Paradise Valley and Scottsdale real estate advisor with the Exec-Elite team at Realty Executives Arizona Territory.",
     },
   },
 };
@@ -146,7 +192,7 @@ export default async function AgentLandingPage({
       <SectionShell padY="md" maxWidth="container-narrow">
         <div className="max-w-2xl">
           <Eyebrow tone="muted" className="mb-4">
-            About Julie
+            About {agent.name.split(" ")[0]}
           </Eyebrow>
           <p className="font-sans text-[16px] sm:text-[17px] text-white/70 leading-[1.7]">
             {agent.bio}
@@ -172,33 +218,37 @@ export default async function AgentLandingPage({
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
               <Eyebrow tone="crimson" className="mb-3">
-                Work with Julie
+                Work with {agent.name.split(" ")[0]}
               </Eyebrow>
               <h2 className="font-display text-[26px] sm:text-[32px] text-white leading-[1.15] tracking-[-0.015em]">
                 {agent.brokerage}
               </h2>
             </div>
             <div className="flex flex-col gap-1.5">
-              <a
-                href={agent.phoneHref}
-                className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 hover:text-[color:var(--accent-red)] transition-colors"
-              >
-                {agent.phone}
-              </a>
+              {agent.phone && agent.phoneHref && (
+                <a
+                  href={agent.phoneHref}
+                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 hover:text-[color:var(--accent-red)] transition-colors"
+                >
+                  {agent.phone}
+                </a>
+              )}
               <a
                 href={`mailto:${agent.email}`}
                 className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 hover:text-[color:var(--accent-red)] transition-colors"
               >
                 {agent.email}
               </a>
-              <a
-                href={agent.websiteHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 hover:text-[color:var(--accent-red)] transition-colors"
-              >
-                {agent.website}
-              </a>
+              {agent.website && agent.websiteHref && (
+                <a
+                  href={agent.websiteHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 hover:text-[color:var(--accent-red)] transition-colors"
+                >
+                  {agent.website}
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -238,6 +288,9 @@ export default async function AgentLandingPage({
 }
 
 // Remaining placeholders (logged to BLOCKERS.md):
-// - [PLACEHOLDER: Julie tagline pending] in AGENTS["julie-jarmiolowski"].tagline
-// - Temp hero photo (/portfolio/andrea-garcia-brochure.png); real Julie headshot TBD at /public/agents/julie-jarmiolowski.jpg
-// - contacts table slug/photo_url/tagline columns TBD; agent records hardcoded until migration lands
+// - [PLACEHOLDER: Julie tagline pending] in AGENTS["julie-jarmiolowski"].tagline  (Blocker #2)
+// - [PLACEHOLDER: Fiona tagline pending] in AGENTS["fiona-bigbee"].tagline  (Blocker #5)
+// - [PLACEHOLDER: Denise tagline pending] in AGENTS["denise-van-den-bossche"].tagline  (Blocker #5)
+// - Temp hero photo (/portfolio/andrea-garcia-brochure.png); real Julie headshot TBD at /public/agents/julie-jarmiolowski.jpg  (Blocker #3)
+// - Fiona + Denise phone/website fields null; CONTACT.md source does not have them  (Blocker #4)
+// - contacts table slug/photo_url/tagline columns TBD; agent records hardcoded until migration lands  (Blocker #1)
