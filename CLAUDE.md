@@ -95,3 +95,32 @@ Inside `~/crm/`, GSD (`get-shit-done`) replaces `/lock` as the execution protoco
 - Do not run `/gsd-new-project` until Gmail MVP 1.3.1 ships. The plan at `~/.claude/plans/gat-bos-1.3.1-gmail-mvp.md` is the current active plan and GSD project bootstrap would collide with it.
 - Design deliverables (re-print-design, re-email-design, re-landing-page, re-listing-presentation, listing-pipeline, canva-handoff) keep three-draft gates per Rule 6 and stay outside GSD. Those skills do not fire inside `~/crm/` anyway.
 - Rollback: `cd ~/crm && git reset --hard pre-gsd-2026-04-19` plus `rm -rf ~/crm/.planning ~/crm/.claude/get-shit-done ~/crm/.claude/hooks/gsd-*` and settings.json revert.
+
+---
+
+## Build vs Plumbing Protocol
+
+Every session in this repo begins by classifying the work and reading two files at repo root: `BUILD.md` (what we're building) and `BLOCKERS.md` (broken integrations waiting for a dedicated fix).
+
+### Session start
+
+1. Ask (or infer from the prompt): **build or plumbing?**
+   - **Build** = new product surface, feature work, UI, copy. Proceeds against `BUILD.md`.
+   - **Plumbing** = migrations, schema fixes, auth, middleware, integrations, resolving items from `BLOCKERS.md`.
+2. Read `BUILD.md` (current build + what's shipped) and `BLOCKERS.md` (open items).
+3. Do not mix. A build session does not resolve plumbing; a plumbing session does not ship new UI. If a build session hits a broken integration, **fill-and-flag** (hardcode a fallback, log to `BLOCKERS.md`) and keep building.
+
+### During a build session
+
+- When a missing table column, unverified Supabase view, unreachable API, or unwarmed email sender blocks progress, log it to `BLOCKERS.md` with a timestamp, what's broken, where it lives (file/line), and what's needed to fix it. Then hardcode a fallback and keep going.
+- Do not refactor, build new skills, or audit adjacent systems mid-session. If an urge surfaces, write a line to `LATER.md` (create at repo root if missing) and return to the current build.
+
+### Session end
+
+- Update `BUILD.md`: move anything completed this session into `## Built` with the date. Keep `## Currently Building` reflecting the next step's exact state.
+- Any new blockers logged this session stay in `BLOCKERS.md` `## Open` until a dedicated plumbing session resolves them. Resolutions move to `## Resolved` with the date and the commit that closed them.
+- `/clear` before the next session so the protocol question fires fresh.
+
+### Resolving blockers
+
+A plumbing session picks one item (or a small cluster) from `BLOCKERS.md` `## Open`, fixes the underlying integration (migration, env var, auth config), removes the hardcoded fallback at the flagged file/line, verifies `pnpm typecheck && pnpm build`, and moves the item to `## Resolved`.
