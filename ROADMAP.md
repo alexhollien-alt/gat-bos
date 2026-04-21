@@ -9,7 +9,7 @@
 
 ## Current Phase
 
-**Phase 1.3.1** -- Gmail integration build. Spec complete, implementation pending. Deadline pressure: DI trial ends April 28.
+**Phase 1.3.2-D** -- Observation window (live). A/B/C shipped; D runs on calendar time, >=14 days + >=50 terminal drafts before Phase E readout.
 
 ---
 
@@ -41,7 +41,7 @@ _Shipped end-to-end on 2026-04-19 (commit 85bf0ef)._
 - [x] /api/email/generate-draft endpoint built
 - [x] /api/email/approve-and-send endpoint built
 - [x] Audit log writing verified
-- [ ] Phase 1.3.2 escalation flags (Marlene routing, agent prospect flag)
+- [x] Phase 1.3.2 escalation flags (Marlene routing, agent prospect flag)
 - [ ] Phase 1.3.3 manual approval dashboard UI
 
 ### 1.4 Projects Data Model

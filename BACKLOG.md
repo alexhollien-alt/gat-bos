@@ -8,13 +8,13 @@
 
 ## Hot queue (next 30 days)
 
-- [ ] ESLint exhaustive-deps warnings resolved before production push
+- [x] ESLint exhaustive-deps warnings resolved before production push
 - [x] Phase 1.3.1 Gmail OAuth app created in GCP
 - [x] Phase 1.3.1 endpoints built and tested end-to-end
 - [ ] DI trial review decision locked (commit, rollback, or extend)
 - [ ] re-email-design skill Mailerlite references stripped
 - [ ] re-email-design skill #C8102E replaced with canonical #b31a35
-- [ ] Playfair Display drift in design-tokens files repaired (HIGH severity from system audit)
+- [x] Playfair Display drift in design-tokens files repaired (HIGH severity from system audit)
 
 ## CRM platform
 
