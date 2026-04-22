@@ -6,11 +6,11 @@ What we're building. Read at session start alongside `BLOCKERS.md`. Update at se
 
 ## Currently Building
 
-**Next session, recommended: BUILD -- Resend announcement email linking to the three live `/agents/<slug>` pages.**
+**Next session, recommended: BUILD -- Universal agent welcome email (Kit 1, three-draft gates, practice-send).**
+
+Scope, corrected 2026-04-22: This is NOT an announcement email linking the three live `/agents/<slug>` pages. It is a **single, universal welcome email**, identical for every recipient agent, that showcases the full GAT-BOS resource system -- what Alex offers every agent in his book (design, marketing materials, cadence, systems, handoffs). No other agents' names, no agent-specific incentives, no per-agent landing page links, no listing content. The email is about Alex's system, not about any individual agent. Alex has notes from 2026-04-21 night that spec the resource list to highlight -- load those before planning the three drafts.
 
 Capture downstream promotion now wired (Session 6). Captures earn their keep: `/captures` Process button writes real `interactions` / `follow_ups` / `material_requests` rows, links back to the target, idempotent on re-process, guarded when a contact is missing.
-
-**Queued, not superseded:** Resend announcement email (Kit 1 -- Instrument Serif + Inter, three agent cards, three-draft gates, practice-send). Next build session.
 
 ---
 
