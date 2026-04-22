@@ -49,7 +49,7 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - `/captures` UI at `src/app/(app)/captures/captures-client.tsx` now reads the payload fields and renders "Promoted → {label} (view)" linked to `/contacts/<id>` (interactions + follow_ups) or `/materials` (tickets). Process button is swapped for a "Needs contact" or "Nothing to promote" pill when the capture can't promote.
 - `pnpm typecheck` PASS, `pnpm lint` PASS (zero warnings), `pnpm build` PASS (`/captures` 2.39 kB, 117 kB first-load).
 - New Blocker #7 logged (inline contact picker) for v2 follow-up.
-- Closing commit: [PLACEHOLDER: filled in at ship].
+- Closing commit: `b56a5b0`.
 
 ### [2026-04-21] Julie headshot not in `/public/agents/` -- RESOLVED 2026-04-21
 - Converted `~/Documents/Agents/Julie Jarmiolowski/Kaygrant/Julie_2022_Headshot_(1).png` (157KB PNG) to `/public/agents/julie-jarmiolowski.jpg` via `sips -s format jpeg -s formatOptions 85 -Z 800` (800×798 JPEG, 179KB).
