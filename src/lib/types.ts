@@ -443,9 +443,14 @@ export type ParsedIntent =
   | "note"
   | "unprocessed";
 
+export type PromotedTarget = "interaction" | "follow_up" | "ticket";
+
 export interface CapturePayload {
   candidate_contact_ids?: string[];
   intent_keyword?: string;
+  promoted_to?: PromotedTarget;
+  promoted_id?: string;
+  promoted_at?: string;
   [key: string]: unknown;
 }
 

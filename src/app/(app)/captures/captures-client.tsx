@@ -5,12 +5,18 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Capture, ParsedIntent } from "@/lib/types";
+import type { Capture, ParsedIntent, PromotedTarget } from "@/lib/types";
 import { PARSED_INTENT_LABELS } from "@/lib/types";
 
 interface CapturesClientProps {
   initial: Capture[];
 }
+
+const PROMOTED_LABELS: Record<PromotedTarget, string> = {
+  interaction: "Interaction",
+  follow_up: "Follow-up",
+  ticket: "Ticket",
+};
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
@@ -38,6 +44,18 @@ function intentBadgeColor(intent: ParsedIntent | null): string {
   }
 }
 
+function needsContact(intent: ParsedIntent | null): boolean {
+  return intent === "interaction" || intent === "note" || intent === "follow_up";
+}
+
+function promotedTargetUrl(
+  target: PromotedTarget,
+  contactId: string | null
+): string {
+  if (target === "ticket") return "/materials";
+  return contactId ? `/contacts/${contactId}` : "/captures";
+}
+
 export function CapturesClient({ initial }: CapturesClientProps) {
   const [captures, setCaptures] = useState<Capture[]>(initial);
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
@@ -49,19 +67,51 @@ export function CapturesClient({ initial }: CapturesClientProps) {
       const res = await fetch(`/api/captures/${id}/process`, {
         method: "POST",
       });
+      const body = await res.json().catch(() => ({}) as Record<string, unknown>);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        toast.error("Couldn't mark processed", {
-          description: err.error ?? "Unknown error",
-          position: "top-right",
-        });
+        if (res.status === 400) {
+          const msg =
+            typeof body.error === "string" ? body.error : "Can't promote this";
+          toast.error(msg, { position: "top-right" });
+        } else if (res.status === 409) {
+          toast("Already processed", { position: "top-right" });
+          setCaptures((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, processed: true } : c))
+          );
+        } else {
+          toast.error("Couldn't promote capture", {
+            description:
+              typeof body.error === "string" ? body.error : "Unknown error",
+            position: "top-right",
+          });
+        }
         return;
       }
+      const promotedTo = body.promoted_to as PromotedTarget | undefined;
+      const promotedId = body.promoted_id as string | undefined;
       setCaptures((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, processed: true } : c))
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                processed: true,
+                parsed_payload: {
+                  ...(c.parsed_payload ?? {}),
+                  ...(promotedTo ? { promoted_to: promotedTo } : {}),
+                  ...(promotedId ? { promoted_id: promotedId } : {}),
+                  promoted_at: new Date().toISOString(),
+                },
+              }
+            : c
+        )
       );
+      if (promotedTo) {
+        toast.success(`Promoted to ${PROMOTED_LABELS[promotedTo]}`, {
+          position: "top-right",
+        });
+      }
     } catch (e) {
-      toast.error("Couldn't mark processed", {
+      toast.error("Couldn't promote capture", {
         description: e instanceof Error ? e.message : "Network error",
         position: "top-right",
       });
@@ -104,6 +154,17 @@ export function CapturesClient({ initial }: CapturesClientProps) {
         const intentLabel = c.parsed_intent
           ? PARSED_INTENT_LABELS[c.parsed_intent]
           : PARSED_INTENT_LABELS.unprocessed;
+        const promotedTo = c.parsed_payload?.promoted_to as
+          | PromotedTarget
+          | undefined;
+        const isUnprocessedIntent = c.parsed_intent === "unprocessed";
+        const missingRequiredContact =
+          needsContact(c.parsed_intent) && !c.parsed_contact_id;
+        const blocked = isUnprocessedIntent || missingRequiredContact;
+        const blockedLabel = isUnprocessedIntent
+          ? "Nothing to promote"
+          : "Needs contact";
+
         return (
           <li
             key={c.id}
@@ -137,12 +198,42 @@ export function CapturesClient({ initial }: CapturesClientProps) {
                   <span className="text-muted-foreground">
                     {formatTimestamp(c.created_at)}
                   </span>
+                  {c.processed && promotedTo ? (
+                    <>
+                      <span className="text-muted-foreground/60">·</span>
+                      <Link
+                        href={promotedTargetUrl(
+                          promotedTo,
+                          c.parsed_contact_id
+                        )}
+                        className="text-[var(--brand-red)] hover:underline underline-offset-2"
+                      >
+                        Promoted → {PROMOTED_LABELS[promotedTo]} (view)
+                      </Link>
+                    </>
+                  ) : null}
                 </div>
               </div>
               <div className="shrink-0">
                 {c.processed ? (
-                  <span className="text-xs text-muted-foreground">
-                    processed
+                  !promotedTo ? (
+                    <span className="text-xs text-muted-foreground">
+                      processed
+                    </span>
+                  ) : null
+                ) : blocked ? (
+                  <span
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-md border border-dashed",
+                      "border-border text-muted-foreground bg-secondary/40"
+                    )}
+                    title={
+                      isUnprocessedIntent
+                        ? "Capture has no contact or intent"
+                        : "Re-capture with a matching contact name"
+                    }
+                  >
+                    {blockedLabel}
                   </span>
                 ) : (
                   <button

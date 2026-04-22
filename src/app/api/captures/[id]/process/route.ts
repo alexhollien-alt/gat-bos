@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { promoteCapture } from "@/lib/captures/promote";
+import type { Capture, CapturePayload } from "@/lib/types";
 
 export async function POST(
   _request: NextRequest,
@@ -15,17 +17,71 @@ export async function POST(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const { data: capture, error: fetchError } = await supabase
     .from("captures")
-    .update({ processed: true })
+    .select(
+      "id, user_id, raw_text, parsed_intent, parsed_contact_id, parsed_payload, processed, created_at, updated_at"
+    )
     .eq("id", id)
     .eq("user_id", user.id)
-    .select("id, processed")
-    .single();
+    .single<Capture>();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (fetchError || !capture) {
+    return NextResponse.json(
+      { error: fetchError?.message ?? "Capture not found" },
+      { status: 404 }
+    );
   }
 
-  return NextResponse.json(data);
+  if (capture.processed) {
+    const existingId = capture.parsed_payload?.promoted_id as string | undefined;
+    const existingTo = capture.parsed_payload?.promoted_to as string | undefined;
+    return NextResponse.json(
+      {
+        error: "Already processed",
+        promoted_to: existingTo ?? null,
+        promoted_id: existingId ?? null,
+      },
+      { status: 409 }
+    );
+  }
+
+  const result = await promoteCapture({
+    capture,
+    userId: user.id,
+    supabase,
+  });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  const promotedAt = new Date().toISOString();
+  const mergedPayload: CapturePayload = {
+    ...(capture.parsed_payload ?? {}),
+    promoted_to: result.promotedTo,
+    promoted_id: result.promotedId,
+    promoted_at: promotedAt,
+  };
+
+  const { error: updateError } = await supabase
+    .from("captures")
+    .update({
+      processed: true,
+      parsed_payload: mergedPayload,
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    id: capture.id,
+    processed: true,
+    promoted_to: result.promotedTo,
+    promoted_id: result.promotedId,
+    target_url: result.targetUrl,
+  });
 }
