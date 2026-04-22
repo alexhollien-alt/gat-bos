@@ -433,6 +433,44 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
 };
 
 // ---------------------
+// Captures (Universal Capture Bar v1)
+// ---------------------
+
+export type ParsedIntent =
+  | "interaction"
+  | "follow_up"
+  | "ticket"
+  | "note"
+  | "unprocessed";
+
+export interface CapturePayload {
+  candidate_contact_ids?: string[];
+  intent_keyword?: string;
+  [key: string]: unknown;
+}
+
+export interface Capture {
+  id: string;
+  user_id: string;
+  raw_text: string;
+  parsed_intent: ParsedIntent | null;
+  parsed_contact_id: string | null;
+  parsed_payload: CapturePayload;
+  processed: boolean;
+  created_at: string;
+  updated_at: string;
+  contacts?: Pick<Contact, "id" | "first_name" | "last_name"> | null;
+}
+
+export const PARSED_INTENT_LABELS: Record<ParsedIntent, string> = {
+  interaction: "Interaction",
+  follow_up: "Follow-up",
+  ticket: "Ticket",
+  note: "Note",
+  unprocessed: "Unprocessed",
+};
+
+// ---------------------
 // Resend Webhooks
 // ---------------------
 

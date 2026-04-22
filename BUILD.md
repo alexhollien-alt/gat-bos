@@ -6,14 +6,17 @@ What we're building. Read at session start alongside `BLOCKERS.md`. Update at se
 
 ## Currently Building
 
-**Session 4 -- Resend announcement email linking to the three live `/agents/<slug>` pages.**
+**Next session, recommended: PLUMBING -- resolve Blocker #4 (capture -> downstream promotion).**
 
-Taglines + Julie headshot shipped today (part 1 of Session 4). Still ahead: re-email-design (Kit 1 -- Instrument Serif + Inter), three agent cards linking to `gat-bos.vercel.app/agents/{julie-jarmiolowski|fiona-bigbee|denise-van-den-bossche}`, three-draft approval gates, then practice-send to the target address Alex confirms at Draft 1.
+Capture bar v1 ships text-only with rule-based parsing. Until process route writes to `interactions` / `follow_ups` / `tickets` based on `parsed_intent`, captures are an inert log. That blocker is what makes v1 earn its keep.
+
+**Paused, not superseded:** Resend announcement email linking to the three live `/agents/<slug>` pages (Kit 1 -- Instrument Serif + Inter, three agent cards, three-draft gates, practice-send). Pick back up when capture downstream lands.
 
 ---
 
 ## Built
 
+- [2026-04-21] **Session 5 -- Universal Capture Bar v1, text-only, rule-parser, /captures list.** Pinned-bottom bar mounted at `(app)/layout.tsx` (visible on every authenticated route). New `captures` table with RLS (migration `20260421150000_add_captures_table.sql`). Shared rule-based parser at `src/lib/captures/parse.ts` (word-boundary intent + contact match), used by both API route (`src/app/api/captures/route.ts`) and client preview (`src/components/capture-bar.tsx`). Live parse preview line in Space Mono above input, debounced 300ms, infers intent + matched contact as Alex types. `.showcase-card` glass treatment; rotating placeholder (4 strings, 3s, pauses on focus); GAT Red submit pulse (400ms); top-right toast with "view" link to /captures. `Cmd/Ctrl+Enter` submits; `Esc` blurs. Mobile keyboard-aware lift via `env(safe-area-inset-bottom)` + transform on focus. `/captures` list page with empty state, unprocessed-row indicator (small GAT Red dot), and "process" button (currently just flips `processed=true` -- see Blocker #4). Sidebar nav entry added as slot 2 (after Today). `pnpm typecheck` PASS, `pnpm lint` PASS (zero warnings), `pnpm build` PASS (`/captures` 1.93 kB, 116 kB first-load). 4 blockers logged for v2 work: voice/mic capture, downstream promotion, Claude API parser upgrade, capture editing after submit.
 - [2026-04-21] Build vs Plumbing Protocol installed in `CLAUDE.md`. `BUILD.md` + `BLOCKERS.md` seeded at repo root.
 - [2026-04-21] **Session 2** -- `/agents/[slug]` dynamic route live locally. Middleware public-route bypass extended to `/agents/`. Layout at `src/app/agents/[slug]/layout.tsx` (GAT-wrapped public shell, Kit Screen fonts, dark screen palette). Page at `src/app/agents/[slug]/page.tsx` renders hero + about + gallery-empty-state + contact + referral footer (Option B, agent-forward). Julie hardcoded in `AGENTS` const with temp headshot fallback + `[PLACEHOLDER]` tagline. JSON-LD RealEstateAgent schema + Open Graph metadata wired per SEO minimum. `pnpm typecheck` PASS, `pnpm build` PASS with `/agents/[slug]` prerendered as SSG at `/agents/julie-jarmiolowski`. Three blockers logged (see `BLOCKERS.md`).
 - [2026-04-21] **Session 4 part 1** -- Taglines J1/F1/D1 patched into `AGENTS` const in `src/app/agents/[slug]/page.tsx` (Julie: Optima Camelview resident-realtor line; Fiona: 85258 backyard line; Denise: Paradise Valley + Scottsdale discretion line). Julie real headshot resolved and wired at `/public/agents/julie-jarmiolowski.jpg` (800×798 JPEG, 179KB). Blockers #2, #3, #5 closed. `pnpm typecheck` PASS, `pnpm build` PASS, commit + prod deploy + smoke pending on same turn. Remaining in Session 4: Resend announcement email via `re-email-design` three-draft gates, practice-send only.

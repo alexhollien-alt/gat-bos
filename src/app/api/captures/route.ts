@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { parseCapture, type ContactIndexEntry } from "@/lib/captures/parse";
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  let body: { raw_text?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const raw = typeof body.raw_text === "string" ? body.raw_text.trim() : "";
+  if (!raw) {
+    return NextResponse.json({ error: "raw_text is required" }, { status: 400 });
+  }
+
+  const { data: contacts, error: contactsErr } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name")
+    .is("deleted_at", null);
+
+  if (contactsErr) {
+    return NextResponse.json(
+      { error: `Contacts lookup failed: ${contactsErr.message}` },
+      { status: 500 }
+    );
+  }
+
+  const index: ContactIndexEntry[] = (contacts ?? []).map((c) => ({
+    id: c.id,
+    first_name: c.first_name ?? "",
+    last_name: c.last_name ?? "",
+  }));
+
+  const parsed = parseCapture({ rawText: raw, contactsIndex: index });
+
+  const { data, error } = await supabase
+    .from("captures")
+    .insert({
+      user_id: user.id,
+      raw_text: raw,
+      parsed_intent: parsed.intent,
+      parsed_contact_id: parsed.contactId,
+      parsed_payload: parsed.payload,
+      processed: false,
+    })
+    .select("id, raw_text, parsed_intent, parsed_contact_id, created_at")
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data, { status: 201 });
+}
+
+export async function GET() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("captures")
+    .select(
+      "id, raw_text, parsed_intent, parsed_contact_id, parsed_payload, processed, created_at, contacts:parsed_contact_id(id, first_name, last_name)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
+}

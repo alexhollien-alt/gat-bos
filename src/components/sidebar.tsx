@@ -18,12 +18,14 @@ import {
   Zap,
   BarChart3,
   Inbox,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/today", label: "Today", icon: Sun },
+  { href: "/captures", label: "Captures", icon: Sparkles },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/actions", label: "Actions", icon: Zap },
