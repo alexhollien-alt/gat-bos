@@ -1,3 +1,5 @@
+// DEPRECATED (Slice 1, 2026-04-22): spine is superseded by activity_events.
+// Do not extend. Will be deleted in Slice 2.
 // src/lib/spine/types.ts
 // Shared Zod schemas and TypeScript types for the Spine layer.
 // These are the contract between API routes, parser, and UI.

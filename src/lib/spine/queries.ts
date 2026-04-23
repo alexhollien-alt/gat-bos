@@ -1,3 +1,5 @@
+// DEPRECATED (Slice 1, 2026-04-22): spine is superseded by activity_events.
+// Do not extend. Will be deleted in Slice 2.
 // src/lib/spine/queries.ts
 // Server-side Supabase query helpers for the spine.
 // Used by API routes. Assumes the Supabase client is passed in.

@@ -1,3 +1,4 @@
+-- DEPRECATED (Slice 1, 2026-04-22): spine tables superseded by activity_events. Will be dropped in Slice 2.
 -- supabase/migrations/20260407021000_spine_interactions_trigger.sql
 -- Denormalizes interactions.created_at into cycle_state.last_touched_at
 -- so /api/spine/today can read recent-touch data without joining.
