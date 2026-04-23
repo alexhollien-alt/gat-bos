@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Capture, InteractionType, PromotedTarget } from "@/lib/types";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 export interface PromoteInput {
   capture: Capture;
@@ -98,6 +99,17 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert interaction",
       };
     }
+    void writeEvent({
+      actorId: process.env.OWNER_USER_ID ?? '',
+      verb: 'capture.promoted',
+      object: { table: 'captures', id: capture.id },
+      context: {
+        promoted_to: 'interaction',
+        promoted_id: data.id as string,
+        // Include contact_id so getContactTimeline can index this event per contact.
+        ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+      },
+    });
     return {
       ok: true,
       promotedTo: "interaction",
@@ -126,6 +138,16 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert follow_up",
       };
     }
+    void writeEvent({
+      actorId: process.env.OWNER_USER_ID ?? '',
+      verb: 'capture.promoted',
+      object: { table: 'captures', id: capture.id },
+      context: {
+        promoted_to: 'follow_up',
+        promoted_id: data.id as string,
+        ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+      },
+    });
     return {
       ok: true,
       promotedTo: "follow_up",
@@ -156,6 +178,16 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert ticket",
       };
     }
+    void writeEvent({
+      actorId: process.env.OWNER_USER_ID ?? '',
+      verb: 'capture.promoted',
+      object: { table: 'captures', id: capture.id },
+      context: {
+        promoted_to: 'ticket',
+        promoted_id: data.id as string,
+        ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+      },
+    });
     return {
       ok: true,
       promotedTo: "ticket",

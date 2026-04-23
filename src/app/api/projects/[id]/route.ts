@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireApiToken } from "@/lib/api-auth";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 const PROJECT_STATUSES = ["active", "paused", "closed"] as const;
 
@@ -69,6 +70,15 @@ export async function PATCH(
     const status = error.code === "PGRST116" ? 404 : 500;
     return NextResponse.json({ error: error.message }, { status });
   }
+
+  // contact_id not reliably available on project PATCH without additional context.
+  // Slice 2 improvement: include contact_id in context for per-contact timeline indexing.
+  void writeEvent({
+    actorId: process.env.OWNER_USER_ID ?? '',
+    verb: 'project.updated',
+    object: { table: 'projects', id },
+    context: { updated_fields: Object.keys(sanitized) },
+  });
 
   return NextResponse.json(data);
 }

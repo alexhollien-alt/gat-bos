@@ -14,6 +14,7 @@ import { createGmailDraft } from "@/lib/gmail/sync-client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
 import { ALEX_EMAIL } from "@/lib/constants";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -331,6 +332,15 @@ export async function POST(request: NextRequest) {
 
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     fireMarkRead(email.id, origin);
+
+    // contact_id not available here without a join from email_draft -> email -> contact.
+    // Slice 2 improvement: fetch contact_id and include in context for timeline indexing.
+    void writeEvent({
+      actorId: process.env.OWNER_USER_ID ?? '',
+      verb: 'email.sent',
+      object: { table: 'email_drafts', id: draftId },
+      context: { email_id: draft.email_id },
+    });
 
     // Record the mark-read intent in audit log immediately so it survives even
     // if the fire-and-forget request fails; the mark-read route logs its own errors.
