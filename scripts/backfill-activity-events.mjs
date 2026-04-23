@@ -35,14 +35,11 @@ for (const [k, v] of Object.entries({ NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL, SU
 const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 async function main() {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  // Fetch interactions from last 7 days.
+  // Fetch all interactions (no date window -- backfill covers full history).
   const { data: interactions, error: fetchErr } = await adminClient
     .from('interactions')
-    .select('id, contact_id, type, summary, occurred_at, user_id')
-    .gte('created_at', sevenDaysAgo)
-    .order('occurred_at', { ascending: true });
+    .select('id, contact_id, type, summary, occurred_at, created_at, user_id')
+    .order('occurred_at', { ascending: true, nullsFirst: false });
 
   if (fetchErr) {
     console.error('Failed to fetch interactions:', fetchErr.message);
@@ -50,7 +47,7 @@ async function main() {
   }
 
   if (!interactions || interactions.length === 0) {
-    console.log('No interactions in the last 7 days. Nothing to backfill.');
+    console.log('No interactions found. Nothing to backfill.');
     return;
   }
 
@@ -88,7 +85,7 @@ async function main() {
           type: interaction.type,
           summary: interaction.summary,
         },
-        occurred_at: interaction.occurred_at,
+        occurred_at: interaction.occurred_at ?? interaction.created_at ?? new Date().toISOString(),
       });
 
     if (insertErr) {
