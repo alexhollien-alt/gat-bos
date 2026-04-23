@@ -16,6 +16,10 @@ const PROMOTED_LABELS: Record<PromotedTarget, string> = {
   interaction: "Interaction",
   follow_up: "Follow-up",
   ticket: "Ticket",
+  task: "Task",
+  contact: "Contact",
+  touchpoint: "Touchpoint",
+  event: "Event",
 };
 
 function formatTimestamp(iso: string): string {
