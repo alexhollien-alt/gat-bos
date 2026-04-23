@@ -9,7 +9,10 @@ import { adminClient } from '@/lib/supabase/admin';
 import { logError } from '@/lib/error-log';
 import type { ActivityVerb } from './types';
 
-const OWNER_USER_ID = process.env.OWNER_USER_ID ?? '';
+const OWNER_USER_ID = process.env.OWNER_USER_ID;
+if (!OWNER_USER_ID) {
+  throw new Error('[writeEvent] OWNER_USER_ID is not set. Activity ledger cannot write events.');
+}
 
 interface WriteEventInput {
   actorId: string;

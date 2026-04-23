@@ -9,7 +9,7 @@ import { adminClient } from '@/lib/supabase/admin';
 import { writeEvent } from '@/lib/activity/writeEvent';
 import type { MaterialRequestStatus } from '@/lib/types';
 
-const OWNER_USER_ID = process.env.OWNER_USER_ID ?? '';
+const OWNER_USER_ID = process.env.OWNER_USER_ID!;
 
 export async function updateTicketStatus(
   ticketId: string,

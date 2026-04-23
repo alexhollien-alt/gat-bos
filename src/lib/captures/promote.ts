@@ -100,7 +100,7 @@ export async function promoteCapture(
       };
     }
     void writeEvent({
-      actorId: process.env.OWNER_USER_ID ?? '',
+      actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
@@ -139,7 +139,7 @@ export async function promoteCapture(
       };
     }
     void writeEvent({
-      actorId: process.env.OWNER_USER_ID ?? '',
+      actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
@@ -179,7 +179,7 @@ export async function promoteCapture(
       };
     }
     void writeEvent({
-      actorId: process.env.OWNER_USER_ID ?? '',
+      actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
