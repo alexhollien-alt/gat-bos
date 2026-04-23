@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-22 (Slice 1)*
+*Last updated: 2026-04-23 (Slice 2A)*
 
 ## Layer Map
 
@@ -41,11 +41,11 @@
 | error_logs | Raw | live | Internal only. Written via logError(). |
 | oauth_tokens | Raw | live | GCal OAuth token storage. |
 | inbox_items | Raw | live | |
-| spine_inbox | Raw | live (deprecated) | Do not extend. Superseded by activity_events. Will be dropped in Slice 2. |
-| commitments | Raw | live (deprecated) | Do not extend. Superseded by activity_events. Will be dropped in Slice 2. |
-| signals | Raw | live (deprecated) | Do not extend. Superseded by activity_events. Will be dropped in Slice 2. |
-| focus_queue | Raw | live (deprecated) | Do not extend. Superseded by activity_events. Will be dropped in Slice 2. |
-| cycle_state | Raw | live (deprecated) | Do not extend. Superseded by activity_events. Will be dropped in Slice 2. |
+| spine_inbox | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
+| commitments | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
+| signals | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
+| focus_queue | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
+| cycle_state | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
 
 ## Restructure Slice Plan
 

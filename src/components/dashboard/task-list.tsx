@@ -134,7 +134,7 @@ function formatRelative(dateStr: string): string {
 
 // agent_health is a materialized view, so PostgREST cannot infer the FK to
 // the contacts base table for an embedded select. Fetch health rows and
-// contacts in two queries, then join in memory. See spine-worktree fix note.
+// contacts in two queries, then join in memory.
 type HealthRowBase = Omit<AgentHealthRow, "contacts">;
 
 async function joinContactsToHealthRows(

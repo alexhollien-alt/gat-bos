@@ -8,11 +8,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
-### [2026-04-22] interactions_update_cycle trigger still live -- spine DROP blocked on Slice 2B
-- **Broken:** The `interactions_update_cycle` trigger from the deprecated spine migration is still active. Every new `interactions` row still upserts into `cycle_state`. This is harmless until spine tables are dropped but it is wasted work and must be cleaned up before the DROP.
-- **Where:** Trigger name `interactions_update_cycle` on `public.interactions`. Defined in `supabase/migrations/20260407021000_spine_interactions_trigger.sql` (deprecated).
-- **Fix needed:** In the Slice 2B plumbing session that DROPs spine tables, add a `DROP TRIGGER IF EXISTS interactions_update_cycle ON public.interactions;` before the `DROP TABLE spine_inbox` etc. The trigger must be dropped before the table it references.
-
 ### [2026-04-22] "New Agent Onboarding" campaign row not yet created
 - **Broken:** Auto-enrollment code ships wired across all 3 contact-creation paths (POST /api/contacts, intake, New Contact modal via `/api/contacts/[id]/auto-enroll`), but `autoEnrollNewAgent()` returns `{status:'skipped', reason:'campaign_not_found'}` silently until a campaign row exists under Alex's `user_id` with `name='New Agent Onboarding'`, `status='active'`, `deleted_at IS NULL`, and at least one step at `step_number=1`. So new realtor contacts are being created but no enrollments land.
 - **Where:** `src/lib/campaigns/auto-enroll.ts:42-52` (campaign lookup filter). Invoked by `src/app/api/contacts/route.ts`, `src/app/api/intake/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`.
@@ -43,6 +38,31 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `src/lib/captures/parse.ts` -- pure function, imported by `src/app/api/captures/route.ts` and `src/components/capture-bar.tsx`.
 - **Fix needed:** Replace the parser body with a cached Claude call (Haiku 4.5 + structured tool use, `user_id`-scoped prompt cache). Keep the rule-based parser as a fallback path on API failure / timeout. Tool schema returns `{intent, contact_match, payload}` so the API route stays unchanged. Live preview line should keep using the rule parser for instant feedback; Claude pass runs only on submit (avoid per-keystroke LLM calls).
 
+### [2026-04-23] tier-alerts.tsx deleted -- needs Slice 2B rebuild
+- **Broken:** `src/components/today/tier-alerts.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
+- **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section A in the original layout.
+- **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
+
+### [2026-04-23] overdue-commitments.tsx deleted -- needs Slice 2B rebuild
+- **Broken:** `src/components/today/overdue-commitments.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
+- **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section B in the original layout.
+- **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
+
+### [2026-04-23] today-focus.tsx deleted -- needs Slice 2B rebuild
+- **Broken:** `src/components/today/today-focus.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
+- **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section C in the original layout.
+- **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
+
+### [2026-04-23] recent-captures.tsx deleted -- needs Slice 2B rebuild
+- **Broken:** `src/components/today/recent-captures.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
+- **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section F in the original layout.
+- **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
+
+### [2026-04-23] week-stats.tsx deleted -- needs Slice 2B rebuild
+- **Broken:** `src/components/today/week-stats.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
+- **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section G in the original layout.
+- **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
+
 ### [2026-04-21] Capture editing after submit not wired
 - **Broken:** Captures are immutable by design for v1. If Alex fat-fingers a capture or wants to fix a parsed intent, the only option is to stop, mark processed, and re-capture. No inline edit UI.
 - **Where:** `src/app/(app)/captures/captures-client.tsx` -- renders `raw_text` as static `<p>`; no edit affordance. No PATCH route on `/api/captures/[id]`.
@@ -51,6 +71,9 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-22] interactions_update_cycle trigger still live -- RESOLVED 2026-04-23
+- Migration file written at `supabase/migrations/slice-2a-drop-spine.sql`. `DROP TRIGGER IF EXISTS interactions_update_cycle ON public.interactions;` appears as first statement before all DROP TABLE calls. Alex executes manually.
 
 ### [2026-04-21] Capture -> downstream promotion not wired -- RESOLVED 2026-04-22
 - Process route at `src/app/api/captures/[id]/process/route.ts` now delegates to a new `promoteCapture()` helper at `src/lib/captures/promote.ts`. The switch: `interaction` + `note` insert `interactions` rows (type mapped from `parsed_payload.intent_keyword` with `note` fallback); `follow_up` inserts a `follow_ups` row with `due_date = created_at + 3 days` and `reason = raw_text`; `ticket` inserts a `material_requests` row with `request_type='design_help'`, `status='draft'`, `source='internal'`, title truncated to 80 chars, full raw text preserved in `notes`.
