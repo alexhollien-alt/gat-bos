@@ -15,7 +15,8 @@ export type ActivityVerb =
   | 'event.created'
   | 'campaign.step_fired'
   | 'ai.call'
-  | 'interaction.backfilled';
+  | 'interaction.backfilled'
+  | 'ticket.notes_updated';
 
 export interface ActivityEvent {
   id: string;
