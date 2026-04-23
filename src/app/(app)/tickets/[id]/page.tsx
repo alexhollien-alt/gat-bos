@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AccentRule, PageHeader, SectionShell } from "@/components/screen";
+import { updateTicketStatus, updateTicketNotes } from "./actions";
 import {
   ArrowLeft,
   Loader2,
@@ -67,25 +68,19 @@ export default function TicketDetailPage() {
 
   const handleStatusChange = async (newStatus: MaterialRequestStatus) => {
     if (!ticket) return;
-    const updates: Record<string, unknown> = {
-      status: newStatus,
-      updated_at: new Date().toISOString(),
-    };
-    if (newStatus === "submitted") updates.submitted_at = new Date().toISOString();
-    if (newStatus === "complete") updates.completed_at = new Date().toISOString();
-
-    await supabase.from("material_requests").update(updates).eq("id", ticket.id);
-    setTicket({ ...ticket, status: newStatus });
+    const result = await updateTicketStatus(ticket.id, ticket.status, newStatus);
+    if (result.ok) {
+      setTicket({ ...ticket, status: newStatus });
+    }
   };
 
   const handleSaveNotes = async () => {
     if (!ticket) return;
     setSaving(true);
-    await supabase
-      .from("material_requests")
-      .update({ notes, updated_at: new Date().toISOString() })
-      .eq("id", ticket.id);
-    setTicket({ ...ticket, notes });
+    const result = await updateTicketNotes(ticket.id, notes);
+    if (result.ok) {
+      setTicket({ ...ticket, notes });
+    }
     setSaving(false);
   };
 

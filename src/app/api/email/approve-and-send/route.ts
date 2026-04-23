@@ -14,6 +14,7 @@ import { createGmailDraft } from "@/lib/gmail/sync-client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
 import { ALEX_EMAIL } from "@/lib/constants";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -50,6 +51,7 @@ interface EmailRow {
   from_email: string;
   from_name: string | null;
   subject: string;
+  contact_id: string | null;
 }
 
 interface AuditEvent {
@@ -246,7 +248,7 @@ export async function POST(request: NextRequest) {
   // sending actions need the original email
   const { data: email, error: emailErr } = await adminClient
     .from("emails")
-    .select("id, gmail_id, gmail_thread_id, from_email, from_name, subject")
+    .select("id, gmail_id, gmail_thread_id, from_email, from_name, subject, contact_id")
     .eq("id", draft.email_id)
     .maybeSingle<EmailRow>();
 
@@ -331,6 +333,16 @@ export async function POST(request: NextRequest) {
 
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     fireMarkRead(email.id, origin);
+
+    void writeEvent({
+      actorId: process.env.OWNER_USER_ID!,
+      verb: 'email.sent',
+      object: { table: 'email_drafts', id: draftId },
+      context: {
+        email_id: draft.email_id,
+        ...(email.contact_id ? { contact_id: email.contact_id } : {}),
+      },
+    });
 
     // Record the mark-read intent in audit log immediately so it survives even
     // if the fire-and-forget request fails; the mark-read route logs its own errors.

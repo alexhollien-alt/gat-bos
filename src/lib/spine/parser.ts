@@ -1,3 +1,5 @@
+// DEPRECATED (Slice 1, 2026-04-22): spine is superseded by activity_events.
+// Do not extend. Will be deleted in Slice 2.
 // src/lib/spine/parser.ts
 // Background parser. Reads unparsed spine_inbox rows and turns them
 // into structured commitments, signals, and focus_queue rows using

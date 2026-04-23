@@ -98,6 +98,16 @@ Inside `~/crm/`, GSD (`get-shit-done`) replaces `/lock` as the execution protoco
 
 ---
 
+## Architecture Notes (Slice 1+)
+
+`activity_events` is the canonical write target for all user-observable actions from Slice 1 onward.
+Every server-side write path emits an event via `writeEvent()` from `src/lib/activity/writeEvent.ts`.
+Do not add new writes to spine tables (spine_inbox, commitments, signals, focus_queue, cycle_state) --
+they are deprecated as of Slice 1 and will be dropped in Slice 2.
+The contact detail page reads its Activity Feed from `getContactTimeline()` in `src/lib/activity/queries.ts`.
+
+---
+
 ## Build vs Plumbing Protocol
 
 Every session in this repo begins by classifying the work and reading two files at repo root: `BUILD.md` (what we're building) and `BLOCKERS.md` (broken integrations waiting for a dedicated fix).

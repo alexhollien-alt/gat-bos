@@ -9,6 +9,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { insertEvent, type CalendarAttendee } from "@/lib/calendar/client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError as sharedLogError } from "@/lib/error-log";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -88,6 +89,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+
+  // event.created is not contact-specific. contact_id not included.
+  // Slice 2 improvement if calendar events ever need per-contact timeline indexing.
+  void writeEvent({
+    actorId: process.env.OWNER_USER_ID ?? '',
+    verb: 'event.created',
+    object: { table: 'events', id: localRow.id },
+    context: { title },
+  });
 
   // Step 2: write to Google Calendar. On failure, keep the local row (null
   // gcal_event_id) so Alex can see it and retry later via a future reconcile.

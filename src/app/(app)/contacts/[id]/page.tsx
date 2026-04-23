@@ -16,6 +16,8 @@ import {
   RelationshipStrength,
 } from "@/lib/types";
 import { buildActivityFeed } from "@/lib/contact-activity";
+import { getContactTimeline } from "@/lib/activity/queries";
+import type { ActivityEvent as ActivityEventRow } from "@/lib/activity/types";
 import { ContactHeader } from "@/components/contacts/contact-header";
 import { ActivityFeed } from "@/components/contacts/activity-feed";
 import { BioPanel } from "@/components/contacts/bio-panel";
@@ -71,6 +73,7 @@ export default function ContactDetailPage() {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [designAssets, setDesignAssets] = useState<DesignAsset[]>([]);
+  const [ledgerTimeline, setLedgerTimeline] = useState<ActivityEventRow[]>([]);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
@@ -172,6 +175,12 @@ export default function ContactDetailPage() {
     if (data) setDesignAssets(data);
   }, [contactId, supabase]);
 
+  const fetchLedgerTimeline = useCallback(async () => {
+    if (!contactId) return;
+    const rows = await getContactTimeline(contactId);
+    setLedgerTimeline(rows);
+  }, [contactId]);
+
   useEffect(() => {
     fetchContact();
     fetchInteractions();
@@ -180,6 +189,7 @@ export default function ContactDetailPage() {
     fetchFollowUps();
     fetchMaterialRequests();
     fetchDesignAssets();
+    fetchLedgerTimeline();
   }, [
     fetchContact,
     fetchInteractions,
@@ -188,19 +198,54 @@ export default function ContactDetailPage() {
     fetchFollowUps,
     fetchMaterialRequests,
     fetchDesignAssets,
+    fetchLedgerTimeline,
   ]);
 
-  const activityEvents = useMemo(
-    () =>
-      buildActivityFeed({
-        interactions,
-        tasks,
-        followUps,
-        materialRequests,
-        designAssets,
-      }),
-    [interactions, tasks, followUps, materialRequests, designAssets]
-  );
+  const activityEvents = useMemo(() => {
+    if (ledgerTimeline.length === 0) {
+      // Ledger empty -- fall back to legacy buildActivityFeed while backfill runs.
+      return buildActivityFeed({ interactions, tasks, followUps, materialRequests, designAssets });
+    }
+    return ledgerTimeline.map((row): import('@/lib/contact-activity').ActivityEvent => {
+      const verbLabelMap: Record<string, string> = {
+        'capture.promoted': 'Capture',
+        'email.sent': 'Email sent',
+        'ticket.status_changed': 'Ticket updated',
+        'project.updated': 'Project update',
+        'event.created': 'Event created',
+        'interaction.backfilled': typeof row.context.type === 'string' ? row.context.type : 'Interaction',
+      };
+      const verbIconMap: Record<string, string> = {
+        'capture.promoted': 'Zap',
+        'email.sent': 'Mail',
+        'ticket.status_changed': 'Printer',
+        'project.updated': 'FolderOpen',
+        'event.created': 'Calendar',
+        'interaction.backfilled': 'Clock',
+      };
+      const verbColorMap: Record<string, string> = {
+        'capture.promoted': 'bg-chart-1',
+        'email.sent': 'bg-primary',
+        'ticket.status_changed': 'bg-chart-2',
+        'project.updated': 'bg-chart-4',
+        'event.created': 'bg-chart-3',
+        'interaction.backfilled': 'bg-primary',
+      };
+      const summary = typeof row.context.summary === 'string'
+        ? row.context.summary
+        : row.verb;
+      return {
+        id: row.id,
+        source: 'interaction' as const,
+        sourceLabel: verbLabelMap[row.verb] ?? row.verb,
+        iconName: verbIconMap[row.verb] ?? 'Circle',
+        barColorClass: verbColorMap[row.verb] ?? 'bg-muted',
+        summary,
+        timestamp: row.occurred_at,
+        sourceId: row.object_id,
+      };
+    });
+  }, [ledgerTimeline, interactions, tasks, followUps, materialRequests, designAssets]);
 
   const hasAnyHistory =
     interactions.length > 0 ||

@@ -1,3 +1,4 @@
+-- DEPRECATED (Slice 1, 2026-04-22): spine tables superseded by activity_events. Will be dropped in Slice 2.
 -- supabase/migrations/20260407020000_spine_tables.sql
 -- Phase 1 of the Spine + Today Command build.
 -- Adds 5 new tables, RLS, indexes, and denorm trigger.

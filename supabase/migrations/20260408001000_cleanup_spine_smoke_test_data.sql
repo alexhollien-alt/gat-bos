@@ -1,3 +1,4 @@
+-- DEPRECATED (Slice 1, 2026-04-22): spine tables superseded by activity_events. Will be dropped in Slice 2.
 -- Hard-delete the synthetic interaction row left behind by the spine
 -- trigger smoke test in Task 2. Standing Rule 3 (no hard deletes) is
 -- waived here because:
