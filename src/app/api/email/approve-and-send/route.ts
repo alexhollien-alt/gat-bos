@@ -51,6 +51,7 @@ interface EmailRow {
   from_email: string;
   from_name: string | null;
   subject: string;
+  contact_id: string | null;
 }
 
 interface AuditEvent {
@@ -247,7 +248,7 @@ export async function POST(request: NextRequest) {
   // sending actions need the original email
   const { data: email, error: emailErr } = await adminClient
     .from("emails")
-    .select("id, gmail_id, gmail_thread_id, from_email, from_name, subject")
+    .select("id, gmail_id, gmail_thread_id, from_email, from_name, subject, contact_id")
     .eq("id", draft.email_id)
     .maybeSingle<EmailRow>();
 
@@ -333,13 +334,14 @@ export async function POST(request: NextRequest) {
     const origin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     fireMarkRead(email.id, origin);
 
-    // contact_id not available here without a join from email_draft -> email -> contact.
-    // Slice 2 improvement: fetch contact_id and include in context for timeline indexing.
     void writeEvent({
-      actorId: process.env.OWNER_USER_ID ?? '',
+      actorId: process.env.OWNER_USER_ID!,
       verb: 'email.sent',
       object: { table: 'email_drafts', id: draftId },
-      context: { email_id: draft.email_id },
+      context: {
+        email_id: draft.email_id,
+        ...(email.contact_id ? { contact_id: email.contact_id } : {}),
+      },
     });
 
     // Record the mark-read intent in audit log immediately so it survives even
