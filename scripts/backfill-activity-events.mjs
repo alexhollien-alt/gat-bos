@@ -42,7 +42,6 @@ async function main() {
     .from('interactions')
     .select('id, contact_id, type, summary, occurred_at, user_id')
     .gte('created_at', sevenDaysAgo)
-    .is('deleted_at', null)
     .order('occurred_at', { ascending: true });
 
   if (fetchErr) {
