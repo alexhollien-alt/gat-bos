@@ -309,8 +309,8 @@ export async function completeStep(
     .eq("campaign_id", campaignId)
     .is("deleted_at", null);
 
-  const isLastStep =
-    (enrollment?.current_step ?? 0) >= (totalSteps?.length ?? 0);
+  const currentStep = enrollment?.current_step ?? 0;
+  const isLastStep = currentStep >= (totalSteps?.length ?? 0);
 
   if (isLastStep) {
     await supabase
@@ -318,14 +318,35 @@ export async function completeStep(
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
+        next_action_at: null,
       })
       .eq("id", enrollmentId);
   } else {
+    // Look up the next step's delay_days so we can roll next_action_at forward.
+    // If missing (step gap / data issue), leave next_action_at as the previous
+    // value rather than clearing it -- dispatcher will still pick up the row.
+    const nextStepNumber = currentStep + 1;
+    const { data: nextStep } = await supabase
+      .from("campaign_steps")
+      .select("delay_days")
+      .eq("campaign_id", campaignId)
+      .eq("step_number", nextStepNumber)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    const update: {
+      current_step: number;
+      next_action_at?: string;
+    } = { current_step: nextStepNumber };
+    if (nextStep) {
+      update.next_action_at = new Date(
+        Date.now() + (nextStep.delay_days ?? 0) * 86_400_000,
+      ).toISOString();
+    }
+
     await supabase
       .from("campaign_enrollments")
-      .update({
-        current_step: (enrollment?.current_step ?? 0) + 1,
-      })
+      .update(update)
       .eq("id", enrollmentId);
   }
 

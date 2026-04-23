@@ -8,6 +8,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-04-22] "New Agent Onboarding" campaign row not yet created
+- **Broken:** Auto-enrollment code ships wired across all 3 contact-creation paths (POST /api/contacts, intake, New Contact modal via `/api/contacts/[id]/auto-enroll`), but `autoEnrollNewAgent()` returns `{status:'skipped', reason:'campaign_not_found'}` silently until a campaign row exists under Alex's `user_id` with `name='New Agent Onboarding'`, `status='active'`, `deleted_at IS NULL`, and at least one step at `step_number=1`. So new realtor contacts are being created but no enrollments land.
+- **Where:** `src/lib/campaigns/auto-enroll.ts:42-52` (campaign lookup filter). Invoked by `src/app/api/contacts/route.ts`, `src/app/api/intake/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`.
+- **Fix needed:** (1) Run `~/Desktop/PASTE-INTO-SUPABASE-enrollment-schedule.sql` in Supabase SQL Editor to add the `next_action_at` column + partial index. (2) Create the campaign in `/campaigns/new` under Alex's user, set `status='active'`, add at least one step with `step_number=1` and a sensible `delay_days`. (3) Smoke-test each of the 3 paths and verify one `campaign_enrollments` row with correct `next_action_at`. Archive the paste-file to `~/Archive/paste-files/2026-04/` once executed.
+
 ### [2026-04-21] `contacts` table missing `slug`, `photo_url`, `tagline` columns
 - **Broken:** No DB-backed source for agent landing page data. `/agents/[slug]` cannot query Supabase for the agent record.
 - **Where:** `src/app/agents/[slug]/page.tsx` -- `AGENTS` const hardcoded at top of file (Julie + Fiona + Denise for Sessions 2-4).

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireApiToken } from "@/lib/api-auth";
+import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
 
 export async function GET(request: NextRequest) {
   const unauth = requireApiToken(request);
@@ -131,6 +132,13 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Fire-and-forget: auto-enroll realtor contacts into "New Agent Onboarding".
+  // Filters on type='realtor' internally; silent no-op otherwise. Never blocks
+  // the response -- enrollment failures must not take down contact creation.
+  if (data?.id) {
+    await autoEnrollNewAgent(adminClient, data.id, ownerId);
   }
 
   return NextResponse.json(data, { status: 201 });

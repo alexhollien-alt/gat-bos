@@ -60,27 +60,41 @@ export function ContactFormModal({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("contacts").insert({
-      user_id: user!.id,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      title: data.title || null,
-      email: data.email || null,
-      phone: data.phone || null,
-      stage: data.stage,
-      source: data.source,
-      notes: data.notes || null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("contacts")
+      .insert({
+        user_id: user!.id,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        title: data.title || null,
+        email: data.email || null,
+        phone: data.phone || null,
+        stage: data.stage,
+        source: data.source,
+        notes: data.notes || null,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      setLoading(false);
+      toast.error("Failed to create contact");
+      return;
+    }
+
+    // Auto-enroll via server endpoint. Browser client can't read campaigns
+    // (RLS scopes them to the auth user) so the service-role endpoint runs
+    // the enroll logic. Fire-and-forget: failures never block the UI flow.
+    if (inserted?.id) {
+      fetch(`/api/contacts/${inserted.id}/auto-enroll`, { method: "POST" })
+        .catch(() => {});
+    }
 
     setLoading(false);
-    if (error) {
-      toast.error("Failed to create contact");
-    } else {
-      toast.success("Contact created");
-      reset();
-      onOpenChange(false);
-      onSuccess?.();
-    }
+    toast.success("Contact created");
+    reset();
+    onOpenChange(false);
+    onSuccess?.();
   }
 
   return (

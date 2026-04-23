@@ -64,7 +64,7 @@ export function CampaignForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="rounded-lg border border-slate-200 bg-white p-5 space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 space-y-4 text-slate-900">
         <div className="space-y-1.5">
           <Label>Name *</Label>
           <Input

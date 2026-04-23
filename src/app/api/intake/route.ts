@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
+import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
 
 // ---------------------------------------------------------------------------
 // Input validation and sanitization
@@ -276,6 +277,11 @@ export async function POST(request: Request) {
         direction: "inbound",
         summary: `Submitted intake form (${body.situation || "general"}). Products requested: ${body.products.join(", ")}.`,
       });
+
+      // Auto-enroll new realtor contacts in "New Agent Onboarding". Fire-and-
+      // forget: silent no-op if the campaign isn't active. Intake always
+      // creates type='realtor' so every new intake contact qualifies.
+      await autoEnrollNewAgent(adminClient, contactId, ownerId);
     }
 
     return NextResponse.json(
