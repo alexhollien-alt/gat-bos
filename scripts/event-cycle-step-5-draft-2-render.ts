@@ -10,7 +10,7 @@ import {
   renderContentDay,
   renderHappyHour,
   renderHomeTour,
-} from "/Users/alex/crm/src/lib/events/invite-templates/index";
+} from "../src/lib/events/invite-templates/index";
 
 const desktop = resolve(homedir(), "Desktop");
 
