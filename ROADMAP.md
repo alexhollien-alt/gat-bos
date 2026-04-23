@@ -3,7 +3,7 @@
 **Repo:** GAT-BOS (Great American Title Business Operating System)
 **Owner:** Alex Hollien
 **Stack:** Next.js 14, TypeScript, Tailwind, shadcn/ui, Supabase, Vercel, Claude API, Resend
-**Last updated:** April 20, 2026
+**Last updated:** April 23, 2026
 
 ---
 
@@ -122,6 +122,29 @@ _Shipped Phase 7, 2026-04-18._
 ## Phase 4: Ambient + Scale (not yet scoped)
 
 Deferred until Phases 1 through 3 are fully live. Candidates include ambient Claude Code skill writing back to spine, /capture mobile-first surface, and new-contact AI enrichment.
+
+---
+
+## GSD Plumbing Slices (tracked separately from product phases)
+
+These are infrastructure / schema consolidation slices tracked via GSD phase numbering.
+
+### Phase 001: Activity Ledger
+- [x] Slice 1 -- activity_events canonical ledger, writeEvent helper, getContactTimeline (shipped 2026-04-22)
+
+### Phase 002: Slice 2A -- Spine Drop
+- [x] Slice 2A -- Remove spine infrastructure (spine_inbox, commitments, signals, focus_queue, cycle_state), delete spine API routes and lib files, clean today-client.tsx (shipped 2026-04-23)
+
+### Phase 003: Slice 2B -- Captures Consolidation
+**Plans:** 6 plans in 5 waves
+
+Plans:
+- [ ] 003-01-PLAN.md -- Git branch + migration file (data merge + schema changes)
+- [ ] 003-02-PLAN.md -- TypeScript types (PromotedTarget, SuggestedTarget, ActivityVerb)
+- [ ] 003-03-PLAN.md -- Refactor promote.ts (5 targets, adminClient, ensureProject)
+- [ ] 003-04-PLAN.md -- Storage bucket check + cleanup-audio cron route
+- [ ] 003-05-PLAN.md -- [BLOCKING] Push migration + typecheck + build verify
+- [ ] 003-06-PLAN.md -- Commit + tag + PR
 
 ---
 
