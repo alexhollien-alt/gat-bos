@@ -183,11 +183,14 @@ export function TaskListWidget() {
     queryFn: async (): Promise<FollowUpRow[]> => {
       const today = todayISO();
       const nowIso = new Date().toISOString();
+      // follow_ups merged into tasks (Slice 2C); query tasks WHERE type='follow_up'.
+      // Read due_reason as the new home of the reason text; alias back to FollowUpRow.reason.
       const { data, error } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .select(
-          "id, reason, due_date, priority, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
+          "id, due_reason, title, due_date, priority, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
         )
+        .eq("type", "follow_up")
         .eq("user_id", userId!)
         .eq("status", "pending")
         .is("deleted_at", null)
@@ -196,7 +199,11 @@ export function TaskListWidget() {
         .order("due_date", { ascending: true })
         .limit(20);
       if (error) throw error;
-      return (data ?? []) as unknown as FollowUpRow[];
+      const mapped = (data ?? []).map((row: Record<string, unknown>) => ({
+        ...row,
+        reason: (row.due_reason as string | null) ?? (row.title as string),
+      }));
+      return mapped as unknown as FollowUpRow[];
     },
   });
 
@@ -210,14 +217,16 @@ export function TaskListWidget() {
     queryFn: async (): Promise<ClosingRow[]> => {
       const today = todayISO();
       const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
+      // deals merged into opportunities (Slice 2C). opportunity_stage has no
+      // 'clear_to_close' value; that semantic was folded into 'in_escrow' on merge.
       const { data, error } = await supabase
-        .from("deals")
+        .from("opportunities")
         .select(
           "id, property_address, scheduled_close_date, stage, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
         )
         .eq("user_id", userId!)
         .is("deleted_at", null)
-        .in("stage", ["in_escrow", "clear_to_close"])
+        .eq("stage", "in_escrow")
         .gte("scheduled_close_date", today)
         .lte("scheduled_close_date", tomorrow)
         .order("scheduled_close_date", { ascending: true })
@@ -335,7 +344,9 @@ export function TaskListWidget() {
         .channel("task-list:follow_ups")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "follow_ups" },
+          // follow_ups merged into tasks (Slice 2C); subscribe to tasks instead.
+          // Listener filters by type='follow_up' on the next fetch.
+          { event: "*", schema: "public", table: "tasks" },
           () => {
             queryClient.invalidateQueries({
               queryKey: ["task-list", "overdue_followups", userId],
@@ -347,7 +358,8 @@ export function TaskListWidget() {
         .channel("task-list:deals")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "deals" },
+          // deals merged into opportunities (Slice 2C); subscribe to opportunities.
+          { event: "*", schema: "public", table: "opportunities" },
           () => {
             queryClient.invalidateQueries({
               queryKey: ["task-list", "closings", userId],
@@ -359,7 +371,8 @@ export function TaskListWidget() {
         .channel("task-list:interactions")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "interactions" },
+          // interactions is now a VIEW; subscribe to interactions_legacy where writes land
+          { event: "*", schema: "public", table: "interactions_legacy" },
           () => {
             // Interactions feed agent_health via the materialized view trigger
             queryClient.invalidateQueries({
@@ -410,8 +423,9 @@ export function TaskListWidget() {
       interactionType: "call" | "email";
     }) => {
       if (!userId) throw new Error("No user");
+      // Write to interactions_legacy -- views are not insertable
       const { data: interaction, error: intError } = await supabase
-        .from("interactions")
+        .from("interactions_legacy")
         .insert({
           user_id: userId,
           contact_id: contactId,
@@ -423,15 +437,18 @@ export function TaskListWidget() {
         .single();
       if (intError) throw intError;
 
+      // follow_ups merged into tasks (Slice 2C). The completed_via_interaction_id
+      // column did not migrate -- that audit linkage is logged via the
+      // interaction's own row instead. Drop it from the update payload.
       const { error: fuError } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({
           status: "completed",
           completed_at: new Date().toISOString(),
-          completed_via_interaction_id: interaction?.id ?? null,
         })
         .eq("id", followUpId);
       if (fuError) throw fuError;
+      void interaction; // referenced for ordering; audit linkage deferred to Slice 3
     },
     onMutate: async ({ followUpId }) => {
       const key = ["task-list", "overdue_followups", userId];
@@ -467,8 +484,9 @@ export function TaskListWidget() {
   const snoozeFollowUp = useMutation({
     mutationFn: async ({ followUpId }: { followUpId: string }) => {
       const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
+      // follow_ups merged into tasks (Slice 2C); update by id (unique).
       const { error } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({ due_date: tomorrow })
         .eq("id", followUpId);
       if (error) throw error;
@@ -511,7 +529,8 @@ export function TaskListWidget() {
       summary: string;
     }) => {
       if (!userId) throw new Error("No user");
-      const { error } = await supabase.from("interactions").insert({
+      // Write to interactions_legacy -- views are not insertable
+      const { error } = await supabase.from("interactions_legacy").insert({
         user_id: userId,
         contact_id: contactId,
         type: interactionType,

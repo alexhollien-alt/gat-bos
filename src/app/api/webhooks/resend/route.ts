@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
         ? `Opened: ${data.subject}`
         : `Clicked link in: ${data.subject}`;
 
-      await supabase.from("interactions").insert({
+      // Write to interactions_legacy -- views are not insertable
+      await supabase.from("interactions_legacy").insert({
         user_id: contact.user_id,
         contact_id: contact.id,
         type: "email",

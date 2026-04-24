@@ -142,7 +142,8 @@ export default function ContactsPage() {
         .channel("contacts:interactions")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "interactions" },
+          // interactions is now a VIEW; subscribe to interactions_legacy where writes land
+          { event: "*", schema: "public", table: "interactions_legacy" },
           () => {
             queryClient.invalidateQueries({
               queryKey: ["contacts", "touch_counts"],

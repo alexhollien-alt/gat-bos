@@ -14,7 +14,9 @@ import {
  * Inclusion rules:
  *  - interactions: all rows
  *  - tasks: only when status === "completed"
- *  - follow_ups: only when status === "completed"
+ *  - follow_ups: only when status === "completed". Slice 2C consolidated
+ *    follow_ups into tasks WHERE type='follow_up'; callers may pass either
+ *    legacy FollowUp rows or Task rows (the union below covers both).
  *  - material_requests: every row, anchored on created_at (Alex's commitment moment)
  *  - design_assets: every row, anchored on created_at
  *
@@ -23,6 +25,18 @@ import {
  *  - open tasks / open follow-ups (live in tab badges, not the feed)
  *  - field edits, tag changes, internal_note edits
  */
+
+// Slice 2C: callers pass Task rows (with type='follow_up') instead of legacy
+// FollowUp rows. We only need a small subset of fields to build the feed entry.
+type FollowUpFeedRow = {
+  id: string;
+  status: string;
+  reason?: string | null;
+  due_reason?: string | null;
+  title?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+};
 
 export type ActivitySource =
   | "interaction"
@@ -79,7 +93,7 @@ export function buildActivityFeed({
 }: {
   interactions: Interaction[];
   tasks: Task[];
-  followUps: FollowUp[];
+  followUps: FollowUpFeedRow[] | FollowUp[];
   materialRequests: MaterialRequest[];
   designAssets: DesignAsset[];
 }): ActivityEvent[] {
@@ -114,16 +128,21 @@ export function buildActivityFeed({
     });
   }
 
-  // Follow-ups: only completed
+  // Follow-ups: only completed.
+  // Slice 2C: prefer the migrated due_reason column, then fall back to the
+  // legacy FollowUp.reason or the Task.title that was set on insert.
   for (const f of followUps) {
     if (f.status !== "completed") continue;
+    const fr = f as FollowUpFeedRow;
+    const summary =
+      (fr.due_reason ?? null) ?? (fr.reason ?? null) ?? (fr.title ?? "");
     events.push({
       id: `followup-${f.id}`,
       source: "followup_done",
       sourceLabel: "Follow-up resolved",
       iconName: "Clock",
       barColorClass: "bg-chart-3",
-      summary: f.reason,
+      summary,
       timestamp: f.completed_at ?? f.created_at,
       sourceId: f.id,
     });

@@ -75,7 +75,8 @@ export function InteractionModal({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("interactions").insert({
+    // Write to interactions_legacy -- views are not insertable
+    const { error } = await supabase.from("interactions_legacy").insert({
       user_id: user!.id,
       contact_id: data.contact_id,
       type: data.type,

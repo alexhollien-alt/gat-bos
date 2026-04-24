@@ -270,7 +270,8 @@ export async function POST(request: Request) {
 
     // ── Log first touch interaction for new contacts ──
     if (isNewContact && contactId) {
-      await adminClient.from("interactions").insert({
+      // Write to interactions_legacy -- views are not insertable
+      await adminClient.from("interactions_legacy").insert({
         user_id: ownerId,
         contact_id: contactId,
         type: "note",

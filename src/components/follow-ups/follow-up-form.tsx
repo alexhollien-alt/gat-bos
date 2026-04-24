@@ -75,11 +75,18 @@ export function FollowUpFormModal({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("follow_ups").insert({
+    // follow_ups merged into tasks (Slice 2C). Write a task with type='follow_up'.
+    // due_reason carries the original reason; title duplicates it for tasks-list views.
+    // due_date (date input string) accepted by Supabase as timestamptz.
+    const { error } = await supabase.from("tasks").insert({
       user_id: user!.id,
       contact_id: data.contact_id,
-      reason: data.reason,
+      type: "follow_up",
+      source: "manual",
+      title: data.reason,
+      due_reason: data.reason,
       due_date: data.due_date,
+      status: "pending",
     });
 
     setLoading(false);

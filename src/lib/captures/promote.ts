@@ -376,8 +376,10 @@ export async function promoteCapture(
     const interactionType: InteractionType =
       intent === "note" ? "note" : mapKeywordToInteractionType(keyword);
 
+    // Writing to interactions_legacy directly -- views are not insertable.
+    // TODO Slice 3+: migrate to writeEvent() so this goes through activity_events.
     const { data, error } = await adminClient
-      .from("interactions")
+      .from("interactions_legacy")
       .insert({
         user_id: userId,
         contact_id: contactId,
@@ -415,14 +417,20 @@ export async function promoteCapture(
   }
 
   if (intent === "follow_up") {
+    // follow_ups merged into tasks (Slice 2C). Write a task with type='follow_up'.
+    // due_reason holds the reason; title duplicates it; source records provenance.
+    // The created_via='capture' field has no tasks-table equivalent; use source instead.
     const { data, error } = await adminClient
-      .from("follow_ups")
+      .from("tasks")
       .insert({
         user_id: userId,
         contact_id: contactId,
-        reason: rawText,
+        type: "follow_up",
+        source: "capture",
+        title: rawText,
+        due_reason: rawText,
         due_date: defaultFollowUpDueDate(capture.created_at),
-        created_via: "capture",
+        status: "pending",
       })
       .select("id")
       .single();

@@ -23,9 +23,13 @@ export default function FollowUpsPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const fetchFollowUps = useCallback(async () => {
+    // follow_ups merged into tasks (Slice 2C). Filter rows by type='follow_up'.
+    // Map status filter from FollowUpStatus to the value the UI passes:
+    //   pending -> tasks rows that are not yet completed/skipped
     let query = supabase
-      .from("follow_ups")
+      .from("tasks")
       .select("*, contacts(id, first_name, last_name)")
+      .eq("type", "follow_up")
       .order("due_date", { ascending: true });
 
     if (filter !== "all") {
@@ -33,7 +37,15 @@ export default function FollowUpsPage() {
     }
 
     const { data } = await query;
-    if (data) setFollowUps(data);
+    if (data) {
+      // Cast Task rows back into the FollowUp shape that the row component expects.
+      // due_reason holds the migrated reason; title is the COALESCE fallback.
+      const mapped = data.map((row: Record<string, unknown>) => ({
+        ...row,
+        reason: (row.due_reason as string | null) ?? (row.title as string),
+      })) as unknown as FollowUp[];
+      setFollowUps(mapped);
+    }
   }, [filter, supabase]);
 
   useEffect(() => {
