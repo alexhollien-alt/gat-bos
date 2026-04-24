@@ -1,11 +1,11 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Capture, InteractionType, PromotedTarget } from "@/lib/types";
+import type { Capture, InteractionType, PromotedTarget, SuggestedTarget } from "@/lib/types";
+import { adminClient } from "@/lib/supabase/admin";
 import { writeEvent } from "@/lib/activity/writeEvent";
 
 export interface PromoteInput {
   capture: Capture;
   userId: string;
-  supabase: SupabaseClient;
+  promoteTarget?: 'task' | 'ticket' | 'contact' | 'touchpoint' | 'event';
 }
 
 export interface PromoteSuccess {
@@ -49,10 +49,52 @@ export function defaultFollowUpDueDate(createdAtIso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+class ProjectHintRequiredError extends Error {
+  constructor() {
+    super('project_hint is required for this promotion target');
+  }
+}
+
+async function ensureProject(
+  hint: SuggestedTarget['project_hint'] | undefined
+): Promise<string> {
+  if (!hint) throw new ProjectHintRequiredError();
+  const { data, error } = await adminClient
+    .from('projects')
+    .insert({
+      title: hint.name,
+      owner_contact_id: hint.contact_id ?? null,
+      type: 'other',
+      status: 'active',
+    })
+    .select('id')
+    .single();
+  if (error || !data) {
+    throw new Error(`ensureProject failed: ${error?.message ?? 'no data'}`);
+  }
+  return data.id as string;
+}
+
+// Fire-and-forget status update -- does not gate the return on success.
+function markCapturePromoted(captureId: string): void {
+  void adminClient
+    .from('captures')
+    .update({ status: 'promoted' })
+    .eq('id', captureId);
+}
+
+// ---------------------------------------------------------------------------
+// Main function
+// ---------------------------------------------------------------------------
+
 export async function promoteCapture(
   input: PromoteInput
 ): Promise<PromoteResult> {
-  const { capture, userId, supabase } = input;
+  const { capture, userId, promoteTarget } = input;
   const intent = capture.parsed_intent;
   const contactId = capture.parsed_contact_id;
   const rawText = capture.raw_text;
@@ -60,6 +102,259 @@ export async function promoteCapture(
     typeof capture.parsed_payload?.intent_keyword === "string"
       ? (capture.parsed_payload.intent_keyword as string)
       : undefined;
+  const suggestedTarget = capture.suggested_target;
+
+  // -------------------------------------------------------------------------
+  // EXPLICIT TARGET ROUTING -- when promoteTarget is provided
+  // -------------------------------------------------------------------------
+  if (promoteTarget) {
+    switch (promoteTarget) {
+      case 'task': {
+        const { data, error } = await adminClient
+          .from('tasks')
+          .insert({
+            user_id: userId,
+            contact_id: capture.parsed_contact_id ?? null,
+            title: buildTicketTitle(rawText),
+            description: rawText,
+            due_date: defaultFollowUpDueDate(capture.created_at),
+            priority: 'medium',
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) {
+          return { ok: false, status: 500, error: error?.message ?? 'Failed to insert task' };
+        }
+
+        markCapturePromoted(capture.id);
+        void writeEvent({
+          actorId: process.env.OWNER_USER_ID!,
+          verb: 'capture.promoted.task',
+          object: { table: 'captures', id: capture.id },
+          context: {
+            promoted_to: 'task',
+            promoted_id: data.id as string,
+            ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+          },
+        });
+        return {
+          ok: true,
+          promotedTo: 'task',
+          promotedId: data.id as string,
+          targetUrl: '/tasks',
+        };
+      }
+
+      case 'ticket': {
+        const { data, error } = await adminClient
+          .from('material_requests')
+          .insert({
+            user_id: userId,
+            contact_id: contactId,
+            title: buildTicketTitle(rawText),
+            request_type: 'design_help',
+            status: 'draft',
+            source: 'internal',
+            notes: rawText,
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) {
+          return { ok: false, status: 500, error: error?.message ?? 'Failed to insert ticket' };
+        }
+
+        markCapturePromoted(capture.id);
+        void writeEvent({
+          actorId: process.env.OWNER_USER_ID!,
+          verb: 'capture.promoted.ticket',
+          object: { table: 'captures', id: capture.id },
+          context: {
+            promoted_to: 'ticket',
+            promoted_id: data.id as string,
+            ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+          },
+        });
+        return {
+          ok: true,
+          promotedTo: 'ticket',
+          promotedId: data.id as string,
+          targetUrl: '/materials',
+        };
+      }
+
+      case 'contact': {
+        // If a resolved contact_id exists on suggestedTarget, link to that contact directly.
+        if (suggestedTarget?.contact_id) {
+          const contactRowId = suggestedTarget.contact_id;
+          markCapturePromoted(capture.id);
+          void writeEvent({
+            actorId: process.env.OWNER_USER_ID!,
+            verb: 'capture.promoted.contact',
+            object: { table: 'captures', id: capture.id },
+            context: {
+              promoted_to: 'contact',
+              promoted_id: contactRowId,
+              contact_id: contactRowId,
+            },
+          });
+          return {
+            ok: true,
+            promotedTo: 'contact',
+            promotedId: contactRowId,
+            targetUrl: `/contacts/${contactRowId}`,
+          };
+        }
+
+        // Otherwise, create a new contact from rawText.
+        const parts = rawText.trim().split(/\s+/);
+        const firstName = parts[0] ?? 'Unknown';
+        const lastName = parts.slice(1).join(' ') || '';
+
+        const { data, error } = await adminClient
+          .from('contacts')
+          .insert({
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            type: 'sphere',
+            source: 'manual',
+            stage: 'new',
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) {
+          return { ok: false, status: 500, error: error?.message ?? 'Failed to insert contact' };
+        }
+
+        const contactRowId = data.id as string;
+        markCapturePromoted(capture.id);
+        void writeEvent({
+          actorId: process.env.OWNER_USER_ID!,
+          verb: 'capture.promoted.contact',
+          object: { table: 'captures', id: capture.id },
+          context: {
+            promoted_to: 'contact',
+            promoted_id: contactRowId,
+            contact_id: contactRowId,
+          },
+        });
+        return {
+          ok: true,
+          promotedTo: 'contact',
+          promotedId: contactRowId,
+          targetUrl: `/contacts/${contactRowId}`,
+        };
+      }
+
+      case 'touchpoint': {
+        let projectId: string;
+        try {
+          projectId = await ensureProject(suggestedTarget?.project_hint);
+        } catch (err) {
+          if (err instanceof ProjectHintRequiredError) {
+            return { ok: false, status: 400, error: 'project_hint required for touchpoint promotion' };
+          }
+          return { ok: false, status: 500, error: (err as Error).message };
+        }
+
+        const { data, error } = await adminClient
+          .from('project_touchpoints')
+          .insert({
+            project_id: projectId,
+            touchpoint_type: 'contact_note',
+            entity_id: capture.id,
+            entity_table: 'captures',
+            occurred_at: new Date().toISOString(),
+            note: rawText,
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) {
+          return { ok: false, status: 500, error: error?.message ?? 'Failed to insert touchpoint' };
+        }
+
+        markCapturePromoted(capture.id);
+        void writeEvent({
+          actorId: process.env.OWNER_USER_ID!,
+          verb: 'capture.promoted.touchpoint',
+          object: { table: 'captures', id: capture.id },
+          context: {
+            promoted_to: 'touchpoint',
+            promoted_id: data.id as string,
+            project_id: projectId,
+            ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+          },
+        });
+        return {
+          ok: true,
+          promotedTo: 'touchpoint',
+          promotedId: data.id as string,
+          targetUrl: `/projects/${projectId}`,
+        };
+      }
+
+      case 'event': {
+        let projectId: string;
+        try {
+          projectId = await ensureProject(suggestedTarget?.project_hint);
+        } catch (err) {
+          if (err instanceof ProjectHintRequiredError) {
+            return { ok: false, status: 400, error: 'project_hint required for event promotion' };
+          }
+          return { ok: false, status: 500, error: (err as Error).message };
+        }
+
+        const startAt = new Date().toISOString();
+        const endAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+        const { data, error } = await adminClient
+          .from('events')
+          .insert({
+            title: rawText.slice(0, 80),
+            start_at: startAt,
+            end_at: endAt,
+            attendees: [],
+            source: 'dashboard_create',
+            occurrence_status: 'scheduled',
+            project_id: projectId,
+            contact_id: capture.parsed_contact_id ?? null,
+          })
+          .select('id')
+          .single();
+
+        if (error || !data) {
+          return { ok: false, status: 500, error: error?.message ?? 'Failed to insert event' };
+        }
+
+        markCapturePromoted(capture.id);
+        void writeEvent({
+          actorId: process.env.OWNER_USER_ID!,
+          verb: 'capture.promoted.event',
+          object: { table: 'captures', id: capture.id },
+          context: {
+            promoted_to: 'event',
+            promoted_id: data.id as string,
+            project_id: projectId,
+            ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
+          },
+        });
+        return {
+          ok: true,
+          promotedTo: 'event',
+          promotedId: data.id as string,
+          targetUrl: `/projects/${projectId}`,
+        };
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // LEGACY PARSED_INTENT ROUTING -- backward compat for callers without promoteTarget
+  // -------------------------------------------------------------------------
 
   if (!intent || intent === "unprocessed") {
     return {
@@ -81,7 +376,7 @@ export async function promoteCapture(
     const interactionType: InteractionType =
       intent === "note" ? "note" : mapKeywordToInteractionType(keyword);
 
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from("interactions")
       .insert({
         user_id: userId,
@@ -99,6 +394,8 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert interaction",
       };
     }
+
+    markCapturePromoted(capture.id);
     void writeEvent({
       actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',
@@ -106,7 +403,6 @@ export async function promoteCapture(
       context: {
         promoted_to: 'interaction',
         promoted_id: data.id as string,
-        // Include contact_id so getContactTimeline can index this event per contact.
         ...(capture.parsed_contact_id ? { contact_id: capture.parsed_contact_id } : {}),
       },
     });
@@ -119,7 +415,7 @@ export async function promoteCapture(
   }
 
   if (intent === "follow_up") {
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from("follow_ups")
       .insert({
         user_id: userId,
@@ -138,6 +434,8 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert follow_up",
       };
     }
+
+    markCapturePromoted(capture.id);
     void writeEvent({
       actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',
@@ -157,7 +455,7 @@ export async function promoteCapture(
   }
 
   if (intent === "ticket") {
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from("material_requests")
       .insert({
         user_id: userId,
@@ -178,6 +476,8 @@ export async function promoteCapture(
         error: error?.message ?? "Failed to insert ticket",
       };
     }
+
+    markCapturePromoted(capture.id);
     void writeEvent({
       actorId: process.env.OWNER_USER_ID!,
       verb: 'capture.promoted',

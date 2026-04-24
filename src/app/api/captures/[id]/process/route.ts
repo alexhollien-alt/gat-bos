@@ -49,7 +49,6 @@ export async function POST(
   const result = await promoteCapture({
     capture,
     userId: user.id,
-    supabase,
   });
 
   if (!result.ok) {

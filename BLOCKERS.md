@@ -38,6 +38,15 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `src/lib/captures/parse.ts` -- pure function, imported by `src/app/api/captures/route.ts` and `src/components/capture-bar.tsx`.
 - **Fix needed:** Replace the parser body with a cached Claude call (Haiku 4.5 + structured tool use, `user_id`-scoped prompt cache). Keep the rule-based parser as a fallback path on API failure / timeout. Tool schema returns `{intent, contact_match, payload}` so the API route stays unchanged. Live preview line should keep using the rule parser for instant feedback; Claude pass runs only on submit (avoid per-keystroke LLM calls).
 
+### [2026-04-23] captures-audio lifecycle: cleanup cron not wired to Vercel scheduler
+- **Broken:** `src/app/api/captures/cleanup-audio/route.ts` exists and deletes storage objects
+  older than 30 days, but is not wired to any automated schedule. Audio files accumulate
+  indefinitely until this is wired.
+- **Where:** `vercel.json` (does not yet have a crons entry for this route).
+- **Fix needed:** Add to vercel.json:
+  `{ "path": "/api/captures/cleanup-audio", "schedule": "0 12 * * *" }`
+  and ensure CRON_SECRET env var is set in Vercel project settings.
+
 ### [2026-04-23] tier-alerts.tsx deleted -- needs Slice 2B rebuild
 - **Broken:** `src/components/today/tier-alerts.tsx` deleted in Slice 2A (spine-only data source). Visible gap on /today until replaced.
 - **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section A in the original layout.

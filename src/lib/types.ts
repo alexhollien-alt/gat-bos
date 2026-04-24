@@ -443,7 +443,20 @@ export type ParsedIntent =
   | "note"
   | "unprocessed";
 
-export type PromotedTarget = "interaction" | "follow_up" | "ticket";
+export type PromotedTarget =
+  | "interaction"
+  | "follow_up"
+  | "ticket"
+  | "task"
+  | "contact"
+  | "touchpoint"
+  | "event";
+
+export type SuggestedTarget = {
+  type?: 'task' | 'ticket' | 'contact' | 'touchpoint' | 'event'
+  project_hint?: { name: string; contact_id?: string }
+  contact_id?: string
+}
 
 export interface CapturePayload {
   candidate_contact_ids?: string[];
@@ -462,6 +475,11 @@ export interface Capture {
   parsed_contact_id: string | null;
   parsed_payload: CapturePayload;
   processed: boolean;
+  source: string;
+  suggested_target?: SuggestedTarget | null;
+  transcript?: string | null;
+  metadata?: Record<string, unknown> | null;
+  status: string;
   created_at: string;
   updated_at: string;
   contacts?: Pick<Contact, "id" | "first_name" | "last_name"> | null;
