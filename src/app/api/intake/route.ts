@@ -7,6 +7,8 @@ import {
   IntakeProcessingError,
   type IntakePayload,
 } from "@/lib/intake/process";
+import { checkRateLimit } from "@/lib/rate-limit/check";
+import { extractIp } from "@/lib/rate-limit/extract-ip";
 
 // Public, unauthenticated endpoint. Service-role writes happen via
 // adminClient. Validation, sanitization, and orchestration live in
@@ -14,8 +16,32 @@ import {
 // parsing, schema dispatch, honeypot short-circuit, and HTTP response
 // shaping. See process.ts for the three-layer defense rationale.
 
+// Rate limit: 10 submissions per 5-minute sliding window per IP. Sized for
+// a public form a real partner fills out once or twice; well below any
+// legitimate burst pattern. Fails open on Supabase error -- availability
+// over enforcement on the inbound write path.
+const INTAKE_RATE_LIMIT = 10;
+const INTAKE_RATE_WINDOW_SEC = 5 * 60;
+
 export async function POST(request: Request) {
   try {
+    const ip = extractIp(request.headers);
+    const rl = await checkRateLimit(
+      `ratelimit:intake:${ip}`,
+      INTAKE_RATE_LIMIT,
+      INTAKE_RATE_WINDOW_SEC,
+    );
+    if (!rl.allowed) {
+      const retryAfter = Math.max(
+        1,
+        Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000),
+      );
+      return NextResponse.json(
+        { error: "rate_limited", retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } },
+      );
+    }
+
     // Hard-pinned CRM owner. Set OWNER_USER_ID in .env.local to Alex's
     // auth.users id (b735d691-4d86-4e31-9fd3-c2257822dca3). Replaces the
     // previous listUsers({perPage: 1}) lookup which was non-deterministic

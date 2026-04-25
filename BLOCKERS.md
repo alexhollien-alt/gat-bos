@@ -8,6 +8,26 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-04-24] Slice 3B follow-up: rename src/lib/captures/parse.ts -> rules.ts
+- **Broken:** Slice 3A standardized `src/lib/<entity>/` shapes to actions.ts/queries.ts/types.ts but left `parse.ts` in place to avoid touching function bodies on the file-org pass. The naming drift is the only remaining non-standard file in `src/lib/captures/`.
+- **Where:** `src/lib/captures/parse.ts` (and its two import sites: `src/app/api/captures/route.ts`, `src/components/capture-bar.tsx`).
+- **Fix needed:** Rename the file to `rules.ts`, update both import sites, run `pnpm typecheck && pnpm lint && pnpm build`. Pure rename, no body changes. Coordinate with the Claude API parser upgrade blocker so this rename doesn't get clobbered.
+
+### [2026-04-24] Slice 3B follow-up: fold src/lib/captures/promote.ts -> actions.ts
+- **Broken:** `promoteCapture` lives at `src/lib/captures/promote.ts` while Slice 3A's standardized shape puts write fns in `src/lib/captures/actions.ts` (currently a stub).
+- **Where:** `src/lib/captures/promote.ts` (and its import site: `src/app/api/captures/[id]/process/route.ts`).
+- **Fix needed:** Move the export into `src/lib/captures/actions.ts`, delete `promote.ts`, update the import in the route handler. Keep the function body intact -- file-org only.
+
+### [2026-04-24] Slice 3B follow-up: fold src/lib/campaigns/auto-enroll.ts -> actions.ts
+- **Broken:** `autoEnrollNewAgent` lives at `src/lib/campaigns/auto-enroll.ts` while Slice 3A's standardized shape puts write fns in `src/lib/campaigns/actions.ts` (currently a stub).
+- **Where:** `src/lib/campaigns/auto-enroll.ts` (and its import sites: `src/app/api/contacts/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`, `src/lib/intake/process.ts`).
+- **Fix needed:** Move the export into `src/lib/campaigns/actions.ts`, delete `auto-enroll.ts`, update all three import sites. Keep the function body intact.
+
+### [2026-04-24] Slice 3B follow-up: promote src/lib/events/invite-templates/ to top-level files
+- **Broken:** Calendar invite templates live in a `src/lib/events/invite-templates/` subdirectory while the Slice 3A standardized shape calls for top-level `actions.ts` / `queries.ts` / `types.ts` directly under `src/lib/events/`.
+- **Where:** `src/lib/events/invite-templates/` (10 files; full inventory in subdirectory listing).
+- **Fix needed:** Audit the existing exports, move template builders into the top-level standard files (or a new `templates.ts` if the surface area justifies it), update all import sites, run typecheck + build.
+
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.

@@ -4,6 +4,17 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { logError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
 
+// NO RATE LIMIT (Slice 3A intentional decision).
+//
+// The Svix HMAC-SHA256 signature verification below IS the security
+// boundary for this endpoint -- forged requests are rejected before any
+// work happens. Adding an IP-based rate limit on top would risk dropping
+// legitimate Resend delivery/open/click event bursts during normal email
+// activity (e.g., a Weekly Edge send to ~25 partners can fan out to 75+
+// webhook callbacks within seconds), creating gaps in the email
+// engagement record without any security upside. Do not "fix" this by
+// wiring checkRateLimit in.
+
 const ROUTE = "/api/webhooks/resend";
 
 const supabase = createClient(

@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-24 (Slice 2C)*
+*Last updated: 2026-04-24 (Slice 3A)*
 
 ## Layer Map
 
@@ -42,6 +42,7 @@
 | error_logs | Raw | live | Internal only. Written via logError(). |
 | oauth_tokens | Raw | live | GCal OAuth token storage. |
 | inbox_items | Raw | live | |
+| rate_limits | Operational | live | Slice 3A. Per-(key, window_start) counter for the Supabase-backed sliding-window limiter at src/lib/rate-limit/check.ts. PK (key, window_start). Service-role only via the increment_rate_limit() RPC; RLS denies anon/authenticated. Hard-delete carve-out per Standing Rule 3 (time-bounded operational data); helper opportunistically culls rows older than 2x the longest window. |
 | spine_inbox | Raw | dropped | Dropped in Slice 2A. |
 | commitments | Raw | dropped | Dropped in Slice 2A. |
 | signals | Raw | dropped | Dropped in Slice 2A. |
@@ -54,7 +55,8 @@
 |-------|---------|
 | Slice 1 | Activity ledger foundation: activity_events table, TypeScript contracts, writeEvent helper, five write-path retrofits, contact timeline migration, spine deprecation. |
 | Slice 2 | Drop spine tables. Migrate remaining spine reads to activity_events. |
-| Slice 3-8 | To be planned. |
+| Slice 3A | Route thinning + lib shape standardization. Extract draftActions + intake orchestration to pure helpers under src/lib/. Add Supabase-backed sliding-window rate limiter (rate_limits table + increment_rate_limit RPC) wired to /api/intake, /api/captures, /api/captures/[id]/process. Standardize 8 src/lib/<entity>/ dirs to actions.ts/queries.ts/types.ts shape. |
+| Slice 3B-8 | To be planned. |
 
 ## activity_events Column Reference
 
