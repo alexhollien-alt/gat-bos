@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-23 (Slice 2A)*
+*Last updated: 2026-04-24 (Slice 2C)*
 
 ## Layer Map
 
@@ -16,10 +16,11 @@
 |-------|------|--------|-------|
 | activity_events | Raw | live | Canonical write target from Slice 1. Ledger for all user-observable actions. |
 | contacts | Raw | live | Core CRM entity. |
-| interactions | Raw | live | Legacy interaction log. Superseded by activity_events for timeline reads. |
+| interactions | Raw | view | Replaced with a VIEW over activity_events in Slice 2C. Part A: interactions_legacy (legacy rows). Part B: activity_events WHERE verb LIKE interaction.%. See interactions_legacy row. |
+| interactions_legacy | Raw | live | Legacy interactions table preserved in Slice 2C. Referenced by the interactions VIEW Part A. Drop deferred to Slice 3 after promote.ts and 5 other writers migrate to writeEvent(). |
 | notes | Raw | live | |
-| tasks | Raw | live | |
-| follow_ups | Raw | live | |
+| tasks | Raw | live | Extended in Slice 2C: added type (todo/follow_up/commitment), source, due_reason, action_hint columns. |
+| follow_ups | Raw | dropped | Dropped in Slice 2C. Rows merged into tasks with type=follow_up. |
 | material_requests | Raw | live | Ticket system. |
 | material_request_items | Raw | live | Line items on tickets. |
 | design_assets | Raw | live | |
@@ -35,17 +36,17 @@
 | campaign_step_completions | Raw | live | |
 | contact_tags | Raw | live | |
 | tags | Raw | live | |
-| deals | Raw | live | |
-| opportunities | Raw | live | |
+| deals | Raw | dropped | Dropped in Slice 2C. Rows merged into opportunities. |
+| opportunities | Raw | live | Extended in Slice 2C: added 13 deal-specific columns (buyer_name, seller_name, earnest_money, commission_rate, escrow_company, escrow_officer, title_company, lender_name, lender_partner_id, contract_date, escrow_open_date, scheduled_close_date, actual_close_date). |
 | agent_health | Raw | live | Relationship health scores. Read-only via security-invoker view. |
 | error_logs | Raw | live | Internal only. Written via logError(). |
 | oauth_tokens | Raw | live | GCal OAuth token storage. |
 | inbox_items | Raw | live | |
-| spine_inbox | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
-| commitments | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
-| signals | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
-| focus_queue | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
-| cycle_state | Raw | dropped | Dropped in Slice 2A. Execute supabase/migrations/slice-2a-drop-spine.sql to finalize. |
+| spine_inbox | Raw | dropped | Dropped in Slice 2A. |
+| commitments | Raw | dropped | Dropped in Slice 2A. |
+| signals | Raw | dropped | Dropped in Slice 2A. |
+| focus_queue | Raw | dropped | Dropped in Slice 2A. |
+| cycle_state | Raw | dropped | Dropped in Slice 2A. |
 
 ## Restructure Slice Plan
 
