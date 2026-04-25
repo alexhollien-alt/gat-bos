@@ -115,13 +115,16 @@ export default function ActionsPage() {
   ) {
     if (!userId) return;
 
-    // Log interaction (write to interactions_legacy -- views are not insertable)
-    await supabase.from("interactions_legacy").insert({
-      user_id: userId,
-      contact_id: item.contactId,
-      type: interactionType,
-      summary: `Follow-up: ${item.title}`,
-      direction: "outbound",
+    // Log interaction via canonical writeEvent endpoint
+    await fetch("/api/activity/interaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contact_id: item.contactId,
+        type: interactionType,
+        summary: `Follow-up: ${item.title}`,
+        direction: "outbound",
+      }),
     });
 
     // Complete source record

@@ -168,6 +168,7 @@ export interface Task {
   status: TaskStatus;
   completed_at: string | null;
   created_at: string;
+  linked_interaction_id?: string | null;
   contacts?: Pick<Contact, "id" | "first_name" | "last_name"> | null;
 }
 

@@ -141,7 +141,7 @@ export function CommandPalette() {
             <CheckSquare className="mr-2 h-4 w-4" />
             View Tasks
           </CommandItem>
-          <CommandItem onSelect={() => navigate("/follow-ups")}>
+          <CommandItem onSelect={() => navigate("/tasks?type=follow_up")}>
             <Clock className="mr-2 h-4 w-4" />
             View Follow-ups
           </CommandItem>

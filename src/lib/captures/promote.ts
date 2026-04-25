@@ -1,6 +1,7 @@
 import type { Capture, InteractionType, PromotedTarget, SuggestedTarget } from "@/lib/types";
 import { adminClient } from "@/lib/supabase/admin";
 import { writeEvent } from "@/lib/activity/writeEvent";
+import type { ActivityVerb } from "@/lib/activity/types";
 
 export interface PromoteInput {
   capture: Capture;
@@ -376,15 +377,20 @@ export async function promoteCapture(
     const interactionType: InteractionType =
       intent === "note" ? "note" : mapKeywordToInteractionType(keyword);
 
-    // Writing to interactions_legacy directly -- views are not insertable.
-    // TODO Slice 3+: migrate to writeEvent() so this goes through activity_events.
     const { data, error } = await adminClient
-      .from("interactions_legacy")
+      .from("activity_events")
       .insert({
         user_id: userId,
-        contact_id: contactId,
-        type: interactionType,
-        summary: rawText,
+        actor_id: userId,
+        verb: `interaction.${interactionType}` as ActivityVerb,
+        object_table: "contacts",
+        object_id: contactId,
+        context: {
+          contact_id: contactId,
+          type: interactionType,
+          summary: rawText,
+          source: "capture",
+        },
       })
       .select("id")
       .single();

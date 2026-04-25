@@ -371,9 +371,13 @@ export function TaskListWidget() {
         .channel("task-list:interactions")
         .on(
           "postgres_changes",
-          // interactions is now a VIEW; subscribe to interactions_legacy where writes land
-          { event: "*", schema: "public", table: "interactions_legacy" },
-          () => {
+          // Slice 3: interactions writes land in activity_events with verb='interaction.*'.
+          { event: "*", schema: "public", table: "activity_events" },
+          (payload) => {
+            const verb = String(
+              (payload.new as { verb?: string } | null)?.verb || ""
+            );
+            if (!verb.startsWith("interaction.")) return;
             // Interactions feed agent_health via the materialized view trigger
             queryClient.invalidateQueries({
               queryKey: ["task-list", "going_cold", userId],
@@ -423,32 +427,30 @@ export function TaskListWidget() {
       interactionType: "call" | "email";
     }) => {
       if (!userId) throw new Error("No user");
-      // Write to interactions_legacy -- views are not insertable
-      const { data: interaction, error: intError } = await supabase
-        .from("interactions_legacy")
-        .insert({
-          user_id: userId,
+      const res = await fetch("/api/activity/interaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           contact_id: contactId,
           type: interactionType,
           summary: `Follow-up: ${reason}`,
           direction: "outbound",
-        })
-        .select("id")
-        .single();
-      if (intError) throw intError;
+        }),
+      });
+      if (!res.ok) throw new Error("interaction log failed");
+      const { event_id } = (await res.json()) as { event_id: string };
 
-      // follow_ups merged into tasks (Slice 2C). The completed_via_interaction_id
-      // column did not migrate -- that audit linkage is logged via the
-      // interaction's own row instead. Drop it from the update payload.
+      // Slice 3: linked_interaction_id restores cross-entity audit linkage that
+      // was dropped when follow_ups was merged into tasks in Slice 2C.
       const { error: fuError } = await supabase
         .from("tasks")
         .update({
           status: "completed",
           completed_at: new Date().toISOString(),
+          linked_interaction_id: event_id,
         })
         .eq("id", followUpId);
       if (fuError) throw fuError;
-      void interaction; // referenced for ordering; audit linkage deferred to Slice 3
     },
     onMutate: async ({ followUpId }) => {
       const key = ["task-list", "overdue_followups", userId];
@@ -529,15 +531,17 @@ export function TaskListWidget() {
       summary: string;
     }) => {
       if (!userId) throw new Error("No user");
-      // Write to interactions_legacy -- views are not insertable
-      const { error } = await supabase.from("interactions_legacy").insert({
-        user_id: userId,
-        contact_id: contactId,
-        type: interactionType,
-        summary,
-        direction: "outbound",
+      const res = await fetch("/api/activity/interaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contact_id: contactId,
+          type: interactionType,
+          summary,
+          direction: "outbound",
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error("interaction log failed");
     },
     onSettled: () => {
       queryClient.invalidateQueries({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { logError } from "@/lib/error-log";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 const ROUTE = "/api/webhooks/resend";
 
@@ -130,13 +131,17 @@ export async function POST(req: NextRequest) {
         ? `Opened: ${data.subject}`
         : `Clicked link in: ${data.subject}`;
 
-      // Write to interactions_legacy -- views are not insertable
-      await supabase.from("interactions_legacy").insert({
-        user_id: contact.user_id,
-        contact_id: contact.id,
-        type: "email",
-        summary,
-        direction: "inbound",
+      void writeEvent({
+        actorId: contact.user_id,
+        verb: "interaction.email",
+        object: { table: "contacts", id: contact.id },
+        context: {
+          contact_id: contact.id,
+          type: "email",
+          summary,
+          direction: "inbound",
+          source: "resend_webhook",
+        },
       });
     }
 
