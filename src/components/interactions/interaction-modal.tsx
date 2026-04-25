@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
 import {
   interactionSchema,
   type InteractionFormData,
@@ -70,21 +69,19 @@ export function InteractionModal({
 
   async function onSubmit(data: InteractionFormData) {
     setLoading(true);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await supabase.from("interactions").insert({
-      user_id: user!.id,
-      contact_id: data.contact_id,
-      type: data.type,
-      summary: data.summary,
-      occurred_at: new Date(data.occurred_at).toISOString(),
+    const res = await fetch("/api/activity/interaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contact_id: data.contact_id,
+        type: data.type,
+        summary: data.summary,
+        occurred_at: new Date(data.occurred_at).toISOString(),
+      }),
     });
 
     setLoading(false);
-    if (error) {
+    if (!res.ok) {
       toast.error("Failed to log interaction");
     } else {
       toast.success("Interaction logged");

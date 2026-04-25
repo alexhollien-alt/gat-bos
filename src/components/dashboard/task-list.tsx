@@ -183,11 +183,14 @@ export function TaskListWidget() {
     queryFn: async (): Promise<FollowUpRow[]> => {
       const today = todayISO();
       const nowIso = new Date().toISOString();
+      // follow_ups merged into tasks (Slice 2C); query tasks WHERE type='follow_up'.
+      // Read due_reason as the new home of the reason text; alias back to FollowUpRow.reason.
       const { data, error } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .select(
-          "id, reason, due_date, priority, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
+          "id, due_reason, title, due_date, priority, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
         )
+        .eq("type", "follow_up")
         .eq("user_id", userId!)
         .eq("status", "pending")
         .is("deleted_at", null)
@@ -196,7 +199,11 @@ export function TaskListWidget() {
         .order("due_date", { ascending: true })
         .limit(20);
       if (error) throw error;
-      return (data ?? []) as unknown as FollowUpRow[];
+      const mapped = (data ?? []).map((row: Record<string, unknown>) => ({
+        ...row,
+        reason: (row.due_reason as string | null) ?? (row.title as string),
+      }));
+      return mapped as unknown as FollowUpRow[];
     },
   });
 
@@ -210,14 +217,16 @@ export function TaskListWidget() {
     queryFn: async (): Promise<ClosingRow[]> => {
       const today = todayISO();
       const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
+      // deals merged into opportunities (Slice 2C). opportunity_stage has no
+      // 'clear_to_close' value; that semantic was folded into 'in_escrow' on merge.
       const { data, error } = await supabase
-        .from("deals")
+        .from("opportunities")
         .select(
           "id, property_address, scheduled_close_date, stage, contact_id, contacts(id, first_name, last_name, tier, phone, email)"
         )
         .eq("user_id", userId!)
         .is("deleted_at", null)
-        .in("stage", ["in_escrow", "clear_to_close"])
+        .eq("stage", "in_escrow")
         .gte("scheduled_close_date", today)
         .lte("scheduled_close_date", tomorrow)
         .order("scheduled_close_date", { ascending: true })
@@ -335,7 +344,9 @@ export function TaskListWidget() {
         .channel("task-list:follow_ups")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "follow_ups" },
+          // follow_ups merged into tasks (Slice 2C); subscribe to tasks instead.
+          // Listener filters by type='follow_up' on the next fetch.
+          { event: "*", schema: "public", table: "tasks" },
           () => {
             queryClient.invalidateQueries({
               queryKey: ["task-list", "overdue_followups", userId],
@@ -347,7 +358,8 @@ export function TaskListWidget() {
         .channel("task-list:deals")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "deals" },
+          // deals merged into opportunities (Slice 2C); subscribe to opportunities.
+          { event: "*", schema: "public", table: "opportunities" },
           () => {
             queryClient.invalidateQueries({
               queryKey: ["task-list", "closings", userId],
@@ -359,8 +371,13 @@ export function TaskListWidget() {
         .channel("task-list:interactions")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "interactions" },
-          () => {
+          // Slice 3: interactions writes land in activity_events with verb='interaction.*'.
+          { event: "*", schema: "public", table: "activity_events" },
+          (payload) => {
+            const verb = String(
+              (payload.new as { verb?: string } | null)?.verb || ""
+            );
+            if (!verb.startsWith("interaction.")) return;
             // Interactions feed agent_health via the materialized view trigger
             queryClient.invalidateQueries({
               queryKey: ["task-list", "going_cold", userId],
@@ -410,25 +427,27 @@ export function TaskListWidget() {
       interactionType: "call" | "email";
     }) => {
       if (!userId) throw new Error("No user");
-      const { data: interaction, error: intError } = await supabase
-        .from("interactions")
-        .insert({
-          user_id: userId,
+      const res = await fetch("/api/activity/interaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           contact_id: contactId,
           type: interactionType,
           summary: `Follow-up: ${reason}`,
           direction: "outbound",
-        })
-        .select("id")
-        .single();
-      if (intError) throw intError;
+        }),
+      });
+      if (!res.ok) throw new Error("interaction log failed");
+      const { event_id } = (await res.json()) as { event_id: string };
 
+      // Slice 3: linked_interaction_id restores cross-entity audit linkage that
+      // was dropped when follow_ups was merged into tasks in Slice 2C.
       const { error: fuError } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({
           status: "completed",
           completed_at: new Date().toISOString(),
-          completed_via_interaction_id: interaction?.id ?? null,
+          linked_interaction_id: event_id,
         })
         .eq("id", followUpId);
       if (fuError) throw fuError;
@@ -467,8 +486,9 @@ export function TaskListWidget() {
   const snoozeFollowUp = useMutation({
     mutationFn: async ({ followUpId }: { followUpId: string }) => {
       const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
+      // follow_ups merged into tasks (Slice 2C); update by id (unique).
       const { error } = await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({ due_date: tomorrow })
         .eq("id", followUpId);
       if (error) throw error;
@@ -511,14 +531,17 @@ export function TaskListWidget() {
       summary: string;
     }) => {
       if (!userId) throw new Error("No user");
-      const { error } = await supabase.from("interactions").insert({
-        user_id: userId,
-        contact_id: contactId,
-        type: interactionType,
-        summary,
-        direction: "outbound",
+      const res = await fetch("/api/activity/interaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contact_id: contactId,
+          type: interactionType,
+          summary,
+          direction: "outbound",
+        }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error("interaction log failed");
     },
     onSettled: () => {
       queryClient.invalidateQueries({

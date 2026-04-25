@@ -9,7 +9,6 @@ import {
   Users,
   CheckSquare,
   Megaphone,
-  Clock,
   Printer,
   TrendingUp,
   LogOut,
@@ -34,7 +33,6 @@ const navItems = [
   { href: "/opportunities", label: "Pipeline", icon: TrendingUp },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/follow-ups", label: "Follow-ups", icon: Clock },
   { href: "/materials", label: "Materials", icon: Printer },
   { href: "/tickets", label: "Tickets", icon: Ticket },
 ];

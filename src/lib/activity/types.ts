@@ -20,6 +20,16 @@ export type ActivityVerb =
   | 'event.created'
   | 'campaign.step_fired'
   | 'ai.call'
+  | 'interaction.call'
+  | 'interaction.text'
+  | 'interaction.email'
+  | 'interaction.meeting'
+  | 'interaction.broker_open'
+  | 'interaction.lunch'
+  | 'interaction.note'
+  | 'interaction.email_sent'
+  | 'interaction.email_received'
+  | 'interaction.event'
   | 'interaction.backfilled'
   | 'ticket.notes_updated';
 

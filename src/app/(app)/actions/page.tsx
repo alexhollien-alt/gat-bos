@@ -38,11 +38,15 @@ export default function ActionsPage() {
 
     const [followUpsRes, tasksRes, contactsRes, interactionsRes] =
       await Promise.all([
+        // follow_ups merged into tasks (Slice 2C); query tasks WHERE type='follow_up'.
+        // Result rows are then re-mapped into FollowUp shape (due_reason -> reason)
+        // before being passed to buildFollowUpActions.
         supabase
-          .from("follow_ups")
+          .from("tasks")
           .select(
             "*, contacts(id, first_name, last_name, tier, health_score, company, phone, email)"
           )
+          .eq("type", "follow_up")
           .eq("status", "pending")
           .lte("due_date", horizon)
           .order("due_date"),
@@ -68,7 +72,16 @@ export default function ActionsPage() {
           .order("occurred_at", { ascending: false }),
       ]);
 
-    const followUpItems = buildFollowUpActions(followUpsRes.data ?? []);
+    // Re-shape Task rows into FollowUp shape so buildFollowUpActions can read .reason and .due_date.
+    const followUpRows = (followUpsRes.data ?? []).map(
+      (row: Record<string, unknown>) => ({
+        ...row,
+        reason: (row.due_reason as string | null) ?? (row.title as string),
+      })
+    );
+    const followUpItems = buildFollowUpActions(
+      followUpRows as unknown as Parameters<typeof buildFollowUpActions>[0]
+    );
     const taskItems = buildTaskActions(tasksRes.data ?? []);
 
     // Build last-interaction lookup: contactId -> most recent date
@@ -102,19 +115,23 @@ export default function ActionsPage() {
   ) {
     if (!userId) return;
 
-    // Log interaction
-    await supabase.from("interactions").insert({
-      user_id: userId,
-      contact_id: item.contactId,
-      type: interactionType,
-      summary: `Follow-up: ${item.title}`,
-      direction: "outbound",
+    // Log interaction via canonical writeEvent endpoint
+    await fetch("/api/activity/interaction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contact_id: item.contactId,
+        type: interactionType,
+        summary: `Follow-up: ${item.title}`,
+        direction: "outbound",
+      }),
     });
 
     // Complete source record
     if (item.sourceTable === "follow_ups") {
+      // follow_ups merged into tasks (Slice 2C); update by id (unique).
       await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({
           status: "completed",
           completed_at: new Date().toISOString(),
@@ -147,8 +164,9 @@ export default function ActionsPage() {
     const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
 
     if (item.sourceTable === "follow_ups") {
+      // follow_ups merged into tasks (Slice 2C); update by id (unique).
       await supabase
-        .from("follow_ups")
+        .from("tasks")
         .update({ due_date: tomorrow })
         .eq("id", item.sourceId);
     } else if (item.sourceTable === "tasks") {
@@ -157,11 +175,14 @@ export default function ActionsPage() {
         .update({ due_date: tomorrow })
         .eq("id", item.sourceId);
     } else if (item.sourceTable === "contacts") {
-      // Create a new follow-up for stale contacts
-      await supabase.from("follow_ups").insert({
+      // Create a new follow-up for stale contacts -- write to tasks with type='follow_up'.
+      await supabase.from("tasks").insert({
         user_id: userId,
         contact_id: item.contactId,
-        reason: "Reconnect -- stale contact",
+        type: "follow_up",
+        source: "stale_action",
+        title: "Reconnect -- stale contact",
+        due_reason: "Reconnect -- stale contact",
         due_date: tomorrow,
         status: "pending",
       });

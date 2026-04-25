@@ -142,8 +142,13 @@ export default function ContactsPage() {
         .channel("contacts:interactions")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "interactions" },
-          () => {
+          // Slice 3: interactions writes land in activity_events with verb='interaction.*'.
+          { event: "*", schema: "public", table: "activity_events" },
+          (payload) => {
+            const verb = String(
+              (payload.new as { verb?: string } | null)?.verb || ""
+            );
+            if (!verb.startsWith("interaction.")) return;
             queryClient.invalidateQueries({
               queryKey: ["contacts", "touch_counts"],
             });

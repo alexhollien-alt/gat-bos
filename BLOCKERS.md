@@ -8,6 +8,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
+- **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
+- **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
+- **Fix needed:** None required. Future: if anyone investigates `interaction.backfilled WHERE deleted_at IS NOT NULL`, these are the 2 known soft-deletes -- not a data integrity issue.
+
 ### [2026-04-22] "New Agent Onboarding" campaign row not yet created
 - **Broken:** Auto-enrollment code ships wired across all 3 contact-creation paths (POST /api/contacts, intake, New Contact modal via `/api/contacts/[id]/auto-enroll`), but `autoEnrollNewAgent()` returns `{status:'skipped', reason:'campaign_not_found'}` silently until a campaign row exists under Alex's `user_id` with `name='New Agent Onboarding'`, `status='active'`, `deleted_at IS NULL`, and at least one step at `step_number=1`. So new realtor contacts are being created but no enrollments land.
 - **Where:** `src/lib/campaigns/auto-enroll.ts:42-52` (campaign lookup filter). Invoked by `src/app/api/contacts/route.ts`, `src/app/api/intake/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`.
@@ -80,6 +85,21 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-24] Slice 2C: writers still INSERT directly into interactions_legacy -- RESOLVED 2026-04-24 (Slice 3)
+- All 6 INSERT call sites migrated. Server-side callers (`src/lib/captures/promote.ts`, `src/app/api/intake/route.ts`, `src/app/api/webhooks/resend/route.ts`) call `writeEvent()` directly with verb=`interaction.{type}`; client-side callers (`src/app/(app)/actions/page.tsx`, `src/components/dashboard/task-list.tsx` x2, `src/components/interactions/interaction-modal.tsx`) post to new endpoint at `src/app/api/activity/interaction/route.ts` which authenticates the user and writes the activity_events row server-side. ActivityVerb union extended with 10 `interaction.*` verbs in `src/lib/activity/types.ts`.
+- Verification: `grep -rn "from('interactions_legacy').insert" src/` returns zero hits.
+- Closing branch: `gsd/005-slice-3-interactions-routes-cleanup`.
+
+### [2026-04-24] Slice 2C: interactions_legacy table -- drop deferred to Slice 3 -- RESOLVED 2026-04-24 (Slice 3)
+- W3 backfill migration writes the 2 legacy rows into activity_events with verb='interaction.backfilled' and context.legacy_id idempotency guard. W4 migration rewrites the interactions VIEW to drop Part A (project from activity_events only) and drops interactions_legacy CASCADE.
+- Realtime channels in `src/components/dashboard/task-list.tsx:374` and `src/app/(app)/contacts/page.tsx:145` flipped to subscribe to `activity_events` with verb-prefix filter inside the callback. activity_events added to `supabase_realtime` publication.
+- Migration files: `supabase/migrations/20260425110000_slice3_legacy_backfill.sql` + `supabase/migrations/20260425120000_slice3_view_rewrite_drop_legacy.sql`. Bundled paste at `~/Desktop/PASTE-INTO-SUPABASE-slice3.sql`.
+
+### [2026-04-24] Slice 2C: tasks.completed_via_interaction_id audit linkage lost -- RESOLVED 2026-04-24 (Slice 3)
+- Added `tasks.linked_interaction_id uuid` with FK to `activity_events(id) ON DELETE SET NULL` and partial index `idx_tasks_linked_interaction_id`. Migration: `supabase/migrations/20260425100000_slice3_tasks_linked_interaction_id.sql`.
+- The completeFollowUp mutation in `src/components/dashboard/task-list.tsx` now POSTs to `/api/activity/interaction`, captures the returned event_id, and writes it back into `tasks.linked_interaction_id` in the same UPDATE that marks the follow-up completed. Audit linkage restored.
+- Task interface in `src/lib/types.ts` extended with optional `linked_interaction_id?: string | null`.
 
 ### [2026-04-22] interactions_update_cycle trigger still live -- RESOLVED 2026-04-23
 - Migration file written at `supabase/migrations/slice-2a-drop-spine.sql`. `DROP TRIGGER IF EXISTS interactions_update_cycle ON public.interactions;` appears as first statement before all DROP TABLE calls. Alex executes manually.

@@ -24,8 +24,10 @@ export function FollowUpRow({
   const isDueToday = isToday(new Date(followUp.due_date));
 
   async function markStatus(status: "completed" | "skipped") {
+    // follow_ups merged into tasks (Slice 2C). Update by id; type filter not
+    // required since id is unique. Status string passed through verbatim.
     const { error } = await supabase
-      .from("follow_ups")
+      .from("tasks")
       .update({
         status,
         completed_at: new Date().toISOString(),

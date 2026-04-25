@@ -1,6 +1,7 @@
 import type { Capture, InteractionType, PromotedTarget, SuggestedTarget } from "@/lib/types";
 import { adminClient } from "@/lib/supabase/admin";
 import { writeEvent } from "@/lib/activity/writeEvent";
+import type { ActivityVerb } from "@/lib/activity/types";
 
 export interface PromoteInput {
   capture: Capture;
@@ -377,12 +378,19 @@ export async function promoteCapture(
       intent === "note" ? "note" : mapKeywordToInteractionType(keyword);
 
     const { data, error } = await adminClient
-      .from("interactions")
+      .from("activity_events")
       .insert({
         user_id: userId,
-        contact_id: contactId,
-        type: interactionType,
-        summary: rawText,
+        actor_id: userId,
+        verb: `interaction.${interactionType}` as ActivityVerb,
+        object_table: "contacts",
+        object_id: contactId,
+        context: {
+          contact_id: contactId,
+          type: interactionType,
+          summary: rawText,
+          source: "capture",
+        },
       })
       .select("id")
       .single();
@@ -415,14 +423,20 @@ export async function promoteCapture(
   }
 
   if (intent === "follow_up") {
+    // follow_ups merged into tasks (Slice 2C). Write a task with type='follow_up'.
+    // due_reason holds the reason; title duplicates it; source records provenance.
+    // The created_via='capture' field has no tasks-table equivalent; use source instead.
     const { data, error } = await adminClient
-      .from("follow_ups")
+      .from("tasks")
       .insert({
         user_id: userId,
         contact_id: contactId,
-        reason: rawText,
+        type: "follow_up",
+        source: "capture",
+        title: rawText,
+        due_reason: rawText,
         due_date: defaultFollowUpDueDate(capture.created_at),
-        created_via: "capture",
+        status: "pending",
       })
       .select("id")
       .single();

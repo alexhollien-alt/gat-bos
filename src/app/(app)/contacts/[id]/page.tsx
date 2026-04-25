@@ -140,12 +140,21 @@ export default function ContactDetailPage() {
   }, [contactId, supabase]);
 
   const fetchFollowUps = useCallback(async () => {
+    // follow_ups merged into tasks (Slice 2C); query tasks WHERE type='follow_up'.
+    // Map back into FollowUp shape so consumers reading .reason still resolve.
     const { data } = await supabase
-      .from("follow_ups")
+      .from("tasks")
       .select("*")
+      .eq("type", "follow_up")
       .eq("contact_id", contactId)
       .order("due_date", { ascending: true });
-    if (data) setFollowUps(data);
+    if (data) {
+      const mapped = data.map((row: Record<string, unknown>) => ({
+        ...row,
+        reason: (row.due_reason as string | null) ?? (row.title as string),
+      })) as unknown as FollowUp[];
+      setFollowUps(mapped);
+    }
   }, [contactId, supabase]);
 
   const fetchMaterialRequests = useCallback(async () => {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { adminClient } from "@/lib/supabase/admin";
 import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
+import { writeEvent } from "@/lib/activity/writeEvent";
 
 // ---------------------------------------------------------------------------
 // Input validation and sanitization
@@ -270,12 +271,17 @@ export async function POST(request: Request) {
 
     // ── Log first touch interaction for new contacts ──
     if (isNewContact && contactId) {
-      await adminClient.from("interactions").insert({
-        user_id: ownerId,
-        contact_id: contactId,
-        type: "note",
-        direction: "inbound",
-        summary: `Submitted intake form (${body.situation || "general"}). Products requested: ${body.products.join(", ")}.`,
+      void writeEvent({
+        actorId: ownerId,
+        verb: "interaction.note",
+        object: { table: "contacts", id: contactId },
+        context: {
+          contact_id: contactId,
+          type: "note",
+          summary: `Submitted intake form (${body.situation || "general"}). Products requested: ${body.products.join(", ")}.`,
+          direction: "inbound",
+          source: "intake",
+        },
       });
 
       // Auto-enroll new realtor contacts in "New Agent Onboarding". Fire-and-
