@@ -38,3 +38,5 @@ next-env.d.ts
 
 # phase gate / playwright local state (auth tokens, run artifacts)
 scripts/.phase-*.json
+.claude/worktrees/
+.playwright-mcp/
