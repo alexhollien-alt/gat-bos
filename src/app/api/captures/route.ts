@@ -1,8 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseCapture, type ContactIndexEntry } from "@/lib/captures/parse";
+import { checkRateLimit } from "@/lib/rate-limit/check";
+import { extractIp } from "@/lib/rate-limit/extract-ip";
+
+// Rate limit: 30 captures per 60s sliding window per IP. Captures are a
+// burst-prone interaction (Alex pastes a sequence of meeting notes), so
+// the window is short and the burst limit is generous compared to intake.
+const CAPTURES_RATE_LIMIT = 30;
+const CAPTURES_RATE_WINDOW_SEC = 60;
 
 export async function POST(request: NextRequest) {
+  const ip = extractIp(request.headers);
+  const rl = await checkRateLimit(
+    `ratelimit:captures:${ip}`,
+    CAPTURES_RATE_LIMIT,
+    CAPTURES_RATE_WINDOW_SEC,
+  );
+  if (!rl.allowed) {
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((rl.resetAt.getTime() - Date.now()) / 1000),
+    );
+    return NextResponse.json(
+      { error: "rate_limited", retryAfter },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
+    );
+  }
+
   const supabase = await createClient();
 
   const {

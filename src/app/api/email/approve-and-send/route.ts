@@ -7,6 +7,13 @@
 //   revise             -- bump revisions_count, reset expires_at, store revised body.
 // Rejects expired or already-sent drafts with 409.
 // Every action appends an event to email_drafts.audit_log.event_sequence.
+//
+// Pure state-machine logic + audit builders live in
+// `src/lib/messaging/draftActions.ts` (tested under draftActions.test.ts).
+// This handler owns: auth, body parsing, Supabase I/O, Resend send, Gmail
+// draft creation, fire-and-forget mark-read, writeEvent emission, and HTTP
+// response shaping. Keep the I/O orchestration here, audit-shape decisions
+// there.
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { sendDraft } from "@/lib/resend/client";
@@ -15,13 +22,26 @@ import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
 import { ALEX_EMAIL } from "@/lib/constants";
 import { writeEvent } from "@/lib/activity/writeEvent";
+import {
+  type Action,
+  type DraftState,
+  buildApprovedAudit,
+  buildDiscardAudit,
+  buildGmailDraftAudit,
+  buildGmailDraftFailAudit,
+  buildMarkReadAudit,
+  buildReviseTransition,
+  buildSendFailAudit,
+  buildSentAudit,
+  htmlToPlain,
+  isValidAction,
+  validateAction,
+} from "@/lib/messaging/draftActions";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 const ROUTE = "/api/email/approve-and-send";
-
-type Action = "send_now" | "create_gmail_draft" | "discard" | "revise";
 
 interface RequestBody {
   draft_id?: string;
@@ -30,17 +50,10 @@ interface RequestBody {
   revised_subject?: string;
 }
 
-interface DraftRow {
+interface DraftRow extends DraftState {
   id: string;
   email_id: string;
-  draft_subject: string | null;
-  draft_body_plain: string | null;
   draft_body_html: string | null;
-  status: string;
-  expires_at: string;
-  revisions_count: number;
-  escalation_flag: "marlene" | "agent_followup" | null;
-  audit_log: AuditLog | null;
   metadata: Record<string, unknown> | null;
 }
 
@@ -52,56 +65,6 @@ interface EmailRow {
   from_name: string | null;
   subject: string;
   contact_id: string | null;
-}
-
-interface AuditEvent {
-  timestamp: string;
-  event: string;
-  [key: string]: unknown;
-}
-
-interface AuditLog {
-  event_sequence: AuditEvent[];
-  metadata: Record<string, unknown>;
-}
-
-function appendAuditEvent(audit: AuditLog | null, event: AuditEvent): AuditLog {
-  const base: AuditLog = audit ?? { event_sequence: [], metadata: {} };
-  return {
-    event_sequence: [...(base.event_sequence ?? []), event],
-    metadata: base.metadata ?? {},
-  };
-}
-
-// Phase 1.3.2-A: produce the escalation lifecycle event for an action on a
-// flagged draft. Discard clears the escalation; everything else acknowledges
-// it. Returns null on un-flagged drafts so callers can skip the prepend.
-function escalationLifecycleEvent(
-  flag: DraftRow["escalation_flag"],
-  action: Action,
-  timestamp: string,
-): AuditEvent | null {
-  if (!flag) return null;
-  return {
-    timestamp,
-    event: action === "discard" ? "escalation_cleared" : "escalation_acknowledged",
-    escalation_flag: flag,
-    action,
-  };
-}
-
-function htmlToPlain(html: string): string {
-  return html
-    .replace(/<br\s*\/?\s*>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }
 
 function fireMarkRead(emailId: string, origin: string) {
@@ -148,7 +111,7 @@ export async function POST(request: NextRequest) {
   if (!draftId || typeof draftId !== "string") {
     return NextResponse.json({ error: "draft_id is required" }, { status: 400 });
   }
-  if (!action || !["send_now", "create_gmail_draft", "discard", "revise"].includes(action)) {
+  if (!isValidAction(action)) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
@@ -168,29 +131,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Draft not found" }, { status: 404 });
   }
 
-  if (draft.status === "sent") {
-    return NextResponse.json({ error: "Draft already sent" }, { status: 409 });
-  }
-
   const now = new Date();
-  const expiresAt = new Date(draft.expires_at);
-  const isExpired = Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < now.getTime();
-  const sendingAction = action === "send_now" || action === "create_gmail_draft";
-
-  if (isExpired && sendingAction) {
-    return NextResponse.json({ error: "Draft expired" }, { status: 409 });
+  const validation = validateAction(draft, action, now);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: validation.status });
   }
 
   if (action === "discard") {
-    const ts = now.toISOString();
-    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
-    const baseAudit = escalationEvent
-      ? appendAuditEvent(draft.audit_log, escalationEvent)
-      : draft.audit_log;
-    const audit = appendAuditEvent(baseAudit, {
-      timestamp: ts,
-      event: "user_discarded",
-    });
+    const audit = buildDiscardAudit(draft, now.toISOString());
     const { error: updErr } = await adminClient
       .from("email_drafts")
       .update({ status: "discarded", audit_log: audit })
@@ -207,30 +155,11 @@ export async function POST(request: NextRequest) {
     if (!newBody) {
       return NextResponse.json({ error: "revised_body is required" }, { status: 400 });
     }
-    const newSubject = body.revised_subject?.trim() || draft.draft_subject;
-    const newExpiresAt = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
-    const ts = now.toISOString();
-    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
-    const baseAudit = escalationEvent
-      ? appendAuditEvent(draft.audit_log, escalationEvent)
-      : draft.audit_log;
-    const audit = appendAuditEvent(baseAudit, {
-      timestamp: ts,
-      event: "user_revised",
-      previous_body: draft.draft_body_plain,
-      previous_subject: draft.draft_subject,
-      revisions_count_after: draft.revisions_count + 1,
-    });
+    const newSubject = body.revised_subject?.trim() || null;
+    const transition = buildReviseTransition(draft, newBody, newSubject, now);
     const { error: updErr } = await adminClient
       .from("email_drafts")
-      .update({
-        draft_body_plain: newBody,
-        draft_subject: newSubject,
-        revisions_count: draft.revisions_count + 1,
-        expires_at: newExpiresAt,
-        status: "revised",
-        audit_log: audit,
-      })
+      .update(transition)
       .eq("id", draftId);
     if (updErr) {
       await logError(ROUTE, `revise update failed: ${updErr.message}`, { draft_id: draftId });
@@ -240,8 +169,8 @@ export async function POST(request: NextRequest) {
       ok: true,
       action,
       draft_id: draftId,
-      revisions_count: draft.revisions_count + 1,
-      expires_at: newExpiresAt,
+      revisions_count: transition.revisions_count,
+      expires_at: transition.expires_at,
     });
   }
 
@@ -267,16 +196,7 @@ export async function POST(request: NextRequest) {
   const text = draft.draft_body_plain ?? htmlToPlain(html);
 
   if (action === "send_now") {
-    const ts = now.toISOString();
-    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
-    const baseAudit = escalationEvent
-      ? appendAuditEvent(draft.audit_log, escalationEvent)
-      : draft.audit_log;
-    const approvedAudit = appendAuditEvent(baseAudit, {
-      timestamp: ts,
-      event: "user_approved",
-      action: "send_now",
-    });
+    const approvedAudit = buildApprovedAudit(draft, "send_now", now.toISOString());
 
     let sendResult;
     try {
@@ -289,11 +209,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "resend send failed";
-      const failAudit = appendAuditEvent(approvedAudit, {
-        timestamp: new Date().toISOString(),
-        event: "send_failed",
-        error: message,
-      });
+      const failAudit = buildSendFailAudit(approvedAudit, message);
       await adminClient
         .from("email_drafts")
         .update({ audit_log: failAudit })
@@ -303,13 +219,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sentAt = new Date().toISOString();
-    const sentAudit = appendAuditEvent(approvedAudit, {
-      timestamp: sentAt,
-      event: "sent_via_resend",
-      message_id: sendResult.messageId,
-      original_to: sendResult.originalTo,
-      redirected_to: sendResult.redirectedTo,
-    });
+    const sentAudit = buildSentAudit(approvedAudit, sentAt, sendResult);
 
     const { error: updErr } = await adminClient
       .from("email_drafts")
@@ -336,8 +246,8 @@ export async function POST(request: NextRequest) {
 
     void writeEvent({
       actorId: process.env.OWNER_USER_ID!,
-      verb: 'email.sent',
-      object: { table: 'email_drafts', id: draftId },
+      verb: "email.sent",
+      object: { table: "email_drafts", id: draftId },
       context: {
         email_id: draft.email_id,
         ...(email.contact_id ? { contact_id: email.contact_id } : {}),
@@ -346,11 +256,7 @@ export async function POST(request: NextRequest) {
 
     // Record the mark-read intent in audit log immediately so it survives even
     // if the fire-and-forget request fails; the mark-read route logs its own errors.
-    const finalAudit = appendAuditEvent(sentAudit, {
-      timestamp: new Date().toISOString(),
-      event: "original_email_marked_read",
-      gmail_id: email.gmail_id,
-    });
+    const finalAudit = buildMarkReadAudit(sentAudit, email.gmail_id);
     await adminClient
       .from("email_drafts")
       .update({ audit_log: finalAudit })
@@ -367,16 +273,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "create_gmail_draft") {
-    const ts = now.toISOString();
-    const escalationEvent = escalationLifecycleEvent(draft.escalation_flag, action, ts);
-    const baseAudit = escalationEvent
-      ? appendAuditEvent(draft.audit_log, escalationEvent)
-      : draft.audit_log;
-    const approvedAudit = appendAuditEvent(baseAudit, {
-      timestamp: ts,
-      event: "user_approved",
-      action: "create_gmail_draft",
-    });
+    const approvedAudit = buildApprovedAudit(draft, "create_gmail_draft", now.toISOString());
 
     let result;
     try {
@@ -389,11 +286,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "gmail draft create failed";
-      const failAudit = appendAuditEvent(approvedAudit, {
-        timestamp: new Date().toISOString(),
-        event: "gmail_draft_failed",
-        error: message,
-      });
+      const failAudit = buildGmailDraftFailAudit(approvedAudit, message);
       await adminClient
         .from("email_drafts")
         .update({ audit_log: failAudit })
@@ -403,12 +296,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sentAt = new Date().toISOString();
-    const draftAudit = appendAuditEvent(approvedAudit, {
-      timestamp: sentAt,
-      event: "sent_via_gmail_draft",
-      gmail_draft_id: result.draftId,
-      gmail_message_id: result.messageId,
-    });
+    const draftAudit = buildGmailDraftAudit(approvedAudit, sentAt, result);
 
     const { error: updErr } = await adminClient
       .from("email_drafts")
@@ -440,6 +328,6 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // unreachable -- action validated above
+  // unreachable -- isValidAction guards this
   return NextResponse.json({ error: "Unhandled action" }, { status: 500 });
 }
