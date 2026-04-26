@@ -12,9 +12,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Inbox } from "lucide-react";
 import { formatDistanceToNow, differenceInDays, subDays } from "date-fns";
 import { AccentRule, MonoNumeral, PageHeader, SectionShell } from "@/components/screen";
+
+function NewIntakeBadge({ count }: { count: number }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--accent-red)]/40 bg-[color:var(--accent-red)]/10 px-3 py-1.5 text-[var(--accent-red)]">
+      <Inbox className="h-3.5 w-3.5" />
+      <span className="font-mono uppercase text-micro tracking-label font-medium">
+        {count} new intake{count !== 1 ? "s" : ""}
+      </span>
+    </div>
+  );
+}
+
+function PreviewLink() {
+  return (
+    <Link
+      href="/weekly-edge/preview"
+      className="font-mono uppercase text-micro tracking-label font-medium text-muted-foreground transition-colors hover:text-[var(--accent-red)]"
+    >
+      Preview this week →
+    </Link>
+  );
+}
 
 // ---------------------
 // Types
@@ -291,14 +313,15 @@ function TicketCard({
 export default function TicketsPage() {
   const supabase = createClient();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [intakeCount, setIntakeCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("material_requests")
+      .from("tickets")
       .select(
-        "*, contacts(id, first_name, last_name, company, tier, phone, email, brand_colors, palette), items:material_request_items(*)"
+        "*, contacts(id, first_name, last_name, company, tier, phone, email, brand_colors, palette), items:ticket_items(*)"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -309,9 +332,20 @@ export default function TicketsPage() {
     setLoading(false);
   }, [supabase]);
 
+  const fetchIntakeCount = useCallback(async () => {
+    const { count } = await supabase
+      .from("tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("source", "intake")
+      .eq("status", "submitted")
+      .is("deleted_at", null);
+    setIntakeCount(count ?? 0);
+  }, [supabase]);
+
   useEffect(() => {
     fetchTickets();
-  }, [fetchTickets]);
+    fetchIntakeCount();
+  }, [fetchTickets, fetchIntakeCount]);
 
   const handleStatusChange = async (
     requestId: string,
@@ -333,7 +367,7 @@ export default function TicketsPage() {
     );
 
     await supabase
-      .from("material_requests")
+      .from("tickets")
       .update({
         status: newStatus,
         ...(newStatus === "complete"
@@ -376,32 +410,37 @@ export default function TicketsPage() {
         eyebrow="Print queue"
         title="Ticket Workbench"
         right={
-          <div className="flex items-center gap-4 text-[12px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
-                Pending
-              </span>
-              <MonoNumeral size="sm" className="text-foreground font-semibold">
-                {pending}
-              </MonoNumeral>
-            </div>
+          <div className="flex items-center gap-4">
+            {intakeCount > 0 && <NewIntakeBadge count={intakeCount} />}
+            <PreviewLink />
             <span className="text-border">|</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
-                This Week
-              </span>
-              <MonoNumeral size="sm" className="text-foreground font-semibold">
-                {completedThisWeek}
-              </MonoNumeral>
-            </div>
-            <span className="text-border">|</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
-                Avg
-              </span>
-              <MonoNumeral size="sm" className="text-foreground font-semibold">
-                {avgTurnaround}
-              </MonoNumeral>
+            <div className="flex items-center gap-4 text-[12px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                  Pending
+                </span>
+                <MonoNumeral size="sm" className="text-foreground font-semibold">
+                  {pending}
+                </MonoNumeral>
+              </div>
+              <span className="text-border">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                  This Week
+                </span>
+                <MonoNumeral size="sm" className="text-foreground font-semibold">
+                  {completedThisWeek}
+                </MonoNumeral>
+              </div>
+              <span className="text-border">|</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-mono">
+                  Avg
+                </span>
+                <MonoNumeral size="sm" className="text-foreground font-semibold">
+                  {avgTurnaround}
+                </MonoNumeral>
+              </div>
             </div>
           </div>
         }

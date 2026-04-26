@@ -17,7 +17,7 @@ import {
  *  - follow_ups: only when status === "completed". Slice 2C consolidated
  *    follow_ups into tasks WHERE type='follow_up'; callers may pass either
  *    legacy FollowUp rows or Task rows (the union below covers both).
- *  - material_requests: every row, anchored on created_at (Alex's commitment moment)
+ *  - tickets: every row, anchored on created_at (Alex's commitment moment)
  *  - design_assets: every row, anchored on created_at
  *
  * Excluded:

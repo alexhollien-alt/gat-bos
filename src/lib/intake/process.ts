@@ -41,9 +41,9 @@ const safeRequiredText = (max: number) =>
   z.preprocess((val) => sanitizeFreeText(val, max), z.string().min(1).max(max));
 
 // Product identifiers the intake form may request. Anything outside this
-// list is rejected before it can land in material_request_items. Must
+// list is rejected before it can land in ticket_items. Must
 // match the canonical `ProductType` union in src/lib/types.ts -- that
-// union mirrors the DB CHECK constraint on material_request_items.product_type.
+// union mirrors the DB CHECK constraint on ticket_items.product_type.
 export const PRODUCT_TYPES = [
   "flyer",
   "brochure",
@@ -259,9 +259,9 @@ export async function processIntake(
   const listingData = buildListingData(payload.listing);
   const title = buildIntakeTitle(payload.agent.agent_name, payload.listing, payload.situation);
 
-  // ── Insert material_request ──
+  // ── Insert ticket ──
   const { data: req, error: reqError } = await client
-    .from("material_requests")
+    .from("tickets")
     .insert({
       contact_id: contactId,
       title,
@@ -295,7 +295,7 @@ export async function processIntake(
     description: null,
   }));
 
-  const { error: itemsError } = await client.from("material_request_items").insert(items);
+  const { error: itemsError } = await client.from("ticket_items").insert(items);
   if (itemsError) {
     // Log and continue -- matches prior route behavior. The request row
     // exists; missing items show up in inbox triage.

@@ -49,13 +49,13 @@ export default function TicketDetailPage() {
   const fetchTicket = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("material_requests")
-      .select("*, contacts(id, first_name, last_name, company, email, phone), material_request_items(*)")
+      .from("tickets")
+      .select("*, contacts(id, first_name, last_name, company, email, phone), ticket_items(*)")
       .eq("id", ticketId)
       .single();
 
     if (!error && data) {
-      const t = { ...data, items: data.material_request_items } as MaterialRequest;
+      const t = { ...data, items: data.ticket_items } as MaterialRequest;
       setTicket(t);
       setNotes(t.notes || "");
     }

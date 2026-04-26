@@ -84,7 +84,7 @@ export function MaterialRequestFormModal({
 
     // Insert request header
     const { data: request, error: reqError } = await supabase
-      .from("material_requests")
+      .from("tickets")
       .insert({
         user_id: user!.id,
         contact_id: data.contact_id,
@@ -113,7 +113,7 @@ export function MaterialRequestFormModal({
     }));
 
     const { error: itemsError } = await supabase
-      .from("material_request_items")
+      .from("ticket_items")
       .insert(items);
 
     setLoading(false);

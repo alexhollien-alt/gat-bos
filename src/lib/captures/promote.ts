@@ -149,7 +149,7 @@ export async function promoteCapture(
 
       case 'ticket': {
         const { data, error } = await adminClient
-          .from('material_requests')
+          .from('tickets')
           .insert({
             user_id: userId,
             contact_id: contactId,
@@ -181,7 +181,7 @@ export async function promoteCapture(
           ok: true,
           promotedTo: 'ticket',
           promotedId: data.id as string,
-          targetUrl: '/materials',
+          targetUrl: '/tickets',
         };
       }
 
@@ -470,7 +470,7 @@ export async function promoteCapture(
 
   if (intent === "ticket") {
     const { data, error } = await adminClient
-      .from("material_requests")
+      .from("tickets")
       .insert({
         user_id: userId,
         contact_id: contactId,
@@ -506,7 +506,7 @@ export async function promoteCapture(
       ok: true,
       promotedTo: "ticket",
       promotedId: data.id as string,
-      targetUrl: "/materials",
+      targetUrl: "/tickets",
     };
   }
 

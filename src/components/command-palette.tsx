@@ -280,9 +280,9 @@ export function CommandPalette() {
             <Phone className="mr-2 h-4 w-4" />
             Campaigns
           </CommandItem>
-          <CommandItem onSelect={() => navigate("/materials")}>
+          <CommandItem onSelect={() => navigate("/tickets")}>
             <CheckSquare className="mr-2 h-4 w-4" />
-            Materials
+            Tickets
           </CommandItem>
         </CommandGroup>
       </CommandList>
