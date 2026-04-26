@@ -46,6 +46,11 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 - **What:** Once Alex pastes the RPC and runs the live smoke (`pnpm dev` + 11x `/api/intake` POST to confirm 429), move the file to `~/Archive/paste-files/2026-04/` per Standing Rule 22.
 - **Why deferred:** Out of Slice 3B scope; flagged in the Slice 3B risk register row #7.
 
+### [2026-04-26] (Practice rule, post-incident) Backfill migrations must assert source row count before any DROP TABLE step in the same sequence
+- **Where:** Any future `~/crm/supabase/migrations/*_backfill_*.sql` that is followed by a `DROP TABLE legacy_*` step in the same slice.
+- **What:** The backfill SQL must `RAISE EXCEPTION` if the source table's row count is below an explicit minimum confirmed at draft time. Pattern: `SELECT COUNT(*) INTO v_src FROM legacy_x; IF v_src < <expected> THEN RAISE EXCEPTION 'Source drift: expected >= % rows in legacy_x, found %. Investigate before continuing.', <expected>, v_src; END IF;` This is a hard gate, not a warning -- the next step in the sequence drops the source, so a silent empty backfill is unrecoverable.
+- **Why:** The 2026-04-25 morning brief returned `effective_drift=1000` for all 103 A/B/C contacts. Root cause: `20260425110000_slice3_legacy_backfill.sql` ran against an `interactions_legacy` table that held =<4 rows at execution time; `20260425120000_slice3_view_rewrite_drop_legacy.sql` then dropped the table. The 78 contacts whose history lived in `contacts.last_touchpoint` (denormalized field, never copied to legacy) were silently lost from the activity ledger. Replacement migration `20260426120000_backfill_last_touchpoint_to_activity_events.sql` demonstrates the pattern: source-count assertion fails loudly if state has drifted from the authored expectation.
+
 ---
 
 ## Done
