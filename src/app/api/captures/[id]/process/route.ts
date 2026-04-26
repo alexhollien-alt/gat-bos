@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { promoteCapture } from "@/lib/captures/promote";
+import { promoteCapture } from "@/lib/captures/actions";
 import type { Capture, CapturePayload } from "@/lib/types";
 import { checkRateLimit } from "@/lib/rate-limit/check";
 import { extractIp } from "@/lib/rate-limit/extract-ip";
