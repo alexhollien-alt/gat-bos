@@ -20,7 +20,7 @@
 
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
+import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
 import { writeEvent } from "@/lib/activity/writeEvent";
 import type { ProductType } from "@/lib/types";
 
