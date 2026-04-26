@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseCapture, type ContactIndexEntry } from "@/lib/captures/parse";
+import { parseCapture, type ContactIndexEntry } from "@/lib/captures/rules";
 import { checkRateLimit } from "@/lib/rate-limit/check";
 import { extractIp } from "@/lib/rate-limit/extract-ip";
 
