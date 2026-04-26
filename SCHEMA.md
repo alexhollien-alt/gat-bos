@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-24 (Slice 3A)*
+*Last updated: 2026-04-26 (Slice 3B)*
 
 ## Layer Map
 
@@ -21,8 +21,9 @@
 | notes | Raw | live | |
 | tasks | Raw | live | Extended in Slice 2C: added type (todo/follow_up/commitment), source, due_reason, action_hint columns. |
 | follow_ups | Raw | dropped | Dropped in Slice 2C. Rows merged into tasks with type=follow_up. |
-| material_requests | Raw | live | Ticket system. |
-| material_request_items | Raw | live | Line items on tickets. |
+| tickets | Raw | live | Ticket system (renamed from `material_requests` in Slice 3B, 23 rows preserved). |
+| ticket_items | Raw | live | Line items on tickets (renamed from `material_request_items` in Slice 3B, 23 rows preserved). FK column `request_id` retained as-is (column rename out of scope). |
+| _deprecated_requests | Raw | deprecated | Orphan stub renamed from `requests` in Slice 3B (0 rows; soft-deprecate per Standing Rule 3). One inbound FK from `activities.request_id` survives by OID. Eventual hard-drop tracked in `LATER.md`. |
 | design_assets | Raw | live | |
 | events | Raw | live | Calendar events. Bidirectional sync with GCal. |
 | projects | Raw | live | Project tracking. |
@@ -56,7 +57,8 @@
 | Slice 1 | Activity ledger foundation: activity_events table, TypeScript contracts, writeEvent helper, five write-path retrofits, contact timeline migration, spine deprecation. |
 | Slice 2 | Drop spine tables. Migrate remaining spine reads to activity_events. |
 | Slice 3A | Route thinning + lib shape standardization. Extract draftActions + intake orchestration to pure helpers under src/lib/. Add Supabase-backed sliding-window rate limiter (rate_limits table + increment_rate_limit RPC) wired to /api/intake, /api/captures, /api/captures/[id]/process. Standardize 8 src/lib/<entity>/ dirs to actions.ts/queries.ts/types.ts shape. |
-| Slice 3B-8 | To be planned. |
+| Slice 3B | Ticket unification + OAuth cleanup + lib carryforwards. DB renames: material_requests -> tickets, material_request_items -> ticket_items, requests -> _deprecated_requests (soft-deprecate). FK + index + RLS policy cosmetic renames included. /materials route 308-redirects to /tickets; intake badge + preview link ported to /tickets header. OAUTH_STATE_SIGNING_KEY introduced as new env var, decoupled from OAUTH_ENCRYPTION_KEY (one-slice fallback). Slice 3A's 4 deferred lib carryforwards land: captures/parse.ts -> rules.ts; captures/promote.ts folded into actions.ts; campaigns/auto-enroll.ts folded into actions.ts; events/invite-templates/ promoted to single-file events/invite-templates.ts. |
+| Slice 4-8 | To be planned. |
 
 ## activity_events Column Reference
 
