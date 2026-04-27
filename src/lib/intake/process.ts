@@ -20,7 +20,7 @@
 
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 import { writeEvent } from "@/lib/activity/writeEvent";
 import type { ProductType } from "@/lib/types";
 
@@ -317,10 +317,15 @@ export async function processIntake(
       },
     });
 
-    // Auto-enroll new realtor contacts in "New Agent Onboarding". Fire-and-
-    // forget: silent no-op if the campaign isn't active. Intake always
-    // creates type='realtor' so every new intake contact qualifies.
-    await autoEnrollNewAgent(client, contactId, ownerId);
+    // Slice 5B: route post-creation effects through the hook dispatcher.
+    // Runs auto-enroll + welcome-task as isolated handlers; one failure
+    // never blocks the other or the intake response.
+    await firePostCreationHooks({
+      entityKind: "contact",
+      entityId: contactId,
+      payload: {},
+      ownerUserId: ownerId,
+    });
   }
 
   return { id: req.id, contactId, isNewContact };
