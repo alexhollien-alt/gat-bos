@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-27 (Slice 5A in progress)*
+*Last updated: 2026-04-27 (Slice 5B shipped)*
 
 ## Layer Map
 
@@ -19,14 +19,14 @@
 | interactions | Raw | view | Replaced with a VIEW over activity_events in Slice 2C. Part A: interactions_legacy (legacy rows). Part B: activity_events WHERE verb LIKE interaction.%. See interactions_legacy row. |
 | interactions_legacy | Raw | live | Legacy interactions table preserved in Slice 2C. Referenced by the interactions VIEW Part A. Drop deferred to Slice 3 after promote.ts and 5 other writers migrate to writeEvent(). |
 | notes | Raw | live | |
-| tasks | Raw | live | Extended in Slice 2C: added type (todo/follow_up/commitment), source, due_reason, action_hint columns. |
+| tasks | Raw | live | Extended in Slice 2C: added type (todo/follow_up/commitment), source, due_reason, action_hint columns. Slice 5B: added project_id (uuid, FK projects ON DELETE SET NULL, partial index WHERE deleted_at IS NULL AND project_id IS NOT NULL). status check constraint allows ('open','done','snoozed','cancelled'). |
 | follow_ups | Raw | dropped | Dropped in Slice 2C. Rows merged into tasks with type=follow_up. |
 | tickets | Raw | live | Ticket system (renamed from `material_requests` in Slice 3B, 23 rows preserved). |
 | ticket_items | Raw | live | Line items on tickets (renamed from `material_request_items` in Slice 3B, 23 rows preserved). FK column `request_id` retained as-is (column rename out of scope). |
 | design_assets | Raw | live | |
 | events | Raw | live | Calendar events. Bidirectional sync with GCal. |
 | projects | Raw | live | Project tracking. |
-| project_touchpoints | Raw | live | |
+| project_touchpoints | Raw | live | Slice 5B: added due_at, deleted_at, user_id (NOT NULL after backfill to OWNER_USER_ID), last_reminded_at columns + partial indexes on (due_at) and (last_reminded_at) WHERE deleted_at IS NULL. project_touchpoint_type enum gained value 'listing_setup'. Alex-only RLS via policy alex_touchpoints_all. |
 | email_drafts | Raw | live | Gmail draft management. |
 | emails | Raw | live | Sent/received email records. |
 | captures | Raw | live | Voice and text captures pending classification. |
