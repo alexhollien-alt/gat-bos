@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireApiToken } from "@/lib/api-auth";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 
 const PROJECT_TYPES = [
   "agent_bd",
@@ -94,6 +95,19 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Fire-and-forget: dispatch project-created hooks. Failures are logged
+  // inside the dispatcher and never block project creation. Mirrors the
+  // autoEnrollNewAgent contract used at contacts/route.ts:140-142.
+  const ownerId = process.env.OWNER_USER_ID;
+  if (data?.id && ownerId) {
+    await firePostCreationHooks({
+      entityKind: "project",
+      entityId: data.id,
+      payload: data,
+      ownerUserId: ownerId,
+    });
   }
 
   return NextResponse.json(data, { status: 201 });
