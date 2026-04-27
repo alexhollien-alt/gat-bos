@@ -10,6 +10,7 @@ import { insertEvent, type CalendarAttendee } from "@/lib/calendar/client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError as sharedLogError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -98,6 +99,19 @@ export async function POST(request: NextRequest) {
     object: { table: 'events', id: localRow.id },
     context: { title },
   });
+
+  // Slice 5B: post-creation hooks. project_id present -> insert
+  // project_touchpoints; contact_id only -> activity_events
+  // event.contact_only. Idempotent + fire-and-forget.
+  const ownerId = process.env.OWNER_USER_ID;
+  if (ownerId) {
+    await firePostCreationHooks({
+      entityKind: "event",
+      entityId: localRow.id,
+      payload: localRow,
+      ownerUserId: ownerId,
+    });
+  }
 
   // Step 2: write to Google Calendar. On failure, keep the local row (null
   // gcal_event_id) so Alex can see it and retry later via a future reconcile.

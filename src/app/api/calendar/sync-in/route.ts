@@ -7,6 +7,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { listEvents, type CalendarEventOutput } from "@/lib/calendar/client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError as sharedLogError } from "@/lib/error-log";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -33,24 +34,44 @@ interface SyncResult {
 }
 
 async function upsertEvent(event: CalendarEventOutput): Promise<"upserted" | "skipped"> {
-  const { error } = await adminClient.from("events").upsert(
-    {
+  const { data: row, error } = await adminClient
+    .from("events")
+    .upsert(
+      {
+        gcal_event_id: event.gcalEventId,
+        title: event.title,
+        description: event.description,
+        start_at: event.startAt.toISOString(),
+        end_at: event.endAt.toISOString(),
+        location: event.location,
+        attendees: event.attendees,
+        source: "gcal_pull",
+        synced_at: new Date().toISOString(),
+      },
+      { onConflict: "gcal_event_id" },
+    )
+    .select("id")
+    .single();
+  if (error || !row) {
+    await logError(`events upsert failed: ${error?.message ?? "no row"}`, {
       gcal_event_id: event.gcalEventId,
-      title: event.title,
-      description: event.description,
-      start_at: event.startAt.toISOString(),
-      end_at: event.endAt.toISOString(),
-      location: event.location,
-      attendees: event.attendees,
-      source: "gcal_pull",
-      synced_at: new Date().toISOString(),
-    },
-    { onConflict: "gcal_event_id" },
-  );
-  if (error) {
-    await logError(`events upsert failed: ${error.message}`, { gcal_event_id: event.gcalEventId });
+    });
     return "skipped";
   }
+
+  // Slice 5B: fire event-created hook per upserted row. The handler is
+  // idempotent on (entity_table='events', entity_id) so re-pulls of the
+  // same gcal_event_id never produce duplicate touchpoints.
+  const ownerId = process.env.OWNER_USER_ID;
+  if (ownerId) {
+    await firePostCreationHooks({
+      entityKind: "event",
+      entityId: row.id,
+      payload: { gcal_event_id: event.gcalEventId },
+      ownerUserId: ownerId,
+    });
+  }
+
   return "upserted";
 }
 
