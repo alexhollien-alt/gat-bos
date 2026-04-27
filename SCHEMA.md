@@ -32,7 +32,7 @@
 | captures | Raw | live | Voice and text captures pending classification. |
 | campaign_enrollments | Raw | live | |
 | campaigns | Raw | live | |
-| campaign_steps | Raw | live | |
+| campaign_steps | Raw | live | Slice 5A Task 4 added template_slug text NULL column + partial index idx_campaign_steps_active_with_slug ON (campaign_id, step_number) WHERE deleted_at IS NULL AND template_slug IS NOT NULL. Runner treats NULL template_slug as a no-op skip and emits campaign.step_skipped activity event. |
 | campaign_step_completions | Raw | live | |
 | contact_tags | Raw | live | |
 | tags | Raw | live | |
