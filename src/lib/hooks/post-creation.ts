@@ -13,6 +13,10 @@
 
 import { writeEvent } from '@/lib/activity/writeEvent';
 import { logError } from '@/lib/error-log';
+import { autoEnrollNewAgentHandler } from './handlers/contact-auto-enroll';
+import { contactWelcomeTaskHandler } from './handlers/contact-created';
+import { projectCreatedHandler } from './handlers/project-created';
+import { eventCreatedHandler } from './handlers/event-created';
 
 export type HookEntityKind = 'project' | 'contact' | 'event';
 
@@ -33,14 +37,16 @@ interface NamedHandler {
 function handlersFor(kind: HookEntityKind): NamedHandler[] {
   switch (kind) {
     case 'project':
-      // Task 3 wires project-created here.
-      return [];
+      return [{ name: 'project-created', run: projectCreatedHandler }];
     case 'contact':
-      // Task 6 wires contact-created here (welcome task + autoEnrollNewAgent).
-      return [];
+      // Two handlers run independently. autoEnroll failures must not block
+      // welcome-task creation, and vice versa.
+      return [
+        { name: 'contact-auto-enroll', run: autoEnrollNewAgentHandler },
+        { name: 'contact-welcome-task', run: contactWelcomeTaskHandler },
+      ];
     case 'event':
-      // Task 5 wires event-created here.
-      return [];
+      return [{ name: 'event-created', run: eventCreatedHandler }];
   }
 }
 
