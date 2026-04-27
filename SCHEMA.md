@@ -23,7 +23,6 @@
 | follow_ups | Raw | dropped | Dropped in Slice 2C. Rows merged into tasks with type=follow_up. |
 | tickets | Raw | live | Ticket system (renamed from `material_requests` in Slice 3B, 23 rows preserved). |
 | ticket_items | Raw | live | Line items on tickets (renamed from `material_request_items` in Slice 3B, 23 rows preserved). FK column `request_id` retained as-is (column rename out of scope). |
-| _deprecated_requests | Raw | deprecated | Orphan stub renamed from `requests` in Slice 3B (0 rows; soft-deprecate per Standing Rule 3). One inbound FK from `activities.request_id` survives by OID. Eventual hard-drop tracked in `LATER.md`. |
 | design_assets | Raw | live | |
 | events | Raw | live | Calendar events. Bidirectional sync with GCal. |
 | projects | Raw | live | Project tracking. |
