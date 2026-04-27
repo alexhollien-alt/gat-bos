@@ -41,3 +41,6 @@ scripts/.phase-*.json
 .claude/worktrees/
 .playwright-mcp/
 .playwright-cli/
+
+# GSD session scratch
+.plan/
