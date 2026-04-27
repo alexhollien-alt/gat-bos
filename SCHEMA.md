@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-27 (Slice 5B shipped)*
+*Last updated: 2026-04-27 (Slice 6 shipped)*
 
 ## Layer Map
 
@@ -46,6 +46,8 @@
 | templates | Raw | live | Slice 4 Task 1. Single-tenant template library for the messaging abstraction at src/lib/messaging/send.ts. Versioned via unique (slug, version); resolver picks max(version) where deleted_at IS NULL. Enums: send_mode (resend/gmail/both), kind (transactional/campaign/newsletter). updated_at trigger. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. |
 | messages_log | Raw | live | Slice 4 Task 2. Per-send audit row for the messaging abstraction. FK templates ON DELETE RESTRICT. status enum (queued/sent/delivered/bounced/opened/clicked/failed). event_sequence jsonb append-only array, mirrors email_drafts.audit_log shape. Indexes: (template_id, sent_at desc) and partial (status, created_at desc) WHERE deleted_at IS NULL. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. Status auto-advances via message_events_status_sync trigger (Slice 5A Task 2). |
 | message_events | Raw | live | Slice 5A Task 2. Resend webhook event ingestion. FK messages_log ON DELETE CASCADE. event_type enum message_event_type (sent/delivered/opened/clicked/bounced/complained). payload jsonb. AFTER INSERT trigger update_message_log_status() advances messages_log.status forward (queued -> sent -> delivered -> opened -> clicked); bounced and complained set status=bounced; bounced/failed are terminal sticky. Index (message_log_id, received_at DESC) WHERE deleted_at IS NULL. RLS Alex-only. Soft-delete via deleted_at. |
+| ai_usage_log | Raw | live | Slice 6. Per-call audit + cost tracking for every Claude call routed through `src/lib/ai/_client.ts`. Cols: feature, model, input/output/cache_read/cache_creation tokens, cost_usd numeric(10,6), occurred_at, context jsonb, user_id, deleted_at. Partial indexes on (occurred_at DESC) and (feature, occurred_at DESC) WHERE deleted_at IS NULL. RLS Alex-only. SECURITY DEFINER RPC `current_day_ai_spend_usd()` returns numeric SUM scoped to America/Phoenix calendar day. Full column reference below. |
+| ai_cache | Raw | live | Slice 6. Per-feature durable result cache (distinct from Anthropic's prompt cache). PK (feature, cache_key). value jsonb, model, expires_at (NULL = TTL-less), accessed_at (best-effort touch on read), deleted_at. Partial index on (feature, expires_at) WHERE deleted_at IS NULL. RLS Alex-only. Full column reference below. |
 | spine_inbox | Raw | dropped | Dropped in Slice 2A. |
 | commitments | Raw | dropped | Dropped in Slice 2A. |
 | signals | Raw | dropped | Dropped in Slice 2A. |
@@ -60,7 +62,11 @@
 | Slice 2 | Drop spine tables. Migrate remaining spine reads to activity_events. |
 | Slice 3A | Route thinning + lib shape standardization. Extract draftActions + intake orchestration to pure helpers under src/lib/. Add Supabase-backed sliding-window rate limiter (rate_limits table + increment_rate_limit RPC) wired to /api/intake, /api/captures, /api/captures/[id]/process. Standardize 8 src/lib/<entity>/ dirs to actions.ts/queries.ts/types.ts shape. |
 | Slice 3B | Ticket unification + OAuth cleanup + lib carryforwards. DB renames: material_requests -> tickets, material_request_items -> ticket_items, requests -> _deprecated_requests (soft-deprecate). FK + index + RLS policy cosmetic renames included. /materials route 308-redirects to /tickets; intake badge + preview link ported to /tickets header. OAUTH_STATE_SIGNING_KEY introduced as new env var, decoupled from OAUTH_ENCRYPTION_KEY (one-slice fallback). Slice 3A's 4 deferred lib carryforwards land: captures/parse.ts -> rules.ts; captures/promote.ts folded into actions.ts; campaigns/auto-enroll.ts folded into actions.ts; events/invite-templates/ promoted to single-file events/invite-templates.ts. |
-| Slice 4-8 | To be planned. |
+| Slice 4 | Templates + messaging abstraction. `templates` + `messages_log` tables. `src/lib/messaging/` namespace (send.ts/render.ts/types.ts + resend/gmail adapters). Weekly Edge template seeded from canonical eval-output. OAuth state-signing fallback retired; `/api/inbox/scan` migrated to oauth_tokens-backed sync client; `_deprecated_requests` hard-removed. |
+| Slice 5A | Campaign runner cron + drip enrollments + Resend webhook -> message_events. `/api/cron/campaign-runner` 15-min tick, `message_events` table + status-sync trigger, `campaign_steps.template_slug`. Drip content seeded (4 New Agent Onboarding templates + Agent Nurture campaign + 2 templates + 2 steps). |
+| Slice 5B | Post-creation event hooks + weeklyWhere + touchpoint-reminder cron. `src/lib/hooks/` dispatcher with isolated handlers for project/contact/event creation. `weeklyWhere.ts` end-of-Sunday America/Phoenix bound. `/api/cron/touchpoint-reminder` 5am MST tick. project_touchpoints + tasks schema deltas; 3 template seeds (listing-launch-invite, listing-launch-social, daily-touchpoint-summary). |
+| Slice 6 | AI layer consolidation + budget guard. `src/lib/ai/` namespace consolidating every Claude call site (_client.ts, _budget.ts, _cache.ts, _pricing.ts + capability files morning-brief.ts, draft-revise.ts, capture-parse.ts, inbox-score.ts). `ai_usage_log` + `ai_cache` tables + `current_day_ai_spend_usd()` RPC. `AI_DAILY_BUDGET_USD` env var (default 5.00) with soft-cap warning at 80% + hard-cap BudgetExceededError. Site migrations: 7a brief-client shim, 7b captures opt-in AI gated on CAPTURES_AI_PARSE flag (default off), 7c draft-revise shim, 7d inbox/scorer shim. New ActivityVerb values: ai.budget_blocked, ai.budget_warning, ai.budget_default_used. |
+| Slice 7-8 | To be planned. |
 
 ## activity_events Column Reference
 
@@ -74,5 +80,42 @@
 | object_id | uuid | no | -- | UUID of the affected row. |
 | context | jsonb | no | '{}' | Optional extra data (from_status, to_status, contact_id, etc.). |
 | occurred_at | timestamptz | no | now() | When the action happened. Set to event time for backfills. |
+| created_at | timestamptz | no | now() | Row insertion time. |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+
+## ai_usage_log Column Reference (Slice 6)
+
+Per-call audit + cost tracking for every Claude API call routed through `src/lib/ai/_client.ts`. RLS Alex-only via `auth.jwt() ->> 'email'`. Indexes: `(occurred_at DESC) WHERE deleted_at IS NULL`, `(feature, occurred_at DESC) WHERE deleted_at IS NULL`.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| id | uuid | no | gen_random_uuid() | Primary key |
+| feature | text | no | -- | Capability name. Enum-style text: `morning-brief`, `capture-parse`, `draft-revise`, `inbox-score`, future capabilities. |
+| model | text | no | -- | Anthropic model id used (e.g. `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`). |
+| input_tokens | integer | no | 0 | Uncached prompt tokens billed at full input rate. |
+| output_tokens | integer | no | 0 | Output tokens billed at full output rate. |
+| cache_read_tokens | integer | no | 0 | Tokens served from Anthropic prompt cache (~0.1x input rate). |
+| cache_creation_tokens | integer | no | 0 | Tokens written to Anthropic prompt cache (~1.25x input rate, 5-min TTL). |
+| cost_usd | numeric(10,6) | no | 0 | Computed at write time from `src/lib/ai/_pricing.ts` rate table. Cache hits log cost=0. |
+| occurred_at | timestamptz | no | now() | When the call happened. RPC `current_day_ai_spend_usd()` aggregates across `>= date_trunc('day', now() AT TIME ZONE 'America/Phoenix')`. |
+| context | jsonb | no | '{}' | Free-form metadata: `{cache_hit: true}` on ai_cache hits, `{stop_reason: ...}` on success, `{error: ...}` on failure. |
+| user_id | uuid | no | -- | RLS owner (always OWNER_USER_ID in single-tenant). |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+| created_at | timestamptz | no | now() | Row insertion time. |
+
+RPC `current_day_ai_spend_usd()` -- SECURITY DEFINER, returns numeric. SUM(cost_usd) WHERE deleted_at IS NULL AND occurred_at >= start of today in America/Phoenix. Granted to `authenticated` + `service_role`.
+
+## ai_cache Column Reference (Slice 6)
+
+Per-feature durable result cache. Distinct from Anthropic's prompt cache. Each capability owns its `cache_key` derivation. RLS Alex-only. Index: `(feature, expires_at) WHERE deleted_at IS NULL` for cleanup queries.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| feature | text | no | -- | PK part 1. Capability name, must match `ai_usage_log.feature` values. |
+| cache_key | text | no | -- | PK part 2. sha256 hex of normalized input from `src/lib/ai/_cache.ts` `cacheKey()`. |
+| value | jsonb | no | -- | Cached response payload (shape determined by capability). |
+| model | text | yes | null | Model id at cache write time. Informational. |
+| expires_at | timestamptz | yes | null | NULL = TTL-less. When set, `cacheGet()` returns null past expiry. |
+| accessed_at | timestamptz | no | now() | Best-effort updated on every cache hit. |
 | created_at | timestamptz | no | now() | Row insertion time. |
 | deleted_at | timestamptz | yes | null | Soft-delete timestamp. |

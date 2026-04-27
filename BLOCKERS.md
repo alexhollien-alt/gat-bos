@@ -38,10 +38,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `src/lib/captures/promote.ts:71-77` (400 guard). `src/app/(app)/captures/captures-client.tsx:162` (`missingRequiredContact` → "Needs contact" pill). No contact-search UI lives on the capture row.
 - **Fix needed:** Render a small "Assign contact" affordance on the row when `missingRequiredContact === true`. Clicking opens a contact search popover (same pattern as `cmdk` `Command` menus already in the app) that writes `captures.parsed_contact_id` + appends to `parsed_payload.contact_assigned_at`. Once set, re-enable the Process button and let `promoteCapture` run the normal path. Optional: PATCH route at `/api/captures/[id]` for the assign write; or reuse existing capture update logic if the edit-after-submit blocker lands first.
 
-### [2026-04-21] Claude API intent parser upgrade deferred
-- **Broken:** `src/lib/captures/parse.ts` is a rule-based keyword matcher. It misses anything that doesn't contain an exact keyword ("grabbed a drink with Julie" -> `note`, not `interaction`; "need a flyer for Denise's listing" works only because "flyer" is hardcoded). Scales linearly with keyword list, not with Alex's language.
-- **Where:** `src/lib/captures/parse.ts` -- pure function, imported by `src/app/api/captures/route.ts` and `src/components/capture-bar.tsx`.
-- **Fix needed:** Replace the parser body with a cached Claude call (Haiku 4.5 + structured tool use, `user_id`-scoped prompt cache). Keep the rule-based parser as a fallback path on API failure / timeout. Tool schema returns `{intent, contact_match, payload}` so the API route stays unchanged. Live preview line should keep using the rule parser for instant feedback; Claude pass runs only on submit (avoid per-keystroke LLM calls).
 
 ### [2026-04-23] captures-audio lifecycle: cleanup cron not wired to Vercel scheduler
 - **Broken:** `src/app/api/captures/cleanup-audio/route.ts` exists and deletes storage objects
@@ -85,6 +81,9 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-21] Claude API intent parser upgrade deferred -- RESOLVED 2026-04-27 (Slice 6)
+- Resolution: `src/lib/ai/capture-parse.ts` ships `parseCaptureWithAI()` -- structured-JSON intent parser routed through `callClaude` (cache + budget guard + ai_usage_log). Wired into `src/app/api/captures/route.ts` POST handler behind `CAPTURES_AI_PARSE=true` feature flag (default off pending 7-day soak; flag flip logged to LATER.md). Rule parser at `src/lib/captures/rules.ts` remains primary path and is the guaranteed fallback when AI returns invalid JSON or fails. Live preview line in `capture-bar.tsx` continues to use the rule parser for instant feedback; AI pass runs only on submit.
 
 ### [2026-04-22] "New Agent Onboarding" campaign row not yet created -- RESOLVED 2026-04-27 (Slice 5A)
 - Campaign row `e13653af-405e-4118-bade-d45d31830b86` (name='New Agent Onboarding', status='active') was already on the books with 4 step rows in place (delay_days = 0/3/7/14, step_type='email', inline email_subject + email_body_html). Slice 5A ratified them: created 4 templates (`new-agent-onboarding-step-1`..`-4`, kind='campaign', send_mode='gmail', subject + body_html + body_text imported from each step's inline copy), backfilled `template_slug` on each step row, and added the column + partial index so the campaign-runner cron route can resolve through templates.
