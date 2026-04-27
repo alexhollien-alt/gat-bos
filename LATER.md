@@ -6,6 +6,21 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-04-27] (Slice 6) Flip CAPTURES_AI_PARSE=true after 7-day soak
+- **Where:** `.env.local` + Vercel preview + Vercel production. Read in `src/app/api/captures/route.ts`.
+- **What:** After ~7 days of usage data lands in `ai_usage_log` (cost-per-capture, cache hit rate) and a sample-quality review against the rule-parser baseline shows AI intent quality >= rule parser, set `CAPTURES_AI_PARSE=true` in all three env locations to make AI the primary intent path. Rule parser stays as the fallback.
+- **Why deferred:** Default-off ships the wiring without committing to AI-on-every-capture before cost + accuracy data exists. Slice 7 owns the flip.
+
+### [2026-04-27] (Slice 6) Delete brief-client / draft-client / inbox/scorer shims
+- **Where:** `src/lib/claude/brief-client.ts`, `src/lib/claude/draft-client.ts`, `src/lib/inbox/scorer.ts`.
+- **What:** Each is now a thin re-export to `src/lib/ai/`. Delete the shims and update the three remaining importers (`src/app/api/cron/morning-brief/route.ts`, `src/app/api/email/generate-draft/route.ts`, `src/app/api/inbox/scan/route.ts`) to import directly from the ai/ paths. `src/lib/claude/draft-client.ts` keeps `wrapReplyHtml` + `detectEscalation` -- relocate those to a non-`claude/` namespace (e.g. `src/lib/email/escalation.ts`) before deletion.
+- **Why deferred:** One slice cycle of stability before deletion. Standard refactor convention.
+
+### [2026-04-27] (Slice 6) Migrate /api/email/approve-and-send send path to sendMessage()
+- **Where:** `src/app/api/email/approve-and-send/route.ts`.
+- **What:** Existing carryover from Slice 4 LATER.md. The revise-side AI call already routes through `src/lib/ai/draft-revise.ts` after Slice 6; the send-side still calls Resend directly instead of going through the unified `sendMessage()` adapter introduced in Slice 4. Re-listed here so it stays visible while Slice 6 is fresh.
+- **Why deferred:** Out of Slice 6 scope (AI consolidation only). Slice 7 task.
+
 ### [2026-04-27] (Slice 5B) Migrate /today reads to weeklyWhere()
 - **Where:** `src/app/(app)/today/today-client.tsx` and `src/app/(app)/today-v2/queries.ts` -- both compute their own "this week" upper bounds inline.
 - **What:** Replace the inline bounds with imports from `src/lib/touchpoints/weeklyWhere.ts`. Single source of truth for the cron, /today, /today-v2, and any future surface that asks "what's due this week?"

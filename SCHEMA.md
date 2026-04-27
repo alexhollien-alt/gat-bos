@@ -76,3 +76,40 @@
 | occurred_at | timestamptz | no | now() | When the action happened. Set to event time for backfills. |
 | created_at | timestamptz | no | now() | Row insertion time. |
 | deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+
+## ai_usage_log Column Reference (Slice 6)
+
+Per-call audit + cost tracking for every Claude API call routed through `src/lib/ai/_client.ts`. RLS Alex-only via `auth.jwt() ->> 'email'`. Indexes: `(occurred_at DESC) WHERE deleted_at IS NULL`, `(feature, occurred_at DESC) WHERE deleted_at IS NULL`.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| id | uuid | no | gen_random_uuid() | Primary key |
+| feature | text | no | -- | Capability name. Enum-style text: `morning-brief`, `capture-parse`, `draft-revise`, `inbox-score`, future capabilities. |
+| model | text | no | -- | Anthropic model id used (e.g. `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`). |
+| input_tokens | integer | no | 0 | Uncached prompt tokens billed at full input rate. |
+| output_tokens | integer | no | 0 | Output tokens billed at full output rate. |
+| cache_read_tokens | integer | no | 0 | Tokens served from Anthropic prompt cache (~0.1x input rate). |
+| cache_creation_tokens | integer | no | 0 | Tokens written to Anthropic prompt cache (~1.25x input rate, 5-min TTL). |
+| cost_usd | numeric(10,6) | no | 0 | Computed at write time from `src/lib/ai/_pricing.ts` rate table. Cache hits log cost=0. |
+| occurred_at | timestamptz | no | now() | When the call happened. RPC `current_day_ai_spend_usd()` aggregates across `>= date_trunc('day', now() AT TIME ZONE 'America/Phoenix')`. |
+| context | jsonb | no | '{}' | Free-form metadata: `{cache_hit: true}` on ai_cache hits, `{stop_reason: ...}` on success, `{error: ...}` on failure. |
+| user_id | uuid | no | -- | RLS owner (always OWNER_USER_ID in single-tenant). |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+| created_at | timestamptz | no | now() | Row insertion time. |
+
+RPC `current_day_ai_spend_usd()` -- SECURITY DEFINER, returns numeric. SUM(cost_usd) WHERE deleted_at IS NULL AND occurred_at >= start of today in America/Phoenix. Granted to `authenticated` + `service_role`.
+
+## ai_cache Column Reference (Slice 6)
+
+Per-feature durable result cache. Distinct from Anthropic's prompt cache. Each capability owns its `cache_key` derivation. RLS Alex-only. Index: `(feature, expires_at) WHERE deleted_at IS NULL` for cleanup queries.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| feature | text | no | -- | PK part 1. Capability name, must match `ai_usage_log.feature` values. |
+| cache_key | text | no | -- | PK part 2. sha256 hex of normalized input from `src/lib/ai/_cache.ts` `cacheKey()`. |
+| value | jsonb | no | -- | Cached response payload (shape determined by capability). |
+| model | text | yes | null | Model id at cache write time. Informational. |
+| expires_at | timestamptz | yes | null | NULL = TTL-less. When set, `cacheGet()` returns null past expiry. |
+| accessed_at | timestamptz | no | now() | Best-effort updated on every cache hit. |
+| created_at | timestamptz | no | now() | Row insertion time. |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
