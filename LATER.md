@@ -6,6 +6,16 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-04-26] (Phase 008) De-duplicate CADENCE map after dddc0b0 lands post-Slice 4
+- **Where:** `src/app/(app)/today-v2/queries.ts:31` carries an inline `const CADENCE: Record<Tier, number> = { A: 5, B: 10, C: 14 }` with a leading comment that the canonical source is `src/lib/scoring/temperature.ts`.
+- **What:** Once Morning Brief Phase 1 commit `dddc0b0` (parked at the tip of `gsd/006-slice-3a-route-thinning-lib-standardization`) lands on main post-Slice 4, delete the inline `CADENCE` const and replace with `import { CADENCE } from '@/lib/scoring/temperature'`. Verify both `useCallsLane` and any future callers stay in sync with the canonical map.
+- **Why deferred:** Cherry-picking `temperature.ts` from `dddc0b0` onto Phase 008 risks dragging in fragments of the deferred Morning Brief consumer route without its 4 sibling files. Plan 008 Decision 2a chose the duplication explicitly.
+
+### [2026-04-26] (Phase 008 -> 009) Wire mutations + plan /today -> /today-v2 cutover
+- **Where:** `/today-v2` reads only as of Phase 008. Mutation surface area: runway item check-off persistence, listing-activity check-off persistence, moments snooze, calls-lane "mark called", any other state currently held in client-only React state.
+- **What:** Phase 009 scope. Add mutation API routes under `/api/today-v2/*` (or extend existing endpoints), expand Realtime subscriptions beyond `email_drafts` (projects, project_touchpoints, activity_events) once the latency profile is understood, then choose and execute the /today -> /today-v2 cutover (replace, A/B, or sunset old). Mobile responsive pass on the 3-column layout also lives in this phase.
+- **Why deferred:** Phase 008 was scoped as ratification + read-only ship; mutations multiply the test surface and the cutover decision needs its own plan.
+
 ### [2026-04-26] (Slice 3B) Hard-drop `_deprecated_requests` after data confidence soak
 - **Where:** `public._deprecated_requests` (renamed from `public.requests` in Slice 3B; 0 rows).
 - **What:** After ~30 days of no regressions referencing the table, run `DROP TABLE public._deprecated_requests CASCADE;` to also drop the orphan inbound FK from `public.activities.request_id`. Confirm `activities.request_id` has no live writers first (it does not as of Slice 3B; the column itself is dead in current code).
