@@ -77,7 +77,7 @@ export function PrintTicketsPanel() {
   useEffect(() => {
     async function fetchTickets() {
       const { data, error } = await supabase
-        .from("material_requests")
+        .from("tickets")
         .select("id, title, status, created_at, contacts(first_name, last_name, tier)")
         .is("deleted_at", null)
         .neq("status", "complete")

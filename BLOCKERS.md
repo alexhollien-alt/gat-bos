@@ -8,25 +8,10 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
-### [2026-04-24] Slice 3B follow-up: rename src/lib/captures/parse.ts -> rules.ts
-- **Broken:** Slice 3A standardized `src/lib/<entity>/` shapes to actions.ts/queries.ts/types.ts but left `parse.ts` in place to avoid touching function bodies on the file-org pass. The naming drift is the only remaining non-standard file in `src/lib/captures/`.
-- **Where:** `src/lib/captures/parse.ts` (and its two import sites: `src/app/api/captures/route.ts`, `src/components/capture-bar.tsx`).
-- **Fix needed:** Rename the file to `rules.ts`, update both import sites, run `pnpm typecheck && pnpm lint && pnpm build`. Pure rename, no body changes. Coordinate with the Claude API parser upgrade blocker so this rename doesn't get clobbered.
-
-### [2026-04-24] Slice 3B follow-up: fold src/lib/captures/promote.ts -> actions.ts
-- **Broken:** `promoteCapture` lives at `src/lib/captures/promote.ts` while Slice 3A's standardized shape puts write fns in `src/lib/captures/actions.ts` (currently a stub).
-- **Where:** `src/lib/captures/promote.ts` (and its import site: `src/app/api/captures/[id]/process/route.ts`).
-- **Fix needed:** Move the export into `src/lib/captures/actions.ts`, delete `promote.ts`, update the import in the route handler. Keep the function body intact -- file-org only.
-
-### [2026-04-24] Slice 3B follow-up: fold src/lib/campaigns/auto-enroll.ts -> actions.ts
-- **Broken:** `autoEnrollNewAgent` lives at `src/lib/campaigns/auto-enroll.ts` while Slice 3A's standardized shape puts write fns in `src/lib/campaigns/actions.ts` (currently a stub).
-- **Where:** `src/lib/campaigns/auto-enroll.ts` (and its import sites: `src/app/api/contacts/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`, `src/lib/intake/process.ts`).
-- **Fix needed:** Move the export into `src/lib/campaigns/actions.ts`, delete `auto-enroll.ts`, update all three import sites. Keep the function body intact.
-
-### [2026-04-24] Slice 3B follow-up: promote src/lib/events/invite-templates/ to top-level files
-- **Broken:** Calendar invite templates live in a `src/lib/events/invite-templates/` subdirectory while the Slice 3A standardized shape calls for top-level `actions.ts` / `queries.ts` / `types.ts` directly under `src/lib/events/`.
-- **Where:** `src/lib/events/invite-templates/` (10 files; full inventory in subdirectory listing).
-- **Fix needed:** Audit the existing exports, move template builders into the top-level standard files (or a new `templates.ts` if the surface area justifies it), update all import sites, run typecheck + build.
+### [2026-04-26] Slice 4 follow-up: migrate /api/inbox/scan to oauth_tokens-backed sync client
+- **Broken:** `src/app/api/inbox/scan/route.ts:47` calls `fetchUnreadThreads` from `src/lib/gmail/client.ts`, which reads `process.env.GOOGLE_REFRESH_TOKEN` directly. This is the only remaining live caller of the legacy env-var path; until it's migrated, `GOOGLE_REFRESH_TOKEN` cannot be removed from `.env.local` or Vercel envs. A parallel new flow exists at `src/lib/gmail/sync-client.ts` reading from `oauth_tokens` (a comment in that file confirms `client.ts` is "legacy still in use").
+- **Where:** `src/app/api/inbox/scan/route.ts:47`, `src/lib/gmail/client.ts:1-22` (legacy refresh-token reader). Replacement infrastructure: `src/lib/gmail/sync-client.ts` + `src/lib/gmail/oauth.ts:loadTokens()` + `src/lib/gmail/oauth.ts:getOAuth2Client()`.
+- **Fix needed:** Refactor scan route to use `loadTokens()` + `getOAuth2Client()` from `src/lib/gmail/oauth.ts` (already wired for Gmail + Calendar combined scope). Smoke `/api/inbox/scan` locally first (verify Gmail thread fetch still works against the oauth_tokens-backed flow). Then remove `GOOGLE_REFRESH_TOKEN` from `.env.local` + Vercel preview + production envs. Optional: also delete `src/lib/gmail/client.ts` if no other callers reappear.
 
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
@@ -105,6 +90,22 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-24] Slice 3B follow-up: rename src/lib/captures/parse.ts -> rules.ts -- RESOLVED 2026-04-26 (Slice 3B)
+- File renamed via `git mv` (blame preserved). Three import sites updated: `src/app/api/captures/route.ts`, `src/components/capture-bar.tsx`, and `src/components/capture-bar-server.tsx` (a third caller of `type ContactIndexEntry` not listed in the original blocker; updated to keep the acceptance grep clean).
+- Closing commit: `01cc954`.
+
+### [2026-04-24] Slice 3B follow-up: fold src/lib/captures/promote.ts -> actions.ts -- RESOLVED 2026-04-26 (Slice 3B)
+- `promoteCapture` and helpers (`mapKeywordToInteractionType`, `buildTicketTitle`, `defaultFollowUpDueDate`, plus private `ProjectHintRequiredError` / `ensureProject` / `markCapturePromoted`) moved verbatim from `src/lib/captures/promote.ts` into `src/lib/captures/actions.ts`. `promote.ts` deleted. Single caller `src/app/api/captures/[id]/process/route.ts` updated to import from `@/lib/captures/actions`.
+- Closing commit: `5a472d8`.
+
+### [2026-04-24] Slice 3B follow-up: fold src/lib/campaigns/auto-enroll.ts -> actions.ts -- RESOLVED 2026-04-26 (Slice 3B)
+- `autoEnrollNewAgent` (+ private types) moved from `src/lib/campaigns/auto-enroll.ts` into `src/lib/campaigns/actions.ts`. `auto-enroll.ts` deleted. Three import sites updated: `src/app/api/contacts/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`, `src/lib/intake/process.ts`.
+- Closing commit: `c4e6fef`.
+
+### [2026-04-24] Slice 3B follow-up: promote src/lib/events/invite-templates/ to top-level files -- RESOLVED 2026-04-26 (Slice 3B)
+- 8 sub-files (types, signature, shell, four renderers, index barrel) consolidated into single `src/lib/events/invite-templates.ts`. Public surface unchanged from prior `index.ts` barrel. Two consolidations to avoid duplicate-identifier errors: four private `buildPlainText` helpers renamed to `buildHomeTourPlainText` / `buildClassDayPlainText` / `buildContentDayPlainText` / `buildHappyHourPlainText`; three identical private `firstName` helpers collapsed into one shared module-private helper. One existing import site (`src/app/api/events/invite-preview/route.ts`) keeps working unchanged because Node resolves `@/lib/events/invite-templates` to the new `.ts` file when no directory of that name is present.
+- Closing commit: `6485d77`.
 
 ### [2026-04-24] Slice 2C: writers still INSERT directly into interactions_legacy -- RESOLVED 2026-04-24 (Slice 3)
 - All 6 INSERT call sites migrated. Server-side callers (`src/lib/captures/promote.ts`, `src/app/api/intake/route.ts`, `src/app/api/webhooks/resend/route.ts`) call `writeEvent()` directly with verb=`interaction.{type}`; client-side callers (`src/app/(app)/actions/page.tsx`, `src/components/dashboard/task-list.tsx` x2, `src/components/interactions/interaction-modal.tsx`) post to new endpoint at `src/app/api/activity/interaction/route.ts` which authenticates the user and writes the activity_events row server-side. ActivityVerb union extended with 10 `interaction.*` verbs in `src/lib/activity/types.ts`.

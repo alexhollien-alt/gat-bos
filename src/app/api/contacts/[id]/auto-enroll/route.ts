@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
-import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
+import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
 
 export async function POST(
   _request: NextRequest,

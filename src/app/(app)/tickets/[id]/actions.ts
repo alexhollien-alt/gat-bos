@@ -14,13 +14,13 @@ export async function updateTicketNotes(
   notes: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const { data: ticketRow } = await adminClient
-    .from('material_requests')
+    .from('tickets')
     .select('contact_id')
     .eq('id', ticketId)
     .maybeSingle();
 
   const { error } = await adminClient
-    .from('material_requests')
+    .from('tickets')
     .update({ notes, updated_at: new Date().toISOString() })
     .eq('id', ticketId);
 
@@ -31,7 +31,7 @@ export async function updateTicketNotes(
   void writeEvent({
     actorId: OWNER_USER_ID,
     verb: 'ticket.notes_updated',
-    object: { table: 'material_requests', id: ticketId },
+    object: { table: 'tickets', id: ticketId },
     context: {
       ...(ticketRow?.contact_id ? { contact_id: ticketRow.contact_id } : {}),
     },
@@ -57,13 +57,13 @@ export async function updateTicketStatus(
   // Fetch contact_id so this event appears in the per-contact timeline.
   // getContactTimeline filters by object_id OR context->>'contact_id'.
   const { data: ticketRow } = await adminClient
-    .from('material_requests')
+    .from('tickets')
     .select('contact_id')
     .eq('id', ticketId)
     .maybeSingle();
 
   const { error } = await adminClient
-    .from('material_requests')
+    .from('tickets')
     .update(updates)
     .eq('id', ticketId);
 
@@ -74,7 +74,7 @@ export async function updateTicketStatus(
   void writeEvent({
     actorId: OWNER_USER_ID,
     verb: 'ticket.status_changed',
-    object: { table: 'material_requests', id: ticketId },
+    object: { table: 'tickets', id: ticketId },
     context: {
       from_status: fromStatus,
       to_status: toStatus,

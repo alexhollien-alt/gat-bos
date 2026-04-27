@@ -51,7 +51,7 @@ export function MaterialRequestRow({
       updates.completed_at = new Date().toISOString();
     }
     const { error } = await supabase
-      .from("material_requests")
+      .from("tickets")
       .update(updates)
       .eq("id", request.id);
     if (error) {

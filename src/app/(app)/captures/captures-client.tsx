@@ -56,7 +56,7 @@ function promotedTargetUrl(
   target: PromotedTarget,
   contactId: string | null
 ): string {
-  if (target === "ticket") return "/materials";
+  if (target === "ticket") return "/tickets";
   return contactId ? `/contacts/${contactId}` : "/captures";
 }
 

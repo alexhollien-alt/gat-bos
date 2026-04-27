@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { CaptureBar } from "@/components/capture-bar";
-import type { ContactIndexEntry } from "@/lib/captures/parse";
+import type { ContactIndexEntry } from "@/lib/captures/rules";
 
 export async function CaptureBarServer() {
   const supabase = await createClient();

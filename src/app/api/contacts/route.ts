@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireApiToken } from "@/lib/api-auth";
-import { autoEnrollNewAgent } from "@/lib/campaigns/auto-enroll";
+import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
 
 export async function GET(request: NextRequest) {
   const unauth = requireApiToken(request);

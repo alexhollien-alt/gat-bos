@@ -1,0 +1,15 @@
+import { createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'node:fs';
+const env = readFileSync('/Users/alex/crm/.env.local', 'utf8');
+const get = k => (env.match(new RegExp('^'+k+'=(.*)$', 'm')) || [])[1]?.replace(/^"|"$/g,'').trim();
+const url = get('NEXT_PUBLIC_SUPABASE_URL');
+const key = get('SUPABASE_SERVICE_ROLE_KEY');
+console.log('URL:', url);
+console.log('KEY length:', key?.length);
+const c = createClient(url, key, { auth: { persistSession: false }});
+const ws = new Date(Math.floor(Date.now()/1000/60)*60*1000).toISOString();
+console.log('windowStart:', ws);
+const r = await c.rpc('increment_rate_limit', { p_key: 'probe:test', p_window_start: ws });
+console.log('RPC result:', JSON.stringify(r, null, 2));
+const sel = await c.from('rate_limits').select('*').eq('key','probe:test');
+console.log('SELECT result:', JSON.stringify(sel, null, 2));

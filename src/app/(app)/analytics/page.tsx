@@ -610,7 +610,7 @@ export default function AnalyticsPage() {
         .not("stage", "eq", "fell_through"),
 
       supabase
-        .from("material_requests")
+        .from("tickets")
         .select("status, created_at, submitted_at, completed_at")
         .is("deleted_at", null),
 

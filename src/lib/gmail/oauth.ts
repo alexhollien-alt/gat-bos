@@ -26,6 +26,14 @@ function requireEnv(name: string): string {
   return v;
 }
 
+// One-slice fallback to OAUTH_ENCRYPTION_KEY so in-flight state nonces
+// (10-min TTL) signed before the new env var was deployed still verify.
+// Removed in a follow-up once the deploy boundary is past one slice cycle
+// (tracked in LATER.md).
+function getStateSigningKey(): string {
+  return process.env.OAUTH_STATE_SIGNING_KEY ?? requireEnv("OAUTH_ENCRYPTION_KEY");
+}
+
 export function getOAuth2Client() {
   return new google.auth.OAuth2(
     requireEnv("GMAIL_CLIENT_ID"),
@@ -37,7 +45,7 @@ export function getOAuth2Client() {
 export function createState(): string {
   const nonce = randomBytes(16).toString("hex");
   const ts = Date.now().toString();
-  const hmac = createHmac("sha256", requireEnv("OAUTH_ENCRYPTION_KEY"))
+  const hmac = createHmac("sha256", getStateSigningKey())
     .update(`${nonce}.${ts}`)
     .digest("hex");
   return `${nonce}.${ts}.${hmac}`;
@@ -49,7 +57,7 @@ export function verifyState(state: string): boolean {
   const [nonce, ts, hmac] = parts;
   const age = Date.now() - Number(ts);
   if (!Number.isFinite(age) || age < 0 || age > STATE_TTL_MS) return false;
-  const expected = createHmac("sha256", requireEnv("OAUTH_ENCRYPTION_KEY"))
+  const expected = createHmac("sha256", getStateSigningKey())
     .update(`${nonce}.${ts}`)
     .digest("hex");
   try {

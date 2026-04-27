@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { parseCapture, type ContactIndexEntry } from "@/lib/captures/parse";
+import { parseCapture, type ContactIndexEntry } from "@/lib/captures/rules";
 import { PARSED_INTENT_LABELS, type ParsedIntent } from "@/lib/types";
 
 const PLACEHOLDERS = [

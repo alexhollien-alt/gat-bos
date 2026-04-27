@@ -13,7 +13,6 @@ import {
   TrendingUp,
   LogOut,
   Search,
-  Ticket,
   Zap,
   BarChart3,
   Inbox,
@@ -33,8 +32,7 @@ const navItems = [
   { href: "/opportunities", label: "Pipeline", icon: TrendingUp },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/materials", label: "Materials", icon: Printer },
-  { href: "/tickets", label: "Tickets", icon: Ticket },
+  { href: "/tickets", label: "Tickets", icon: Printer },
 ];
 
 export function Sidebar() {
