@@ -40,3 +40,4 @@ next-env.d.ts
 scripts/.phase-*.json
 .claude/worktrees/
 .playwright-mcp/
+.playwright-cli/
