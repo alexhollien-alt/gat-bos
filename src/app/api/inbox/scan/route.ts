@@ -1,7 +1,7 @@
 // src/app/api/inbox/scan/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { fetchUnreadThreads } from "@/lib/gmail/client";
+import { fetchUnreadThreads } from "@/lib/gmail/sync-client";
 import { scoreThread } from "@/lib/inbox/scorer";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";

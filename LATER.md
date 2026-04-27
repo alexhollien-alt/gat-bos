@@ -16,15 +16,20 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 - **What:** Phase 009 scope. Add mutation API routes under `/api/today-v2/*` (or extend existing endpoints), expand Realtime subscriptions beyond `email_drafts` (projects, project_touchpoints, activity_events) once the latency profile is understood, then choose and execute the /today -> /today-v2 cutover (replace, A/B, or sunset old). Mobile responsive pass on the 3-column layout also lives in this phase.
 - **Why deferred:** Phase 008 was scoped as ratification + read-only ship; mutations multiply the test surface and the cutover decision needs its own plan.
 
-### [2026-04-26] (Slice 3B) Hard-drop `_deprecated_requests` after data confidence soak
-- **Where:** `public._deprecated_requests` (renamed from `public.requests` in Slice 3B; 0 rows).
-- **What:** After ~30 days of no regressions referencing the table, run `DROP TABLE public._deprecated_requests CASCADE;` to also drop the orphan inbound FK from `public.activities.request_id`. Confirm `activities.request_id` has no live writers first (it does not as of Slice 3B; the column itself is dead in current code).
-- **Why deferred:** Standing Rule 3 prohibits hard deletes on first pass; soak period gives confidence the orphan really is orphan.
+### [2026-04-27] (Slice 4) Migrate /api/email/approve-and-send to call sendMessage()
+- **Where:** `src/app/api/email/approve-and-send/route.ts` calls `sendDraft` from `src/lib/resend/client.ts` directly. The new `sendMessage()` abstraction at `src/lib/messaging/send.ts` is the canonical send path going forward.
+- **What:** Replace the direct `sendDraft` call with a `sendMessage({ templateSlug: '<draft-slug>', recipient, mode: 'resend', variables })` call. Requires either creating a per-draft template row or extending `sendMessage()` to accept inline body for ad-hoc drafts. Decide pattern at start of work; ad-hoc is simpler v1.
+- **Why deferred:** Slice 4 sets up the abstraction surface; touching the live approve-and-send path would have widened the slice diff and increased regression risk on the production-critical email send. Logged for Slice 5A or 5B.
 
-### [2026-04-26] (Slice 3B) Remove OAUTH_ENCRYPTION_KEY fallback in oauth.ts state signing
-- **Where:** `src/lib/gmail/oauth.ts:getStateSigningKey()` -- helper currently does `process.env.OAUTH_STATE_SIGNING_KEY ?? requireEnv("OAUTH_ENCRYPTION_KEY")`.
-- **What:** After ~7-14 days post-merge (one slice cycle, well past the 10-minute OAuth state TTL), drop the `?? requireEnv(...)` fallback so `OAUTH_STATE_SIGNING_KEY` is the only valid key for HMAC state signing. Encryption (`OAUTH_ENCRYPTION_KEY`) and signing then have fully separate keys.
-- **Why deferred:** One-slice fallback ensures any in-flight OAuth state nonces (10-min TTL) signed with the old key still verify across the deploy boundary.
+### [2026-04-27] (Slice 4) Explicit drop of activities.request_id column
+- **Where:** `public.activities.request_id` column. The inbound FK was cleared by `DROP TABLE _deprecated_requests CASCADE` in Slice 4 Task 9, but the column itself remains (0 non-null rows confirmed pre-drop).
+- **What:** `ALTER TABLE public.activities DROP COLUMN request_id;` -- mechanical, no live writers in current code. Pair with a SCHEMA.md note.
+- **Why deferred:** Out of Slice 4 scope; column-drop should happen in a small dedicated cleanup step, not as a side-effect of the table-drop migration.
+
+### [2026-04-27] (Slice 4) Weekly Edge font-stack reconciliation vs brand.md Email = Kit 1
+- **Where:** `public.templates` row `slug='weekly-edge'`, version=1. The seed body_html ships with Syne + Playfair Display + Inter + Space Mono (newsletter-aesthetic screen-tier pairing carried in from the canonical eval-output).
+- **What:** Brand.md "Font Stack Per Format" table mandates Email = Kit 1 (Instrument Serif + Inter, Google Fonts only). Decide whether to (a) bump the Weekly Edge to version=2 with a Kit-1-conformant body, treating the newsletter as a screen-tier exception logged in brand-reference.md, or (b) keep eval-output verbatim as the canonical Weekly Edge brand and update brand.md to reflect the newsletter exception. Either path works; pick one and ship.
+- **Why deferred:** Q1 of the Slice 4 protocol explicitly chose eval-output verbatim; reconciling the brand-stack mandate is a separate decision that warrants its own discussion with Alex.
 
 ### [2026-04-26] (Slice 3B) Per-provider OAuth state-signing keys when non-Google providers arrive
 - **Where:** `src/lib/gmail/oauth.ts` (currently a single combined Gmail+Calendar Google flow per `GMAIL_SCOPES` union at lines 13-17).

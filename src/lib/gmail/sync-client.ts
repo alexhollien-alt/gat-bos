@@ -1,5 +1,6 @@
-// Phase 1.3.1 Gmail sync client. DB-backed tokens.
-// Separate from legacy src/lib/gmail/client.ts which powers /api/inbox/scan on GOOGLE_* env vars.
+// Phase 1.3.1 Gmail sync client. DB-backed tokens via oauth_tokens.
+// As of Slice 4 Task 8 this is the sole Gmail client; the legacy
+// GOOGLE_REFRESH_TOKEN-backed src/lib/gmail/client.ts has been deleted.
 import { google, type gmail_v1 } from "googleapis";
 import { getOAuth2Client, loadTokens, saveTokens, touchLastUsed } from "./oauth";
 import { withRetry } from "@/lib/retry";
@@ -16,6 +17,15 @@ export interface SyncMessage {
   labels: string[];
   receivedAt: Date;
   isUnread: boolean;
+}
+
+export interface GmailThread {
+  threadId: string;
+  subject: string;
+  senderEmail: string;
+  senderName: string;
+  snippet: string;
+  receivedAt: Date;
 }
 
 async function getAuthedClient() {
@@ -137,6 +147,70 @@ export async function createGmailDraft(input: {
   const messageId = res.data.message?.id;
   if (!draftId || !messageId) throw new Error("Gmail draft creation returned no id");
   return { draftId, messageId };
+}
+
+// Slice 4 Task 8 -- thread-list scan for /api/inbox/scan, ported from
+// the retired src/lib/gmail/client.ts. Same shape as before but rides
+// the oauth_tokens-backed client so GOOGLE_REFRESH_TOKEN is no longer
+// required.
+export async function fetchUnreadThreads(maxResults = 50, sinceDays = 2): Promise<GmailThread[]> {
+  const auth = await getAuthedClient();
+  const gmail = google.gmail({ version: "v1", auth });
+
+  const listRes = await withRetry(
+    () =>
+      gmail.users.threads.list({
+        userId: "me",
+        q: `in:inbox is:unread newer_than:${sinceDays}d`,
+        maxResults,
+      }),
+    "gmail.threads.list",
+  );
+  await touchLastUsed();
+
+  const threads = listRes.data.threads ?? [];
+  if (threads.length === 0) return [];
+
+  const results: GmailThread[] = [];
+
+  for (const thread of threads) {
+    if (!thread.id) continue;
+
+    const detail = await withRetry(
+      () =>
+        gmail.users.threads.get({
+          userId: "me",
+          id: thread.id!,
+          format: "metadata",
+          metadataHeaders: ["From", "Subject", "Date"],
+        }),
+      `gmail.threads.get(${thread.id})`,
+    );
+
+    const firstMessage = detail.data.messages?.[0];
+    if (!firstMessage) continue;
+
+    const headers = firstMessage.payload?.headers ?? [];
+    const getHeader = (name: string) =>
+      headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
+
+    const fromRaw = getHeader("From");
+    const subject = getHeader("Subject") || "(no subject)";
+    const dateRaw = getHeader("Date");
+
+    const emailMatch = fromRaw.match(/<([^>]+)>/);
+    const senderEmail = emailMatch ? emailMatch[1].trim() : fromRaw.trim();
+    const senderName = emailMatch
+      ? fromRaw.replace(/<[^>]+>/, "").trim().replace(/^"|"$/g, "")
+      : senderEmail;
+
+    const snippet = detail.data.snippet ?? "";
+    const receivedAt = dateRaw ? new Date(dateRaw) : new Date();
+
+    results.push({ threadId: thread.id, subject, senderEmail, senderName, snippet, receivedAt });
+  }
+
+  return results;
 }
 
 export async function fetchMessage(id: string): Promise<SyncMessage | null> {

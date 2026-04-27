@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-26 (Slice 3B)*
+*Last updated: 2026-04-27 (Slice 4 in progress)*
 
 ## Layer Map
 
@@ -23,7 +23,6 @@
 | follow_ups | Raw | dropped | Dropped in Slice 2C. Rows merged into tasks with type=follow_up. |
 | tickets | Raw | live | Ticket system (renamed from `material_requests` in Slice 3B, 23 rows preserved). |
 | ticket_items | Raw | live | Line items on tickets (renamed from `material_request_items` in Slice 3B, 23 rows preserved). FK column `request_id` retained as-is (column rename out of scope). |
-| _deprecated_requests | Raw | deprecated | Orphan stub renamed from `requests` in Slice 3B (0 rows; soft-deprecate per Standing Rule 3). One inbound FK from `activities.request_id` survives by OID. Eventual hard-drop tracked in `LATER.md`. |
 | design_assets | Raw | live | |
 | events | Raw | live | Calendar events. Bidirectional sync with GCal. |
 | projects | Raw | live | Project tracking. |
@@ -44,6 +43,8 @@
 | oauth_tokens | Raw | live | GCal OAuth token storage. |
 | inbox_items | Raw | live | |
 | rate_limits | Operational | live | Slice 3A. Per-(key, window_start) counter for the Supabase-backed sliding-window limiter at src/lib/rate-limit/check.ts. PK (key, window_start). Service-role only via the increment_rate_limit() RPC; RLS denies anon/authenticated. Hard-delete carve-out per Standing Rule 3 (time-bounded operational data); helper opportunistically culls rows older than 2x the longest window. |
+| templates | Raw | live | Slice 4 Task 1. Single-tenant template library for the messaging abstraction at src/lib/messaging/send.ts. Versioned via unique (slug, version); resolver picks max(version) where deleted_at IS NULL. Enums: send_mode (resend/gmail/both), kind (transactional/campaign/newsletter). updated_at trigger. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. |
+| messages_log | Raw | live | Slice 4 Task 2. Per-send audit row for the messaging abstraction. FK templates ON DELETE RESTRICT. status enum (queued/sent/delivered/bounced/opened/clicked/failed). event_sequence jsonb append-only array, mirrors email_drafts.audit_log shape. Indexes: (template_id, sent_at desc) and partial (status, created_at desc) WHERE deleted_at IS NULL. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. |
 | spine_inbox | Raw | dropped | Dropped in Slice 2A. |
 | commitments | Raw | dropped | Dropped in Slice 2A. |
 | signals | Raw | dropped | Dropped in Slice 2A. |

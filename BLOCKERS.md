@@ -8,11 +8,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
-### [2026-04-26] Slice 4 follow-up: migrate /api/inbox/scan to oauth_tokens-backed sync client
-- **Broken:** `src/app/api/inbox/scan/route.ts:47` calls `fetchUnreadThreads` from `src/lib/gmail/client.ts`, which reads `process.env.GOOGLE_REFRESH_TOKEN` directly. This is the only remaining live caller of the legacy env-var path; until it's migrated, `GOOGLE_REFRESH_TOKEN` cannot be removed from `.env.local` or Vercel envs. A parallel new flow exists at `src/lib/gmail/sync-client.ts` reading from `oauth_tokens` (a comment in that file confirms `client.ts` is "legacy still in use").
-- **Where:** `src/app/api/inbox/scan/route.ts:47`, `src/lib/gmail/client.ts:1-22` (legacy refresh-token reader). Replacement infrastructure: `src/lib/gmail/sync-client.ts` + `src/lib/gmail/oauth.ts:loadTokens()` + `src/lib/gmail/oauth.ts:getOAuth2Client()`.
-- **Fix needed:** Refactor scan route to use `loadTokens()` + `getOAuth2Client()` from `src/lib/gmail/oauth.ts` (already wired for Gmail + Calendar combined scope). Smoke `/api/inbox/scan` locally first (verify Gmail thread fetch still works against the oauth_tokens-backed flow). Then remove `GOOGLE_REFRESH_TOKEN` from `.env.local` + Vercel preview + production envs. Optional: also delete `src/lib/gmail/client.ts` if no other callers reappear.
-
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
@@ -90,6 +85,10 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-26] Slice 4 follow-up: migrate /api/inbox/scan to oauth_tokens-backed sync client -- RESOLVED 2026-04-27 (Slice 4)
+- `/api/inbox/scan` now imports `fetchUnreadThreads` from `src/lib/gmail/sync-client.ts` (oauth_tokens-backed via `loadTokens()` + `getOAuth2Client()`). Legacy `src/lib/gmail/client.ts` deleted; no remaining callers. `GOOGLE_REFRESH_TOKEN` env removal instructions written to `~/Desktop/PASTE-INTO-ENV-slice4-google-refresh-token-removal.txt` for Alex to apply across `.env.local` + Vercel preview + production + `.env.example`. Live smoke (curl `/api/inbox/scan` + OAuth re-authorize) deferred to Alex's runtime testing before final acceptance.
+- Closing commits: `add681b` (migration + client.ts delete) + `57a6c99` (recovery hotfix for SQL files clobbered in same commit).
 
 ### [2026-04-24] Slice 3B follow-up: rename src/lib/captures/parse.ts -> rules.ts -- RESOLVED 2026-04-26 (Slice 3B)
 - File renamed via `git mv` (blame preserved). Three import sites updated: `src/app/api/captures/route.ts`, `src/components/capture-bar.tsx`, and `src/components/capture-bar-server.tsx` (a third caller of `type ContactIndexEntry` not listed in the original blocker; updated to keep the acceptance grep clean).
