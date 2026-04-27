@@ -49,6 +49,7 @@ export default function OpportunitiesPage() {
     const { data } = await supabase
       .from("opportunities")
       .select("*, contacts(id, first_name, last_name)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (data) setOpportunities(data);
   }, [supabase]);

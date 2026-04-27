@@ -132,27 +132,6 @@ function formatRelative(dateStr: string): string {
   }
 }
 
-// agent_health is a materialized view, so PostgREST cannot infer the FK to
-// the contacts base table for an embedded select. Fetch health rows and
-// contacts in two queries, then join in memory.
-type HealthRowBase = Omit<AgentHealthRow, "contacts">;
-
-async function joinContactsToHealthRows(
-  supabase: ReturnType<typeof createClient>,
-  rows: HealthRowBase[]
-): Promise<AgentHealthRow[]> {
-  if (rows.length === 0) return [];
-  const ids = Array.from(new Set(rows.map((r) => r.contact_id)));
-  const { data, error } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, tier, phone, email")
-    .in("id", ids);
-  if (error) throw error;
-  const byId = new Map<string, ContactRef>();
-  ((data ?? []) as ContactRef[]).forEach((c) => byId.set(c.id, c));
-  return rows.map((r) => ({ ...r, contacts: byId.get(r.contact_id) ?? null }));
-}
-
 // ============================================================
 // Component
 // ============================================================
@@ -245,25 +224,8 @@ export function TaskListWidget() {
     queryKey: ["task-list", "going_cold", userId],
     enabled: !!userId,
     staleTime: 30_000,
-    queryFn: async (): Promise<AgentHealthRow[]> => {
-      const { data, error } = await supabase
-        .from("agent_health")
-        .select(
-          "contact_id, health_score, days_since_contact, trend_direction"
-        )
-        .eq("user_id", userId!)
-        .or("trend_direction.eq.down,days_since_contact.gte.21")
-        .order("days_since_contact", { ascending: false, nullsFirst: false })
-        .limit(20);
-      if (error) throw error;
-      const joined = await joinContactsToHealthRows(
-        supabase,
-        (data ?? []) as HealthRowBase[]
-      );
-      return joined.filter(
-        (r) => r.contacts?.tier && r.contacts.tier !== "P"
-      );
-    },
+    // TODO: re-enable when agent_health view ships (see ~/.claude/plans/2026-04-26-qa-f2-f4-fixes.md F2)
+    queryFn: async (): Promise<AgentHealthRow[]> => [],
   });
 
   // ----------------------------------------------------------
@@ -279,27 +241,8 @@ export function TaskListWidget() {
     queryKey: ["task-list", "proactive", userId],
     enabled: !!userId,
     staleTime: 30_000,
-    queryFn: async (): Promise<AgentHealthRow[]> => {
-      const { data, error } = await supabase
-        .from("agent_health")
-        .select(
-          "contact_id, health_score, days_since_contact, trend_direction"
-        )
-        .eq("user_id", userId!)
-        .gte("health_score", 60)
-        .gte("days_since_contact", 7)
-        .lte("days_since_contact", 20)
-        .order("health_score", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      const joined = await joinContactsToHealthRows(
-        supabase,
-        (data ?? []) as HealthRowBase[]
-      );
-      return joined.filter(
-        (r) => r.contacts?.tier === "A" || r.contacts?.tier === "B"
-      );
-    },
+    // TODO: re-enable when agent_health view ships (see ~/.claude/plans/2026-04-26-qa-f2-f4-fixes.md F2)
+    queryFn: async (): Promise<AgentHealthRow[]> => [],
   });
 
   // ----------------------------------------------------------
