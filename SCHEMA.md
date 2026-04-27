@@ -30,7 +30,7 @@
 | email_drafts | Raw | live | Gmail draft management. |
 | emails | Raw | live | Sent/received email records. |
 | captures | Raw | live | Voice and text captures pending classification. |
-| campaign_enrollments | Raw | live | |
+| campaign_enrollments | Raw | live | next_action_at timestamptz column + partial index `idx_enrollments_next_action ON (next_action_at) WHERE deleted_at IS NULL AND status='active'` (registered earlier via the [2026-04-22] paste-file). Slice 5A Task 1 verified the index + added partial index `idx_campaign_enrollments_contact_active` for auto-enroll dedup. Runner reads `enrolled_at` and treats `campaign_steps.delay_days` as an absolute offset from enrollment when scheduling next_action_at. |
 | campaigns | Raw | live | |
 | campaign_steps | Raw | live | Slice 5A Task 4 added template_slug text NULL column + partial index idx_campaign_steps_active_with_slug ON (campaign_id, step_number) WHERE deleted_at IS NULL AND template_slug IS NOT NULL. Runner treats NULL template_slug as a no-op skip and emits campaign.step_skipped activity event. |
 | campaign_step_completions | Raw | live | |
