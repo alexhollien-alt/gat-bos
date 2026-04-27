@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseCapture, type ContactIndexEntry } from "@/lib/captures/rules";
+import { parseCaptureWithAI } from "@/lib/ai/capture-parse";
 import { checkRateLimit } from "@/lib/rate-limit/check";
 import { extractIp } from "@/lib/rate-limit/extract-ip";
 
@@ -67,7 +68,12 @@ export async function POST(request: NextRequest) {
     last_name: c.last_name ?? "",
   }));
 
-  const parsed = parseCapture({ rawText: raw, contactsIndex: index });
+  // Slice 6: opt-in AI intent parser. Default off; rule parser stays primary
+  // until the flag flips after a 7-day soak (see LATER.md).
+  const aiEnabled = process.env.CAPTURES_AI_PARSE === "true";
+  const parsed = aiEnabled
+    ? await parseCaptureWithAI({ rawText: raw, contactsIndex: index })
+    : parseCapture({ rawText: raw, contactsIndex: index });
 
   const { data, error } = await supabase
     .from("captures")
