@@ -43,7 +43,10 @@ export const maxDuration = 60;
 
 const ROUTE = "/api/cron/campaign-runner";
 const TICK_LIMIT = 50;
-const ACTOR = "system:campaign-runner";
+// activity_events.actor_id is uuid NOT NULL. The runner attributes events to
+// the enrollment's owner (enrollment.user_id) -- see writeEvent calls below.
+// A string sentinel like "system:campaign-runner" was the original intent but
+// the column type rejects it.
 
 interface EnrollmentRow {
   id: string;
@@ -152,7 +155,7 @@ export async function GET(request: NextRequest) {
           continue;
         }
         await writeEvent({
-          actorId: ACTOR,
+          actorId: enrollment.user_id,
           verb: "campaign.completed",
           object: { table: "campaign_enrollments", id: enrollment.id },
           context: {
@@ -182,7 +185,7 @@ export async function GET(request: NextRequest) {
           })
           .eq("id", enrollment.id);
         await writeEvent({
-          actorId: ACTOR,
+          actorId: enrollment.user_id,
           verb: "campaign.step_skipped",
           object: { table: "campaign_enrollments", id: enrollment.id },
           context: {
@@ -220,7 +223,7 @@ export async function GET(request: NextRequest) {
           })
           .eq("id", enrollment.id);
         await writeEvent({
-          actorId: ACTOR,
+          actorId: enrollment.user_id,
           verb: "campaign.step_skipped",
           object: { table: "campaign_enrollments", id: enrollment.id },
           context: {
@@ -263,7 +266,7 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         await writeEvent({
-          actorId: ACTOR,
+          actorId: enrollment.user_id,
           verb: "campaign.send_failed",
           object: { table: "campaign_enrollments", id: enrollment.id },
           context: {
@@ -320,7 +323,7 @@ export async function GET(request: NextRequest) {
       });
 
       await writeEvent({
-        actorId: ACTOR,
+        actorId: enrollment.user_id,
         verb: "campaign.step_fired",
         object: { table: "campaign_enrollments", id: enrollment.id },
         context: {
