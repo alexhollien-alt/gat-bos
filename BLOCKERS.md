@@ -8,6 +8,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-04-27] Six non-conforming migration filenames silently skipped by Supabase CLI
+- **Broken:** `supabase migration list` (and the CLI's apply / repair flow) skips any file in `supabase/migrations/` whose name doesn't match `<14-digit-timestamp>_<name>.sql`. Six legacy files predate that convention and are therefore invisible to the CLI: `phase-1.3.1-gmail-mvp.sql`, `phase-1.3.2-observation.sql`, `phase-1.4-projects.sql`, `phase-1.5-calendar.sql`, `phase-9-realtime-email-drafts.sql`, `slice-2a-drop-spine.sql`. Their contents have already been applied to remote (`db reset` would not recreate them, but they already exist), so this is registry hygiene, not data risk. Risk surface: any future contributor running `supabase db reset` against a clean local instance would not re-apply them and would diverge from prod.
+- **Where:** `supabase/migrations/` -- the six filenames above.
+- **Fix needed:** Dedicated plumbing session: rename each to a chronologically-correct timestamp prefix (or leave on disk and explicitly delete from `migrations/` if their DDL is now redundant), then `supabase migration repair --status applied <new-version>` to register. Suggest grouping with future migration-hygiene cleanups.
+
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
