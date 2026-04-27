@@ -8,15 +8,15 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-04-27] Six non-conforming migration filenames silently skipped by Supabase CLI
+- **Broken:** `supabase migration list` (and the CLI's apply / repair flow) skips any file in `supabase/migrations/` whose name doesn't match `<14-digit-timestamp>_<name>.sql`. Six legacy files predate that convention and are therefore invisible to the CLI: `phase-1.3.1-gmail-mvp.sql`, `phase-1.3.2-observation.sql`, `phase-1.4-projects.sql`, `phase-1.5-calendar.sql`, `phase-9-realtime-email-drafts.sql`, `slice-2a-drop-spine.sql`. Their contents have already been applied to remote (`db reset` would not recreate them, but they already exist), so this is registry hygiene, not data risk. Risk surface: any future contributor running `supabase db reset` against a clean local instance would not re-apply them and would diverge from prod.
+- **Where:** `supabase/migrations/` -- the six filenames above.
+- **Fix needed:** Dedicated plumbing session: rename each to a chronologically-correct timestamp prefix (or leave on disk and explicitly delete from `migrations/` if their DDL is now redundant), then `supabase migration repair --status applied <new-version>` to register. Suggest grouping with future migration-hygiene cleanups.
+
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
 - **Fix needed:** None required. Future: if anyone investigates `interaction.backfilled WHERE deleted_at IS NOT NULL`, these are the 2 known soft-deletes -- not a data integrity issue.
-
-### [2026-04-22] "New Agent Onboarding" campaign row not yet created
-- **Broken:** Auto-enrollment code ships wired across all 3 contact-creation paths (POST /api/contacts, intake, New Contact modal via `/api/contacts/[id]/auto-enroll`), but `autoEnrollNewAgent()` returns `{status:'skipped', reason:'campaign_not_found'}` silently until a campaign row exists under Alex's `user_id` with `name='New Agent Onboarding'`, `status='active'`, `deleted_at IS NULL`, and at least one step at `step_number=1`. So new realtor contacts are being created but no enrollments land.
-- **Where:** `src/lib/campaigns/auto-enroll.ts:42-52` (campaign lookup filter). Invoked by `src/app/api/contacts/route.ts`, `src/app/api/intake/route.ts`, `src/app/api/contacts/[id]/auto-enroll/route.ts`.
-- **Fix needed:** (1) Run `~/Desktop/PASTE-INTO-SUPABASE-enrollment-schedule.sql` in Supabase SQL Editor to add the `next_action_at` column + partial index. (2) Create the campaign in `/campaigns/new` under Alex's user, set `status='active'`, add at least one step with `step_number=1` and a sensible `delay_days`. (3) Smoke-test each of the 3 paths and verify one `campaign_enrollments` row with correct `next_action_at`. Archive the paste-file to `~/Archive/paste-files/2026-04/` once executed.
 
 ### [2026-04-21] `contacts` table missing `slug`, `photo_url`, `tagline` columns
 - **Broken:** No DB-backed source for agent landing page data. `/agents/[slug]` cannot query Supabase for the agent record.
@@ -85,6 +85,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-22] "New Agent Onboarding" campaign row not yet created -- RESOLVED 2026-04-27 (Slice 5A)
+- Campaign row `e13653af-405e-4118-bade-d45d31830b86` (name='New Agent Onboarding', status='active') was already on the books with 4 step rows in place (delay_days = 0/3/7/14, step_type='email', inline email_subject + email_body_html). Slice 5A ratified them: created 4 templates (`new-agent-onboarding-step-1`..`-4`, kind='campaign', send_mode='gmail', subject + body_html + body_text imported from each step's inline copy), backfilled `template_slug` on each step row, and added the column + partial index so the campaign-runner cron route can resolve through templates.
+- Three secondary fixes shipped alongside: (a) runner re-keyed scheduling to absolute-from-`enrolled_at` so existing data 0/3/7/14 yields Day 0/3/7/14 cadence (commit `d530c1c`); (b) `autoEnrollNewAgent()` now inserts `current_step=0` and explicit `user_id` (commit `57774e7`) -- previously `current_step=1` would have skipped step 1 entirely and the missing user_id would have failed the NOT NULL constraint under service-role context; (c) runner's `actorId` switched from string sentinel to `enrollment.user_id` (commit `73f7cfe`) so writeEvent's uuid column accepts the value.
+- Closing commits: `56e6fa4` (Task 4 column add), `d530c1c` (Task 3 follow-up runner semantics), `57774e7` (Task 7 + 8 -- autoEnroll + webhook), `73f7cfe` (Task 10 runner actorId fix). Slice 5A also seeded the Agent Nurture campaign (id `85af274e-ae78-4a32-9915-fefb952dda43`) + 2 templates + 2 steps (Day 0 monthly recap + Day 30 soft re-engage) for future manual enrollment.
 
 ### [2026-04-26] Slice 4 follow-up: migrate /api/inbox/scan to oauth_tokens-backed sync client -- RESOLVED 2026-04-27 (Slice 4)
 - `/api/inbox/scan` now imports `fetchUnreadThreads` from `src/lib/gmail/sync-client.ts` (oauth_tokens-backed via `loadTokens()` + `getOAuth2Client()`). Legacy `src/lib/gmail/client.ts` deleted; no remaining callers. `GOOGLE_REFRESH_TOKEN` env removal instructions written to `~/Desktop/PASTE-INTO-ENV-slice4-google-refresh-token-removal.txt` for Alex to apply across `.env.local` + Vercel preview + production + `.env.example`. Live smoke (curl `/api/inbox/scan` + OAuth re-authorize) deferred to Alex's runtime testing before final acceptance.

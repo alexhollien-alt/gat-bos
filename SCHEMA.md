@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-27 (Slice 4 in progress)*
+*Last updated: 2026-04-27 (Slice 5A in progress)*
 
 ## Layer Map
 
@@ -30,9 +30,9 @@
 | email_drafts | Raw | live | Gmail draft management. |
 | emails | Raw | live | Sent/received email records. |
 | captures | Raw | live | Voice and text captures pending classification. |
-| campaign_enrollments | Raw | live | |
+| campaign_enrollments | Raw | live | next_action_at timestamptz column + partial index `idx_enrollments_next_action ON (next_action_at) WHERE deleted_at IS NULL AND status='active'` (registered earlier via the [2026-04-22] paste-file). Slice 5A Task 1 verified the index + added partial index `idx_campaign_enrollments_contact_active` for auto-enroll dedup. Runner reads `enrolled_at` and treats `campaign_steps.delay_days` as an absolute offset from enrollment when scheduling next_action_at. |
 | campaigns | Raw | live | |
-| campaign_steps | Raw | live | |
+| campaign_steps | Raw | live | Slice 5A Task 4 added template_slug text NULL column + partial index idx_campaign_steps_active_with_slug ON (campaign_id, step_number) WHERE deleted_at IS NULL AND template_slug IS NOT NULL. Runner treats NULL template_slug as a no-op skip and emits campaign.step_skipped activity event. |
 | campaign_step_completions | Raw | live | |
 | contact_tags | Raw | live | |
 | tags | Raw | live | |
@@ -44,7 +44,8 @@
 | inbox_items | Raw | live | |
 | rate_limits | Operational | live | Slice 3A. Per-(key, window_start) counter for the Supabase-backed sliding-window limiter at src/lib/rate-limit/check.ts. PK (key, window_start). Service-role only via the increment_rate_limit() RPC; RLS denies anon/authenticated. Hard-delete carve-out per Standing Rule 3 (time-bounded operational data); helper opportunistically culls rows older than 2x the longest window. |
 | templates | Raw | live | Slice 4 Task 1. Single-tenant template library for the messaging abstraction at src/lib/messaging/send.ts. Versioned via unique (slug, version); resolver picks max(version) where deleted_at IS NULL. Enums: send_mode (resend/gmail/both), kind (transactional/campaign/newsletter). updated_at trigger. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. |
-| messages_log | Raw | live | Slice 4 Task 2. Per-send audit row for the messaging abstraction. FK templates ON DELETE RESTRICT. status enum (queued/sent/delivered/bounced/opened/clicked/failed). event_sequence jsonb append-only array, mirrors email_drafts.audit_log shape. Indexes: (template_id, sent_at desc) and partial (status, created_at desc) WHERE deleted_at IS NULL. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. |
+| messages_log | Raw | live | Slice 4 Task 2. Per-send audit row for the messaging abstraction. FK templates ON DELETE RESTRICT. status enum (queued/sent/delivered/bounced/opened/clicked/failed). event_sequence jsonb append-only array, mirrors email_drafts.audit_log shape. Indexes: (template_id, sent_at desc) and partial (status, created_at desc) WHERE deleted_at IS NULL. RLS Alex-only via auth.jwt() ->> 'email'. Soft-delete via deleted_at. Status auto-advances via message_events_status_sync trigger (Slice 5A Task 2). |
+| message_events | Raw | live | Slice 5A Task 2. Resend webhook event ingestion. FK messages_log ON DELETE CASCADE. event_type enum message_event_type (sent/delivered/opened/clicked/bounced/complained). payload jsonb. AFTER INSERT trigger update_message_log_status() advances messages_log.status forward (queued -> sent -> delivered -> opened -> clicked); bounced and complained set status=bounced; bounced/failed are terminal sticky. Index (message_log_id, received_at DESC) WHERE deleted_at IS NULL. RLS Alex-only. Soft-delete via deleted_at. |
 | spine_inbox | Raw | dropped | Dropped in Slice 2A. |
 | commitments | Raw | dropped | Dropped in Slice 2A. |
 | signals | Raw | dropped | Dropped in Slice 2A. |

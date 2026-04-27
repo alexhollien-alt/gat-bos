@@ -53,7 +53,11 @@ export async function autoEnrollNewAgent(
       return { status: "skipped", reason: "campaign_not_found" };
     }
 
-    // 3) Read step 1 to compute next_action_at.
+    // 3) Read step 1 to compute next_action_at. step.delay_days is an
+    //    absolute offset from enrolled_at (Slice 5A semantics) so for step 1
+    //    we schedule next_action_at = now() + delay_days. enrolled_at defaults
+    //    to now() at insert time, so the runner sees enrolled_at and
+    //    next_action_at as effectively co-anchored.
     const { data: step1, error: stepErr } = await supabase
       .from("campaign_steps")
       .select("delay_days")
@@ -69,9 +73,13 @@ export async function autoEnrollNewAgent(
       Date.now() + (step1.delay_days ?? 0) * 86_400_000,
     ).toISOString();
 
-    // 4) Insert enrollment. ON CONFLICT (campaign_id, contact_id) DO NOTHING
-    //    via upsert with ignoreDuplicates so re-saves of the same contact
-    //    don't spawn duplicate enrollments.
+    // 4) Insert enrollment. current_step=0 so the campaign-runner cron
+    //    targets step_number = current_step + 1 = 1 on the first tick.
+    //    user_id is set explicitly because callers use the service-role
+    //    adminClient (auth.uid() returns NULL under service-role).
+    //    ON CONFLICT (campaign_id, contact_id) DO NOTHING via upsert with
+    //    ignoreDuplicates so re-saves of the same contact don't spawn
+    //    duplicate enrollments.
     const { data: inserted, error: insertErr } = await supabase
       .from("campaign_enrollments")
       .upsert(
@@ -80,8 +88,9 @@ export async function autoEnrollNewAgent(
             campaign_id: campaign.id,
             contact_id: contactId,
             status: "active",
-            current_step: 1,
+            current_step: 0,
             next_action_at: nextActionAt,
+            user_id: ownerUserId,
           },
         ],
         { onConflict: "campaign_id,contact_id", ignoreDuplicates: true },

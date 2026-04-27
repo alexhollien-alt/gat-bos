@@ -6,6 +6,16 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-04-27] (Slice 5A) Migrate /api/email/approve-and-send to call sendMessage()
+- **Where:** `src/app/api/email/approve-and-send/route.ts` -- still calls `sendDraft` from `src/lib/resend/client.ts` directly. The Slice 4 `sendMessage()` abstraction at `src/lib/messaging/send.ts` is the canonical path going forward.
+- **What:** Replace `sendDraft` with `sendMessage({ templateSlug, recipient, mode: 'resend', variables })`. Either (a) create a per-draft template row, or (b) extend `sendMessage()` to accept inline body for ad-hoc drafts. Pick at start of work; (b) is simpler v1.
+- **Why deferred:** Slice 5A focused on the cron runner + drip data + webhook ingestion. Touching the live approve-and-send path would have widened the diff and risked the production-critical send. Until this lands, Resend webhook events for legacy approve-and-send sends fall through the message_events insert with a console.warn (the unknown-provider_message_id path) -- documented as expected during the slice cycle.
+
+### [2026-04-27] (Slice 5A) campaign_enrollments.current_step DB default = 1 is a footgun
+- **Where:** `public.campaign_enrollments.current_step` defaults to 1, but the campaign-runner cron resolves `step_number = current_step + 1`. So a default-only insert silently skips step 1.
+- **What:** Either (a) change the column default to 0 to match the runner convention, or (b) align the runner to read `step_number = current_step` (and decrement everywhere else). Audit all callers (`autoEnrollNewAgent`, manual `enrollContacts` at `src/app/(app)/campaigns/[id]/actions.ts:220`, future Slice 5B hooks) before flipping.
+- **Why deferred:** Slice 5A patched the two known callers (autoEnroll set explicit current_step=0, manual enrollContacts still inserts current_step=1 and would skip step 1 -- carryforward). The default change is small-blast, but the semantic question (what does current_step *mean*?) deserves a focused decision rather than a side-effect of this slice.
+
 ### [2026-04-26] (Phase 008) De-duplicate CADENCE map after dddc0b0 lands post-Slice 4
 - **Where:** `src/app/(app)/today-v2/queries.ts:31` carries an inline `const CADENCE: Record<Tier, number> = { A: 5, B: 10, C: 14 }` with a leading comment that the canonical source is `src/lib/scoring/temperature.ts`.
 - **What:** Once Morning Brief Phase 1 commit `dddc0b0` (parked at the tip of `gsd/006-slice-3a-route-thinning-lib-standardization`) lands on main post-Slice 4, delete the inline `CADENCE` const and replace with `import { CADENCE } from '@/lib/scoring/temperature'`. Verify both `useCallsLane` and any future callers stay in sync with the canonical map.
