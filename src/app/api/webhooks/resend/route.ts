@@ -28,6 +28,21 @@ const SCORE_BUMPS: Record<string, number> = {
   "email.clicked": 5,
 };
 
+// Slice 5A Task 8: map Resend webhook event names to message_event_type enum.
+// Resend emits 'email.sent' on dispatch, 'email.delivered' when the upstream
+// inbox accepts it, 'email.opened' / 'email.clicked' for engagement, and
+// 'email.bounced' / 'email.complained' for terminal failures. Anything not
+// in the map skips the message_events insert (we still 200-OK so Resend
+// stops retrying).
+const MESSAGE_EVENT_TYPE: Record<string, "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained"> = {
+  "email.sent": "sent",
+  "email.delivered": "delivered",
+  "email.opened": "opened",
+  "email.clicked": "clicked",
+  "email.bounced": "bounced",
+  "email.complained": "complained",
+};
+
 // Replay protection: reject timestamps more than 5 minutes off.
 const TOLERANCE_MS = 5 * 60 * 1000;
 
@@ -113,8 +128,56 @@ export async function POST(req: NextRequest) {
     const payload = JSON.parse(rawBody);
     const { type, data } = payload;
 
+    // Slice 5A Task 8: ingest the event into message_events first. The
+    // status-sync trigger (Slice 5A Task 2) updates messages_log.status.
+    // Unknown event names short-circuit; known events with a non-matching
+    // provider_message_id log a warning and continue (legacy
+    // /api/email/approve-and-send sends still flow through Resend without
+    // a messages_log row -- see LATER.md "migrate approve-and-send to
+    // sendMessage()" follow-up).
+    const eventType = MESSAGE_EVENT_TYPE[type as keyof typeof MESSAGE_EVENT_TYPE];
+    const providerMessageId =
+      typeof data?.email_id === "string"
+        ? data.email_id
+        : typeof data?.message_id === "string"
+          ? data.message_id
+          : null;
+
+    if (eventType && providerMessageId) {
+      const { data: log } = await supabase
+        .from("messages_log")
+        .select("id")
+        .eq("provider_message_id", providerMessageId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (log?.id) {
+        const { error: insertErr } = await supabase
+          .from("message_events")
+          .insert({
+            message_log_id: log.id,
+            event_type: eventType,
+            provider_message_id: providerMessageId,
+            payload,
+          });
+        if (insertErr) {
+          await logError(ROUTE, `message_events insert failed: ${insertErr.message}`, {
+            providerMessageId,
+            eventType,
+          });
+        }
+      } else {
+        // Not in messages_log -- could be a legacy /api/email/approve-and-send
+        // send. Log + continue; do not 4xx (Resend retries on non-2xx).
+        console.warn(
+          `[resend-webhook] no messages_log row for provider_message_id=${providerMessageId} (event=${type})`,
+        );
+      }
+    }
+
+    // Existing per-contact side effects only apply for delivered/opened/clicked.
     if (!["email.delivered", "email.opened", "email.clicked"].includes(type)) {
-      return NextResponse.json({ ok: true, skipped: true });
+      return NextResponse.json({ ok: true, skipped_contact_side_effect: true });
     }
 
     const recipientEmail = data.to?.[0];
