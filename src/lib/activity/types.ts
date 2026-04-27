@@ -34,7 +34,9 @@ export type ActivityVerb =
   | 'interaction.email_received'
   | 'interaction.event'
   | 'interaction.backfilled'
-  | 'ticket.notes_updated';
+  | 'ticket.notes_updated'
+  | 'hook.failed'
+  | 'event.contact_only';
 
 export interface ActivityEvent {
   id: string;
