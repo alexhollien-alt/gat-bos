@@ -11,8 +11,7 @@
 // contact) never surfaces as a UI error.
 
 import { NextRequest, NextResponse } from "next/server";
-import { adminClient } from "@/lib/supabase/admin";
-import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 
 export async function POST(
   _request: NextRequest,
@@ -26,6 +25,15 @@ export async function POST(
     );
   }
 
-  const result = await autoEnrollNewAgent(adminClient, params.id, ownerId);
-  return NextResponse.json(result);
+  // Slice 5B: route through the hook dispatcher. Runs auto-enroll +
+  // welcome-task in isolation. The endpoint stays fire-and-forget from the
+  // browser modal's perspective: always returns 200 ok even when handlers
+  // skip (non-realtor, missing campaign, already-enrolled, etc.).
+  await firePostCreationHooks({
+    entityKind: "contact",
+    entityId: params.id,
+    payload: {},
+    ownerUserId: ownerId,
+  });
+  return NextResponse.json({ ok: true });
 }

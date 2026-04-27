@@ -6,6 +6,21 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-04-27] (Slice 5B) Migrate /today reads to weeklyWhere()
+- **Where:** `src/app/(app)/today/today-client.tsx` and `src/app/(app)/today-v2/queries.ts` -- both compute their own "this week" upper bounds inline.
+- **What:** Replace the inline bounds with imports from `src/lib/touchpoints/weeklyWhere.ts`. Single source of truth for the cron, /today, /today-v2, and any future surface that asks "what's due this week?"
+- **Why deferred:** Slice 5B scope was the cron + hooks. /today read paths predate the helper and work fine on inline bounds; touching them widens the diff and would mix read-path UX with write-path plumbing.
+
+### [2026-04-27] (Slice 5B) Add last_reminded_at column to tasks
+- **Where:** `public.tasks` schema. Touchpoints have `last_reminded_at` (debounce); tasks do not.
+- **What:** ADD COLUMN tasks.last_reminded_at timestamptz; update touchpoint-reminder cron to filter and stamp tasks the same way it does touchpoints.
+- **Why deferred:** v1 cron is a single 5am tick. Same-day re-runs may include the same task; not painful while the cron only fires once per morning.
+
+### [2026-04-27] (Slice 5B) Tighten project_touchpoints.entity_table values
+- **Where:** `public.project_touchpoints.entity_table` is a free-text column. Slice 5B handler writes `'projects'`, `'events'`, `'email_drafts'`, etc.
+- **What:** Either an enum or a CHECK constraint to enumerate valid entity tables; documents the contract and prevents typos in future hooks.
+- **Why deferred:** Out of scope of the hook builds; live data is correct today and a backfill is trivial.
+
 ### [2026-04-27] (Slice 5A) Migrate /api/email/approve-and-send to call sendMessage()
 - **Where:** `src/app/api/email/approve-and-send/route.ts` -- still calls `sendDraft` from `src/lib/resend/client.ts` directly. The Slice 4 `sendMessage()` abstraction at `src/lib/messaging/send.ts` is the canonical path going forward.
 - **What:** Replace `sendDraft` with `sendMessage({ templateSlug, recipient, mode: 'resend', variables })`. Either (a) create a per-draft template row, or (b) extend `sendMessage()` to accept inline body for ad-hoc drafts. Pick at start of work; (b) is simpler v1.

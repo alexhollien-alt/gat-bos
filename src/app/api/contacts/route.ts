@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { requireApiToken } from "@/lib/api-auth";
-import { autoEnrollNewAgent } from "@/lib/campaigns/actions";
+import { firePostCreationHooks } from "@/lib/hooks/post-creation";
 
 export async function GET(request: NextRequest) {
   const unauth = requireApiToken(request);
@@ -134,11 +134,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Fire-and-forget: auto-enroll realtor contacts into "New Agent Onboarding".
-  // Filters on type='realtor' internally; silent no-op otherwise. Never blocks
-  // the response -- enrollment failures must not take down contact creation.
+  // Fire-and-forget post-creation hooks: auto-enroll + welcome task.
+  // Both run inside firePostCreationHooks under the 'contact' kind. The
+  // dispatcher isolates each handler so one failure cannot block the other
+  // or the parent response.
   if (data?.id) {
-    await autoEnrollNewAgent(adminClient, data.id, ownerId);
+    await firePostCreationHooks({
+      entityKind: "contact",
+      entityId: data.id,
+      payload: data,
+      ownerUserId: ownerId,
+    });
   }
 
   return NextResponse.json(data, { status: 201 });
