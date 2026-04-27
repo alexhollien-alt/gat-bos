@@ -26,12 +26,8 @@ function requireEnv(name: string): string {
   return v;
 }
 
-// One-slice fallback to OAUTH_ENCRYPTION_KEY so in-flight state nonces
-// (10-min TTL) signed before the new env var was deployed still verify.
-// Removed in a follow-up once the deploy boundary is past one slice cycle
-// (tracked in LATER.md).
 function getStateSigningKey(): string {
-  return process.env.OAUTH_STATE_SIGNING_KEY ?? requireEnv("OAUTH_ENCRYPTION_KEY");
+  return requireEnv("OAUTH_STATE_SIGNING_KEY");
 }
 
 export function getOAuth2Client() {
