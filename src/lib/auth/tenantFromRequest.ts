@@ -1,9 +1,7 @@
 // src/lib/auth/tenantFromRequest.ts
 //
-// Slice 7A: single entry point for resolving the tenant (user + account, or
-// explicit service context) of any incoming request. Replaces the implicit
-// "alex@alexhollienco.com" / OWNER_USER_ID assumptions scattered across
-// route handlers.
+// Single entry point for resolving the tenant (user + account, or explicit
+// service context) of any incoming request.
 //
 // Service-role contract: when kind === 'service', accountId is intentionally
 // absent. Service-role callers (cron, webhook, intake, background) use

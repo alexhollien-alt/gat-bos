@@ -1,13 +1,9 @@
-// Phase 1.5 Calendar inbound sync. Hourly cron pulls events from Google
-// Calendar (now-1h .. now+7d) and upserts into public.events on gcal_event_id.
+// Calendar inbound sync. Hourly cron pulls events from Google Calendar
+// (now-1h .. now+7d) and upserts into public.events on gcal_event_id.
 // GCal wins on conflict: every field is overwritten from the inbound payload.
 // Dual auth: Bearer CRON_SECRET for cron + Supabase session for manual trigger.
-//
-// Slice 7A -- 2026-04-30: events.user_id is NOT NULL with default auth.uid().
-// Cron context has no auth.uid(), so we must derive user_id explicitly. Pulled
-// from the accounts table (single-account today; multi-account iteration is a
-// future scope). user_id flows into events.upsert + firePostCreationHooks,
-// replacing the OWNER_USER_ID env dependency.
+// Cron context has no auth.uid(), so user_id is derived from the accounts
+// table and passed explicitly into events.upsert + firePostCreationHooks.
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { listEvents, type CalendarEventOutput } from "@/lib/calendar/client";

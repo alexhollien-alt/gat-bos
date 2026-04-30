@@ -9,9 +9,6 @@
 // Fire-and-forget from the client: this endpoint always returns 200 JSON,
 // even if enrollment was skipped, so a campaign-not-found (or a non-realtor
 // contact) never surfaces as a UI error.
-//
-// Slice 7A -- 2026-04-30: ownerUserId now derived from tenantFromRequest
-// (session) rather than process.env.OWNER_USER_ID.
 
 import { NextRequest, NextResponse } from "next/server";
 import { firePostCreationHooks } from "@/lib/hooks/post-creation";

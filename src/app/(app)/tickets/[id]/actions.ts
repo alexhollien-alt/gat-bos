@@ -2,10 +2,6 @@
 
 // src/app/(app)/tickets/[id]/actions.ts
 // Server Action for ticket status mutation + activity ledger write.
-// Replaces the direct supabase.update() call in the client page.
-// Slice 1 -- 2026-04-22.
-// Slice 7A -- 2026-04-30: writeEvent userId/actorId now row-derived
-// (tickets.user_id), no OWNER_USER_ID env dependency.
 
 import { adminClient } from '@/lib/supabase/admin';
 import { writeEvent } from '@/lib/activity/writeEvent';

@@ -12,8 +12,6 @@ import {
   DesignAssetType,
 } from "./types";
 
-export const ALEX_EMAIL = "alex@alexhollienco.com";
-
 export const RELATIONSHIP_CONFIG: Record<
   RelationshipStrength,
   { label: string; color: string; bgColor: string; textColor: string }
