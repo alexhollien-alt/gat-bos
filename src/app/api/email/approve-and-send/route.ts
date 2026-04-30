@@ -53,6 +53,7 @@ interface RequestBody {
 interface DraftRow extends DraftState {
   id: string;
   email_id: string;
+  user_id: string;
   draft_body_html: string | null;
   metadata: Record<string, unknown> | null;
 }
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
   const { data: draft, error: draftErr } = await adminClient
     .from("email_drafts")
     .select(
-      "id, email_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, escalation_flag, audit_log, metadata",
+      "id, email_id, user_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, escalation_flag, audit_log, metadata",
     )
     .eq("id", draftId)
     .maybeSingle<DraftRow>();
@@ -245,8 +246,8 @@ export async function POST(request: NextRequest) {
     fireMarkRead(email.id, origin);
 
     void writeEvent({
-      userId: process.env.OWNER_USER_ID!,
-      actorId: process.env.OWNER_USER_ID!,
+      userId: draft.user_id,
+      actorId: draft.user_id,
       verb: "email.sent",
       object: { table: "email_drafts", id: draftId },
       context: {
