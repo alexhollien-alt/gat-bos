@@ -32,8 +32,9 @@ export async function scoreThread(params: {
   snippet: string;
   isKnownContact: boolean;
   contactTier?: string | null;
+  userId: string;
 }): Promise<ThreadScore> {
-  const { subject, senderEmail, senderName, snippet, isKnownContact, contactTier } = params;
+  const { subject, senderEmail, senderName, snippet, isKnownContact, contactTier, userId } = params;
 
   const userContent = [
     `From: ${senderName} <${senderEmail}>`,
@@ -45,6 +46,7 @@ export async function scoreThread(params: {
   try {
     const result = await callClaude({
       feature: FEATURE,
+      userId,
       model: MODEL,
       max_tokens: MAX_TOKENS,
       system: [

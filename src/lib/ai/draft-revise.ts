@@ -119,11 +119,13 @@ function buildSubject(originalSubject: string): string {
 export async function generateDraft(
   email: DraftEmailInput,
   context: DraftContext,
+  userId: string,
 ): Promise<DraftResult> {
   const userMessage = buildUserMessage(email, context);
 
   const result = await callClaude({
     feature: FEATURE,
+    userId,
     system: [
       {
         type: "text",

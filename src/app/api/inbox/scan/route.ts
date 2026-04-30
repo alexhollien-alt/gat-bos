@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
       snippet: thread.snippet,
       isKnownContact: !!contact,
       contactTier: contact?.tier ?? null,
+      userId: user.id,
     });
 
     if (!result.needs_reply) continue;

@@ -40,6 +40,33 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const briefDate = todayInPhoenix();
 
+  const userEmail = process.env.GOOGLE_USER_EMAIL;
+  if (!userEmail) {
+    return NextResponse.json(
+      { error: "GOOGLE_USER_EMAIL not configured" },
+      { status: 500 },
+    );
+  }
+
+  // Resolve Alex's Supabase user ID from his email -- mirrors api/inbox/scan.
+  // Slice 7A: ai_usage_log + budget events key on user_id under RLS, so the
+  // cron must thread a real auth user through assembleBrief.
+  const { data: authUsers, error: userErr } = await adminClient.auth.admin.listUsers({
+    perPage: 1000,
+  });
+  const matched = authUsers?.users?.find((u) => u.email === userEmail);
+  if (userErr || !matched) {
+    await logError(
+      ROUTE,
+      `user lookup failed: ${userErr?.message ?? "no user matched"}`,
+      { email: userEmail },
+    );
+    return NextResponse.json(
+      { error: `No Supabase user found for ${userEmail}` },
+      { status: 500 },
+    );
+  }
+
   try {
     const ranked = await scoreContacts(adminClient);
     const congrats: CongratsItem[] = []; // [PHASE 2] empty until MLS feed
@@ -48,6 +75,7 @@ export async function GET(request: NextRequest) {
       brief_date: briefDate,
       temperature_ranking: ranked.map(toBriefRanked),
       congrats_queue: congrats,
+      userId: matched.id,
     });
 
     const briefJson = {

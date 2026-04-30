@@ -32,8 +32,6 @@ export { BudgetExceededError } from "./_budget";
 
 export const DEFAULT_MODEL = "claude-sonnet-4-6";
 
-const OWNER_USER_ID = process.env.OWNER_USER_ID;
-
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
   if (_client) return _client;
@@ -45,6 +43,9 @@ function getClient(): Anthropic {
 
 export interface CallClaudeParams {
   feature: string;
+  // Tenant owner of this call. Required: ai_usage_log, budget warnings, and
+  // budget-blocked events all key on user_id under Slice 7A RLS.
+  userId: string;
   system: Anthropic.MessageCreateParams["system"];
   messages: Anthropic.MessageParam[];
   model?: string;
@@ -68,6 +69,7 @@ export interface CallClaudeResult {
 export async function callClaude(params: CallClaudeParams): Promise<CallClaudeResult> {
   const {
     feature,
+    userId,
     system,
     messages,
     model = DEFAULT_MODEL,
@@ -85,6 +87,7 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
       // Still log the cache hit to ai_usage_log so the audit trail is complete.
       await writeUsageLog({
         feature,
+        userId,
         model: hit.model ?? model,
         usage: zeroUsage(),
         cost_usd: 0,
@@ -95,13 +98,13 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
   }
 
   // 2. Budget guard.
-  const status = await checkBudget(feature);
+  const status = await checkBudget(feature, userId);
   if (status.blocked) {
-    await writeBudgetBlocked(feature, status);
+    await writeBudgetBlocked(feature, userId, status);
     throw new BudgetExceededError(feature, status.remaining_usd, status.budget_usd);
   }
   if (status.soft_cap_breached) {
-    await maybeWriteSoftCapWarning(feature, status);
+    await maybeWriteSoftCapWarning(feature, userId, status);
   }
 
   // 3. Anthropic call.
@@ -123,6 +126,7 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
     // Log the failure row so cost-per-failure is visible.
     await writeUsageLog({
       feature,
+      userId,
       model,
       usage: zeroUsage(),
       cost_usd: 0,
@@ -143,6 +147,7 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
   const cost_usd = priceUsage(response.model ?? model, usage);
   await writeUsageLog({
     feature,
+    userId,
     model: response.model ?? model,
     usage,
     cost_usd,
@@ -174,13 +179,13 @@ function zeroUsage(): UsageTokens {
 
 async function writeUsageLog(params: {
   feature: string;
+  userId: string;
   model: string;
   usage: UsageTokens;
   cost_usd: number;
   context: Record<string, unknown>;
 }): Promise<void> {
-  if (!OWNER_USER_ID) return;
-  const { feature, model, usage, cost_usd, context } = params;
+  const { feature, userId, model, usage, cost_usd, context } = params;
   const { error } = await adminClient.from("ai_usage_log").insert({
     feature,
     model,
@@ -190,7 +195,7 @@ async function writeUsageLog(params: {
     cache_creation_tokens: usage.cache_creation_tokens,
     cost_usd,
     context,
-    user_id: OWNER_USER_ID,
+    user_id: userId,
   });
   if (error) {
     await logError("ai/_client.writeUsageLog", error.message, { feature, model });
