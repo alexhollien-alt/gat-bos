@@ -13,8 +13,6 @@ import { logError } from "@/lib/error-log";
 const DEFAULT_BUDGET_USD = 5.0;
 const SOFT_CAP_FRACTION = 0.8;
 
-const OWNER_USER_ID = process.env.OWNER_USER_ID;
-
 export class BudgetExceededError extends Error {
   readonly remaining_usd: number;
   readonly budget_usd: number;
@@ -49,7 +47,10 @@ function readBudgetEnv(): { value: number; default_used: boolean } {
   return { value: parsed, default_used: false };
 }
 
-export async function checkBudget(feature: string): Promise<BudgetStatus> {
+export async function checkBudget(
+  feature: string,
+  userId: string,
+): Promise<BudgetStatus> {
   const { value: budget_usd, default_used } = readBudgetEnv();
 
   const { data, error } = await adminClient.rpc("current_day_ai_spend_usd");
@@ -64,17 +65,17 @@ export async function checkBudget(feature: string): Promise<BudgetStatus> {
   const blocked = remaining_usd <= 0;
   const soft_cap_breached = !blocked && spent_usd >= budget_usd * SOFT_CAP_FRACTION;
 
-  if (default_used && OWNER_USER_ID) {
+  if (default_used) {
     // Fire-and-forget: surface that the default was used so Alex can set the
     // env var. Best-effort -- if it fails, don't block the call.
     void adminClient
       .from("activity_events")
       .insert({
-        user_id: OWNER_USER_ID,
-        actor_id: OWNER_USER_ID,
+        user_id: userId,
+        actor_id: userId,
         verb: "ai.budget_default_used",
         object_table: "ai_usage_log",
-        object_id: OWNER_USER_ID,
+        object_id: userId,
         context: { feature, budget_usd },
       })
       .then(() => null, () => null);
@@ -101,10 +102,10 @@ function phoenixDayKey(): string {
 
 export async function maybeWriteSoftCapWarning(
   feature: string,
+  userId: string,
   status: BudgetStatus,
 ): Promise<void> {
   if (!status.soft_cap_breached) return;
-  if (!OWNER_USER_ID) return;
   const day = phoenixDayKey();
   const key = `${feature}::${day}`;
   if (warnedToday.has(key)) return;
@@ -113,11 +114,11 @@ export async function maybeWriteSoftCapWarning(
   void adminClient
     .from("activity_events")
     .insert({
-      user_id: OWNER_USER_ID,
-      actor_id: OWNER_USER_ID,
+      user_id: userId,
+      actor_id: userId,
       verb: "ai.budget_warning",
       object_table: "ai_usage_log",
-      object_id: OWNER_USER_ID,
+      object_id: userId,
       context: {
         feature,
         spent_usd: status.spent_usd,
@@ -130,17 +131,17 @@ export async function maybeWriteSoftCapWarning(
 
 export async function writeBudgetBlocked(
   feature: string,
+  userId: string,
   status: BudgetStatus,
 ): Promise<void> {
-  if (!OWNER_USER_ID) return;
   void adminClient
     .from("activity_events")
     .insert({
-      user_id: OWNER_USER_ID,
-      actor_id: OWNER_USER_ID,
+      user_id: userId,
+      actor_id: userId,
       verb: "ai.budget_blocked",
       object_table: "ai_usage_log",
-      object_id: OWNER_USER_ID,
+      object_id: userId,
       context: {
         feature,
         spent_usd: status.spent_usd,

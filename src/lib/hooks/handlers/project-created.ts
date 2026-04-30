@@ -215,6 +215,7 @@ export async function projectCreatedHandler(
 
   // Mark hook as fired so retries are no-ops.
   await writeEvent({
+    userId: ownerUserId,
     actorId: ownerUserId,
     verb: 'project.hook_fired',
     object: { table: 'projects', id: project.id },

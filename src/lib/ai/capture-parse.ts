@@ -79,7 +79,10 @@ function deriveCacheKey(rawText: string, contactsIndex: ContactIndexEntry[]): st
   });
 }
 
-export async function parseCaptureWithAI(input: ParseInput): Promise<ParseResult> {
+export async function parseCaptureWithAI(
+  input: ParseInput,
+  userId: string,
+): Promise<ParseResult> {
   const ruleResult = parseCapture(input);
 
   let aiResponse: AiParserResponse | null = null;
@@ -99,6 +102,7 @@ export async function parseCaptureWithAI(input: ParseInput): Promise<ParseResult
 
     const result = await callClaude({
       feature: FEATURE,
+      userId,
       system: [
         {
           type: "text",

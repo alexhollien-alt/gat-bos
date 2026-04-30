@@ -71,14 +71,18 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status });
   }
 
+  // userId/actorId derived from projects.user_id (Slice 7A: column-based RLS).
   // contact_id not reliably available on project PATCH without additional context.
   // Slice 2 improvement: include contact_id in context for per-contact timeline indexing.
-  void writeEvent({
-    actorId: process.env.OWNER_USER_ID ?? '',
-    verb: 'project.updated',
-    object: { table: 'projects', id },
-    context: { updated_fields: Object.keys(sanitized) },
-  });
+  if (data?.user_id) {
+    void writeEvent({
+      userId: data.user_id,
+      actorId: data.user_id,
+      verb: 'project.updated',
+      object: { table: 'projects', id },
+      context: { updated_fields: Object.keys(sanitized) },
+    });
+  }
 
   return NextResponse.json(data);
 }

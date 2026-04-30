@@ -8,13 +8,13 @@
 // verifyCronSecret -- Bearer CRON_SECRET check. Returns boolean; callers choose
 //   their own 401 response shape. Used by Vercel cron + manual route triggers.
 //
-// verifyAlexSession -- Supabase session gate; true iff signed in as ALEX_EMAIL.
+// verifySession -- Supabase session gate; true iff a Supabase user is signed
+//   in. Tenant scoping lives in tenantFromRequest + RLS, not here.
 //
 // verifyBearerOrSession -- combined cron OR session check for dual-auth routes.
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
-import { ALEX_EMAIL } from "@/lib/constants";
 
 const TOKEN = process.env.INTERNAL_API_TOKEN;
 
@@ -61,13 +61,13 @@ export function verifyCronSecret(request: Request): boolean {
   }
 }
 
-export async function verifyAlexSession(): Promise<boolean> {
+export async function verifySession(): Promise<boolean> {
   try {
     const supabase = await createServerSupabase();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    return user?.email?.toLowerCase() === ALEX_EMAIL;
+    return user != null;
   } catch {
     return false;
   }
@@ -75,5 +75,5 @@ export async function verifyAlexSession(): Promise<boolean> {
 
 export async function verifyBearerOrSession(request: Request): Promise<boolean> {
   if (verifyCronSecret(request)) return true;
-  return verifyAlexSession();
+  return verifySession();
 }

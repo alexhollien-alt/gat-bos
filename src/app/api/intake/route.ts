@@ -42,13 +42,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hard-pinned CRM owner. Set OWNER_USER_ID in .env.local to Alex's
-    // auth.users id (b735d691-4d86-4e31-9fd3-c2257822dca3). Replaces the
-    // previous listUsers({perPage: 1}) lookup which was non-deterministic
-    // when auth.users had more than one row.
-    const ownerId = process.env.OWNER_USER_ID;
+    // Slice 7A: derive owner from accounts table (single account today).
+    // Public intake form has no session, so the route runs as a service
+    // path -- accounts is the canonical source of "whose system is this".
+    const { data: acct } = await adminClient
+      .from("accounts")
+      .select("owner_user_id")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const ownerId = acct?.owner_user_id;
     if (!ownerId) {
-      console.error("Intake API: OWNER_USER_ID env var not set");
+      console.error("Intake API: no account owner resolvable");
       return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
     }
 

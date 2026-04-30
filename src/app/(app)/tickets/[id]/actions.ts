@@ -2,8 +2,6 @@
 
 // src/app/(app)/tickets/[id]/actions.ts
 // Server Action for ticket status mutation + activity ledger write.
-// Replaces the direct supabase.update() call in the client page.
-// Slice 1 -- 2026-04-22.
 
 import { adminClient } from '@/lib/supabase/admin';
 import { writeEvent } from '@/lib/activity/writeEvent';
@@ -15,9 +13,13 @@ export async function updateTicketNotes(
 ): Promise<{ ok: boolean; error?: string }> {
   const { data: ticketRow } = await adminClient
     .from('tickets')
-    .select('contact_id')
+    .select('user_id, contact_id')
     .eq('id', ticketId)
     .maybeSingle();
+
+  if (!ticketRow?.user_id) {
+    return { ok: false, error: 'ticket not found' };
+  }
 
   const { error } = await adminClient
     .from('tickets')
@@ -29,18 +31,17 @@ export async function updateTicketNotes(
   }
 
   void writeEvent({
-    actorId: OWNER_USER_ID,
+    userId: ticketRow.user_id,
+    actorId: ticketRow.user_id,
     verb: 'ticket.notes_updated',
     object: { table: 'tickets', id: ticketId },
     context: {
-      ...(ticketRow?.contact_id ? { contact_id: ticketRow.contact_id } : {}),
+      ...(ticketRow.contact_id ? { contact_id: ticketRow.contact_id } : {}),
     },
   });
 
   return { ok: true };
 }
-
-const OWNER_USER_ID = process.env.OWNER_USER_ID!;
 
 export async function updateTicketStatus(
   ticketId: string,
@@ -54,13 +55,18 @@ export async function updateTicketStatus(
   if (toStatus === 'submitted') updates.submitted_at = new Date().toISOString();
   if (toStatus === 'complete') updates.completed_at = new Date().toISOString();
 
-  // Fetch contact_id so this event appears in the per-contact timeline.
-  // getContactTimeline filters by object_id OR context->>'contact_id'.
+  // Fetch user_id (for writeEvent) + contact_id so this event appears in
+  // the per-contact timeline. getContactTimeline filters by object_id OR
+  // context->>'contact_id'.
   const { data: ticketRow } = await adminClient
     .from('tickets')
-    .select('contact_id')
+    .select('user_id, contact_id')
     .eq('id', ticketId)
     .maybeSingle();
+
+  if (!ticketRow?.user_id) {
+    return { ok: false, error: 'ticket not found' };
+  }
 
   const { error } = await adminClient
     .from('tickets')
@@ -72,14 +78,15 @@ export async function updateTicketStatus(
   }
 
   void writeEvent({
-    actorId: OWNER_USER_ID,
+    userId: ticketRow.user_id,
+    actorId: ticketRow.user_id,
     verb: 'ticket.status_changed',
     object: { table: 'tickets', id: ticketId },
     context: {
       from_status: fromStatus,
       to_status: toStatus,
       // contact_id enables getContactTimeline to surface this event per contact.
-      ...(ticketRow?.contact_id ? { contact_id: ticketRow.contact_id } : {}),
+      ...(ticketRow.contact_id ? { contact_id: ticketRow.contact_id } : {}),
     },
   });
 

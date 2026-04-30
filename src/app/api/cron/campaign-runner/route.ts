@@ -155,6 +155,7 @@ export async function GET(request: NextRequest) {
           continue;
         }
         await writeEvent({
+          userId: enrollment.user_id,
           actorId: enrollment.user_id,
           verb: "campaign.completed",
           object: { table: "campaign_enrollments", id: enrollment.id },
@@ -185,6 +186,7 @@ export async function GET(request: NextRequest) {
           })
           .eq("id", enrollment.id);
         await writeEvent({
+          userId: enrollment.user_id,
           actorId: enrollment.user_id,
           verb: "campaign.step_skipped",
           object: { table: "campaign_enrollments", id: enrollment.id },
@@ -223,6 +225,7 @@ export async function GET(request: NextRequest) {
           })
           .eq("id", enrollment.id);
         await writeEvent({
+          userId: enrollment.user_id,
           actorId: enrollment.user_id,
           verb: "campaign.step_skipped",
           object: { table: "campaign_enrollments", id: enrollment.id },
@@ -266,6 +269,7 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         await writeEvent({
+          userId: enrollment.user_id,
           actorId: enrollment.user_id,
           verb: "campaign.send_failed",
           object: { table: "campaign_enrollments", id: enrollment.id },
@@ -323,6 +327,7 @@ export async function GET(request: NextRequest) {
       });
 
       await writeEvent({
+        userId: enrollment.user_id,
         actorId: enrollment.user_id,
         verb: "campaign.step_fired",
         object: { table: "campaign_enrollments", id: enrollment.id },

@@ -37,6 +37,7 @@ export interface BriefInput {
   brief_date: string;
   temperature_ranking: BriefRankedContact[];
   congrats_queue: BriefCongratsItem[];
+  userId: string;
 }
 
 export interface BriefUsage {
@@ -142,6 +143,7 @@ export async function runMorningBrief(input: BriefInput): Promise<BriefResult> {
 
   const result = await callClaude({
     feature: FEATURE,
+    userId: input.userId,
     system: [
       {
         type: "text",

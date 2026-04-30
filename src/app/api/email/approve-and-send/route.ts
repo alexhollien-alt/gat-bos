@@ -20,7 +20,6 @@ import { sendDraft } from "@/lib/resend/client";
 import { createGmailDraft } from "@/lib/gmail/sync-client";
 import { verifyBearerOrSession } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
-import { ALEX_EMAIL } from "@/lib/constants";
 import { writeEvent } from "@/lib/activity/writeEvent";
 import {
   type Action,
@@ -53,6 +52,7 @@ interface RequestBody {
 interface DraftRow extends DraftState {
   id: string;
   email_id: string;
+  user_id: string;
   draft_body_html: string | null;
   metadata: Record<string, unknown> | null;
 }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
   const { data: draft, error: draftErr } = await adminClient
     .from("email_drafts")
     .select(
-      "id, email_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, escalation_flag, audit_log, metadata",
+      "id, email_id, user_id, draft_subject, draft_body_plain, draft_body_html, status, expires_at, revisions_count, escalation_flag, audit_log, metadata",
     )
     .eq("id", draftId)
     .maybeSingle<DraftRow>();
@@ -189,6 +189,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Original email not found" }, { status: 404 });
   }
 
+  const { data: ownerRecord, error: ownerErr } =
+    await adminClient.auth.admin.getUserById(draft.user_id);
+  const ownerEmail = ownerRecord?.user?.email;
+  if (ownerErr || !ownerEmail) {
+    await logError(ROUTE, `owner email lookup failed`, {
+      draft_id: draftId,
+      user_id: draft.user_id,
+    });
+    return NextResponse.json({ error: "Owner email lookup failed" }, { status: 500 });
+  }
+
   const subject = draft.draft_subject?.trim() || `Re: ${email.subject}`;
   const html =
     draft.draft_body_html ??
@@ -205,7 +216,7 @@ export async function POST(request: NextRequest) {
         subject,
         html,
         text,
-        replyTo: ALEX_EMAIL,
+        replyTo: ownerEmail,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "resend send failed";
@@ -228,7 +239,7 @@ export async function POST(request: NextRequest) {
         sent_at: sentAt,
         sent_via: "resend",
         approved_at: sentAt,
-        approved_by: ALEX_EMAIL,
+        approved_by: ownerEmail,
         audit_log: sentAudit,
       })
       .eq("id", draftId);
@@ -245,7 +256,8 @@ export async function POST(request: NextRequest) {
     fireMarkRead(email.id, origin);
 
     void writeEvent({
-      actorId: process.env.OWNER_USER_ID!,
+      userId: draft.user_id,
+      actorId: draft.user_id,
       verb: "email.sent",
       object: { table: "email_drafts", id: draftId },
       context: {
@@ -305,7 +317,7 @@ export async function POST(request: NextRequest) {
         sent_at: sentAt,
         sent_via: "gmail_draft",
         approved_at: sentAt,
-        approved_by: ALEX_EMAIL,
+        approved_by: ownerEmail,
         created_in_gmail_draft_id: result.draftId,
         audit_log: draftAudit,
       })

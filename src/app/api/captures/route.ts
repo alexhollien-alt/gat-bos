@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   // until the flag flips after a 7-day soak (see LATER.md).
   const aiEnabled = process.env.CAPTURES_AI_PARSE === "true";
   const parsed = aiEnabled
-    ? await parseCaptureWithAI({ rawText: raw, contactsIndex: index })
+    ? await parseCaptureWithAI({ rawText: raw, contactsIndex: index }, user.id)
     : parseCapture({ rawText: raw, contactsIndex: index });
 
   const { data, error } = await supabase

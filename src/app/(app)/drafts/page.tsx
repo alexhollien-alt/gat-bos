@@ -9,7 +9,6 @@ import { headers } from "next/headers";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { DraftsClient, type DraftRow } from "./drafts-client";
 import { redirect } from "next/navigation";
-import { ALEX_EMAIL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +34,6 @@ export default async function DraftsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login?next=/drafts");
-  if (user.email?.toLowerCase() !== ALEX_EMAIL) redirect("/");
 
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
@@ -45,7 +43,7 @@ export default async function DraftsPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <DraftsClient />
+      <DraftsClient userEmail={user.email ?? ""} />
     </HydrationBoundary>
   );
 }

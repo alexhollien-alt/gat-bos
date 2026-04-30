@@ -2,12 +2,15 @@
 // then mirrors to Google Calendar and backfills gcal_event_id.
 // Dashboard is canonical; if gcal_event_id is already populated on the row,
 // do not re-insert (the inbound cron owns subsequent updates).
-// Dual auth: Bearer CRON_SECRET + Supabase session (Alex).
+// Slice 7A -- 2026-04-30: tenantFromRequest replaces verifyBearerOrSession.
+// This route is dashboard-only (no cron schedule, no skill caller); the
+// session is required to derive user_id for events.user_id (column-based RLS)
+// and downstream writeEvent/firePostCreationHooks.
 // Kill switch: ROLLBACK_CAL_WRITE=true returns 503 on outbound write only.
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { insertEvent, type CalendarAttendee } from "@/lib/calendar/client";
-import { verifyBearerOrSession } from "@/lib/api-auth";
+import { tenantFromRequest, TenantResolutionError } from "@/lib/auth/tenantFromRequest";
 import { logError as sharedLogError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
 import { firePostCreationHooks } from "@/lib/hooks/post-creation";
@@ -40,8 +43,19 @@ export async function POST(request: NextRequest) {
   if (process.env.ROLLBACK_CAL_WRITE === "true") {
     return NextResponse.json({ error: "Calendar write disabled" }, { status: 503 });
   }
-  if (!(await verifyBearerOrSession(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let userId: string;
+  try {
+    const ctx = await tenantFromRequest(request);
+    if (ctx.kind !== "user") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userId = ctx.userId;
+  } catch (err) {
+    if (err instanceof TenantResolutionError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    throw err;
   }
 
   const body = (await request.json().catch(() => ({}))) as CreateBody;
@@ -67,6 +81,7 @@ export async function POST(request: NextRequest) {
   const { data: localRow, error: insertErr } = await adminClient
     .from("events")
     .insert({
+      user_id: userId,
       title,
       description: body.description ?? null,
       start_at: startAt.toISOString(),
@@ -94,7 +109,8 @@ export async function POST(request: NextRequest) {
   // event.created is not contact-specific. contact_id not included.
   // Slice 2 improvement if calendar events ever need per-contact timeline indexing.
   void writeEvent({
-    actorId: process.env.OWNER_USER_ID ?? '',
+    userId,
+    actorId: userId,
     verb: 'event.created',
     object: { table: 'events', id: localRow.id },
     context: { title },
@@ -103,15 +119,12 @@ export async function POST(request: NextRequest) {
   // Slice 5B: post-creation hooks. project_id present -> insert
   // project_touchpoints; contact_id only -> activity_events
   // event.contact_only. Idempotent + fire-and-forget.
-  const ownerId = process.env.OWNER_USER_ID;
-  if (ownerId) {
-    await firePostCreationHooks({
-      entityKind: "event",
-      entityId: localRow.id,
-      payload: localRow,
-      ownerUserId: ownerId,
-    });
-  }
+  await firePostCreationHooks({
+    entityKind: "event",
+    entityId: localRow.id,
+    payload: localRow,
+    ownerUserId: userId,
+  });
 
   // Step 2: write to Google Calendar. On failure, keep the local row (null
   // gcal_event_id) so Alex can see it and retry later via a future reconcile.

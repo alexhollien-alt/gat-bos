@@ -1,0 +1,280 @@
+CREATE FUNCTION public.compute_relationship_health_score(p_contact_id uuid) RETURNS TABLE(score numeric, touchpoint_count integer, last_touchpoint_at timestamp with time zone, half_life_days numeric)
+CREATE FUNCTION public.current_day_ai_spend_usd() RETURNS numeric
+CREATE FUNCTION public.increment_rate_limit(p_key text, p_window_start timestamp with time zone) RETURNS integer
+CREATE FUNCTION public.recompute_all_relationship_health_scores(p_batch_limit integer DEFAULT 500) RETURNS integer
+CREATE FUNCTION public.recompute_relationship_health_on_touchpoint() RETURNS trigger
+CREATE FUNCTION public.refresh_agent_relationship_health() RETURNS trigger
+CREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger
+CREATE FUNCTION public.set_attendees_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_email_drafts_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_event_templates_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_events_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_projects_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_templates_updated_at() RETURNS trigger
+CREATE FUNCTION public.set_updated_at() RETURNS trigger
+CREATE FUNCTION public.spine_touch_updated_at() RETURNS trigger
+CREATE FUNCTION public.spine_update_cycle_on_interaction() RETURNS trigger
+CREATE FUNCTION public.touch_rep_pulse_updated_at() RETURNS trigger
+CREATE FUNCTION public.update_message_log_status() RETURNS trigger
+CREATE FUNCTION public.update_updated_at() RETURNS trigger
+CREATE FUNCTION public.upsert_relationship_health_score(p_contact_id uuid) RETURNS void
+CREATE INDEX accounts_owner_user_id_active_idx ON public.accounts USING btree (owner_user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX agent_metrics_contact_idx ON public.agent_metrics USING btree (contact_id);
+CREATE INDEX agent_metrics_user_period_idx ON public.agent_metrics USING btree (user_id, period);
+CREATE INDEX ai_cache_user_id_idx ON public.ai_cache USING btree (user_id);
+CREATE INDEX attendees_user_id_idx ON public.attendees USING btree (user_id);
+CREATE INDEX captures_contact_idx ON public.captures USING btree (parsed_contact_id) WHERE (parsed_contact_id IS NOT NULL);
+CREATE INDEX captures_unprocessed_idx ON public.captures USING btree (user_id, processed) WHERE (processed = false);
+CREATE INDEX captures_user_created_idx ON public.captures USING btree (user_id, created_at DESC);
+CREATE INDEX contacts_lender_partner_id_idx ON public.contacts USING btree (lender_partner_id) WHERE (lender_partner_id IS NOT NULL);
+CREATE INDEX email_drafts_user_id_idx ON public.email_drafts USING btree (user_id);
+CREATE INDEX email_log_campaign_idx ON public.email_log USING btree (user_id, campaign);
+CREATE INDEX email_log_contact_idx ON public.email_log USING btree (contact_id);
+CREATE INDEX email_log_user_sent_idx ON public.email_log USING btree (user_id, sent_at DESC);
+CREATE INDEX emails_user_id_idx ON public.emails USING btree (user_id);
+CREATE INDEX error_logs_user_id_idx ON public.error_logs USING btree (user_id);
+CREATE INDEX event_templates_user_id_idx ON public.event_templates USING btree (user_id);
+CREATE INDEX events_user_id_idx ON public.events USING btree (user_id);
+CREATE INDEX idx_activities_contact ON public.activities USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_activities_created ON public.activities USING btree (created_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_activities_user ON public.activities USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_activity_events_actor ON public.activity_events USING btree (actor_id, occurred_at DESC);
+CREATE INDEX idx_activity_events_object ON public.activity_events USING btree (object_table, object_id, occurred_at DESC);
+CREATE INDEX idx_activity_events_user_occurred ON public.activity_events USING btree (user_id, occurred_at DESC);
+CREATE INDEX idx_ai_cache_feature_expires_at ON public.ai_cache USING btree (feature, expires_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_ai_usage_log_feature_occurred_at ON public.ai_usage_log USING btree (feature, occurred_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_ai_usage_log_occurred_at ON public.ai_usage_log USING btree (occurred_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_api_usage_log_feature ON public.api_usage_log USING btree (feature_key, created_at DESC);
+CREATE INDEX idx_api_usage_log_user_created ON public.api_usage_log USING btree (user_id, created_at DESC);
+CREATE INDEX idx_attendees_contact ON public.attendees USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_attendees_event ON public.attendees USING btree (event_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_attendees_recorded ON public.attendees USING btree (recorded_at) WHERE ((deleted_at IS NULL) AND (recorded_at IS NOT NULL));
+CREATE INDEX idx_campaign_enrollments_campaign ON public.campaign_enrollments USING btree (campaign_id);
+CREATE INDEX idx_campaign_enrollments_contact ON public.campaign_enrollments USING btree (contact_id);
+CREATE INDEX idx_campaign_enrollments_contact_active ON public.campaign_enrollments USING btree (contact_id) WHERE ((deleted_at IS NULL) AND (status = 'active'::text));
+CREATE INDEX idx_campaign_enrollments_user ON public.campaign_enrollments USING btree (user_id);
+CREATE INDEX idx_campaign_step_completions_user ON public.campaign_step_completions USING btree (user_id);
+CREATE INDEX idx_campaign_steps_active_with_slug ON public.campaign_steps USING btree (campaign_id, step_number) WHERE ((deleted_at IS NULL) AND (template_slug IS NOT NULL));
+CREATE INDEX idx_campaign_steps_campaign ON public.campaign_steps USING btree (campaign_id);
+CREATE INDEX idx_campaign_steps_user ON public.campaign_steps USING btree (user_id);
+CREATE INDEX idx_campaigns_user ON public.campaigns USING btree (user_id);
+CREATE INDEX idx_captures_source ON public.captures USING btree (source);
+CREATE INDEX idx_contacts_last_touch ON public.contacts USING btree (last_touchpoint) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_contacts_next_action_date ON public.contacts USING btree (next_followup) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_contacts_stage ON public.contacts USING btree (stage) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_contacts_temperature ON public.contacts USING btree (health_score DESC);
+CREATE INDEX idx_contacts_tier ON public.contacts USING btree (tier) WHERE (tier IS NOT NULL);
+CREATE INDEX idx_contacts_type ON public.contacts USING btree (type) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_contacts_user ON public.contacts USING btree (user_id) WHERE (user_id IS NOT NULL);
+CREATE INDEX idx_design_assets_contact ON public.design_assets USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_design_assets_user ON public.design_assets USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_drafts_email_id ON public.email_drafts USING btree (email_id);
+CREATE INDEX idx_drafts_expires_at ON public.email_drafts USING btree (expires_at);
+CREATE INDEX idx_drafts_status_recent ON public.email_drafts USING btree (status, created_at DESC);
+CREATE INDEX idx_emails_contact_id ON public.emails USING btree (contact_id);
+CREATE INDEX idx_emails_from_email ON public.emails USING btree (from_email);
+CREATE INDEX idx_emails_unread_recent ON public.emails USING btree (is_unread, created_at DESC);
+CREATE INDEX idx_enrollments_next_action ON public.campaign_enrollments USING btree (next_action_at) WHERE ((deleted_at IS NULL) AND (status = 'active'::text));
+CREATE INDEX idx_error_logs_recent ON public.error_logs USING btree (created_at DESC);
+CREATE INDEX idx_error_logs_unresolved ON public.error_logs USING btree (resolved, created_at DESC) WHERE (resolved = false);
+CREATE INDEX idx_event_templates_active ON public.event_templates USING btree (active) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_event_templates_owner ON public.event_templates USING btree (owner_contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_events_contact ON public.events USING btree (contact_id) WHERE ((deleted_at IS NULL) AND (contact_id IS NOT NULL));
+CREATE INDEX idx_events_gcal_event_id ON public.events USING btree (gcal_event_id) WHERE (gcal_event_id IS NOT NULL);
+CREATE INDEX idx_events_occurrence_status ON public.events USING btree (occurrence_status) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_events_project ON public.events USING btree (project_id) WHERE ((deleted_at IS NULL) AND (project_id IS NOT NULL));
+CREATE INDEX idx_events_start_at ON public.events USING btree (start_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_events_template ON public.events USING btree (event_template_id) WHERE ((deleted_at IS NULL) AND (event_template_id IS NOT NULL));
+CREATE INDEX idx_events_today_window ON public.events USING btree (start_at, end_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_listings_contact ON public.listings USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_listings_mls ON public.listings USING btree (mls_number) WHERE ((deleted_at IS NULL) AND (mls_number IS NOT NULL));
+CREATE INDEX idx_listings_status ON public.listings USING btree (status) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_listings_user ON public.listings USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_listings_zip ON public.listings USING btree (zip) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_message_events_log_received ON public.message_events USING btree (message_log_id, received_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_messages_log_status_live ON public.messages_log USING btree (status, created_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_messages_log_template_sent ON public.messages_log USING btree (template_id, sent_at DESC);
+CREATE INDEX idx_opportunities_close ON public.opportunities USING btree (expected_close_date) WHERE (stage = 'in_escrow'::public.opportunity_stage);
+CREATE INDEX idx_opportunities_contact ON public.opportunities USING btree (contact_id);
+CREATE INDEX idx_opportunities_stage ON public.opportunities USING btree (stage) WHERE (stage <> ALL (ARRAY['closed'::public.opportunity_stage, 'fell_through'::public.opportunity_stage]));
+CREATE INDEX idx_opportunities_user ON public.opportunities USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_project_touchpoints_due_at ON public.project_touchpoints USING btree (due_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_project_touchpoints_last_reminded_at ON public.project_touchpoints USING btree (last_reminded_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_projects_owner ON public.projects USING btree (owner_contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_projects_status_active ON public.projects USING btree (status, updated_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_projects_type ON public.projects USING btree (type) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_referral_partners_category ON public.referral_partners USING btree (category) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_referral_partners_trust ON public.referral_partners USING btree (trust_level DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_referral_partners_user ON public.referral_partners USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_resources_category ON public.resources USING btree (category) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_resources_tags ON public.resources USING gin (tags) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_resources_user ON public.resources USING btree (user_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_rhs_computed_at ON public.relationship_health_scores USING btree (computed_at) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_rhs_score_desc ON public.relationship_health_scores USING btree (score DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_step_completions_enrollment ON public.campaign_step_completions USING btree (enrollment_id);
+CREATE INDEX idx_step_completions_step ON public.campaign_step_completions USING btree (step_id);
+CREATE INDEX idx_tasks_contact ON public.tasks USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tasks_due_date ON public.tasks USING btree (due_date) WHERE ((deleted_at IS NULL) AND (status = 'open'::text));
+CREATE INDEX idx_tasks_linked_interaction_id ON public.tasks USING btree (linked_interaction_id) WHERE (linked_interaction_id IS NOT NULL);
+CREATE INDEX idx_tasks_project_id ON public.tasks USING btree (project_id) WHERE ((deleted_at IS NULL) AND (project_id IS NOT NULL));
+CREATE INDEX idx_tasks_status ON public.tasks USING btree (status) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tasks_type ON public.tasks USING btree (type) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tasks_user ON public.tasks USING btree (user_id);
+CREATE INDEX idx_templates_slug_live ON public.templates USING btree (slug, version DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_ticket_items_ticket ON public.ticket_items USING btree (request_id);
+CREATE INDEX idx_tickets_contact ON public.tickets USING btree (contact_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tickets_source ON public.tickets USING btree (source) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tickets_status ON public.tickets USING btree (user_id, status) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_tickets_user ON public.tickets USING btree (user_id);
+CREATE INDEX idx_touchpoints_entity ON public.project_touchpoints USING btree (entity_table, entity_id);
+CREATE INDEX idx_touchpoints_project ON public.project_touchpoints USING btree (project_id, occurred_at DESC NULLS LAST);
+CREATE INDEX idx_touchpoints_type ON public.project_touchpoints USING btree (touchpoint_type);
+CREATE INDEX inbox_items_user_status_received_idx ON public.inbox_items USING btree (user_id, status, received_at DESC) WHERE (dismissed_at IS NULL);
+CREATE INDEX message_events_user_id_idx ON public.message_events USING btree (user_id);
+CREATE INDEX messages_log_user_id_idx ON public.messages_log USING btree (user_id);
+CREATE INDEX morning_briefs_generated_at_idx ON public.morning_briefs USING btree (generated_at DESC) WHERE (deleted_at IS NULL);
+CREATE INDEX morning_briefs_user_id_idx ON public.morning_briefs USING btree (user_id);
+CREATE INDEX projects_user_id_idx ON public.projects USING btree (user_id);
+CREATE INDEX rate_limits_window_start_idx ON public.rate_limits USING btree (window_start);
+CREATE INDEX relationship_health_config_user_id_idx ON public.relationship_health_config USING btree (user_id);
+CREATE INDEX relationship_health_scores_user_id_idx ON public.relationship_health_scores USING btree (user_id);
+CREATE INDEX relationship_health_touchpoint_weights_user_id_idx ON public.relationship_health_touchpoint_weights USING btree (user_id);
+CREATE INDEX templates_user_id_idx ON public.templates USING btree (user_id);
+CREATE POLICY "Allow anonymous intake inserts" ON public.tickets FOR INSERT WITH CHECK ((source = 'intake'::text));
+CREATE POLICY "Allow anonymous intake item inserts" ON public.ticket_items FOR INSERT WITH CHECK ((request_id IN ( SELECT tickets.id
+CREATE POLICY "Users manage own activities" ON public.activities TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own agent_metrics" ON public.agent_metrics TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own api_usage_log" ON public.api_usage_log USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
+CREATE POLICY "Users manage own campaign_enrollments" ON public.campaign_enrollments TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own campaign_step_completions" ON public.campaign_step_completions TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own campaign_steps" ON public.campaign_steps TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own campaigns" ON public.campaigns TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own captures" ON public.captures TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own contacts" ON public.contacts TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own design assets" ON public.design_assets USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own email_log" ON public.email_log TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own listings" ON public.listings TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own opportunities" ON public.opportunities USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own referral_partners" ON public.referral_partners TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own resources" ON public.resources TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own tasks" ON public.tasks TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY "Users manage own ticket items" ON public.ticket_items USING ((request_id IN ( SELECT tickets.id
+CREATE POLICY "Users manage own tickets" ON public.tickets USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY accounts_owner_delete ON public.accounts FOR DELETE TO authenticated USING ((owner_user_id = auth.uid()));
+CREATE POLICY accounts_owner_select ON public.accounts FOR SELECT TO authenticated USING ((owner_user_id = auth.uid()));
+CREATE POLICY accounts_owner_update ON public.accounts FOR UPDATE TO authenticated USING ((owner_user_id = auth.uid())) WITH CHECK ((owner_user_id = auth.uid()));
+CREATE POLICY ai_cache_user_isolation ON public.ai_cache TO authenticated USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY alex_ai_usage_log_all ON public.ai_usage_log USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_attendees_all ON public.attendees TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_drafts_all ON public.email_drafts TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_emails_all ON public.emails TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_error_logs_all ON public.error_logs TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_event_templates_all ON public.event_templates TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_events_all ON public.events TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_message_events_all ON public.message_events USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_messages_log_all ON public.messages_log TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_morning_briefs_all ON public.morning_briefs TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_oauth_tokens_all ON public.oauth_tokens TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_projects_all ON public.projects TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_templates_all ON public.templates TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY alex_touchpoints_all ON public.project_touchpoints TO authenticated USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY inbox_items_owner ON public.inbox_items USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY owner_read_write ON public.activity_events USING ((user_id = auth.uid())) WITH CHECK ((user_id = auth.uid()));
+CREATE POLICY rate_limits_deny_anon ON public.rate_limits TO anon USING (false) WITH CHECK (false);
+CREATE POLICY rate_limits_deny_authenticated ON public.rate_limits TO authenticated USING (false) WITH CHECK (false);
+CREATE POLICY rhc_alex_read ON public.relationship_health_config FOR SELECT USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY rhc_alex_write ON public.relationship_health_config USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY rhs_alex_read ON public.relationship_health_scores FOR SELECT USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY rhs_alex_write ON public.relationship_health_scores USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY rhw_alex_read ON public.relationship_health_touchpoint_weights FOR SELECT USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE POLICY rhw_alex_write ON public.relationship_health_touchpoint_weights USING (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text)) WITH CHECK (((auth.jwt() ->> 'email'::text) = 'alex@alexhollienco.com'::text));
+CREATE TABLE public.accounts (
+CREATE TABLE public.activities (
+CREATE TABLE public.activity_events (
+CREATE TABLE public.agent_metrics (
+CREATE TABLE public.ai_cache (
+CREATE TABLE public.ai_usage_log (
+CREATE TABLE public.api_usage_log (
+CREATE TABLE public.attendees (
+CREATE TABLE public.campaign_enrollments (
+CREATE TABLE public.campaign_step_completions (
+CREATE TABLE public.campaign_steps (
+CREATE TABLE public.campaigns (
+CREATE TABLE public.captures (
+CREATE TABLE public.contacts (
+CREATE TABLE public.design_assets (
+CREATE TABLE public.email_drafts (
+CREATE TABLE public.email_log (
+CREATE TABLE public.emails (
+CREATE TABLE public.error_logs (
+CREATE TABLE public.event_templates (
+CREATE TABLE public.events (
+CREATE TABLE public.inbox_items (
+CREATE TABLE public.listings (
+CREATE TABLE public.message_events (
+CREATE TABLE public.messages_log (
+CREATE TABLE public.morning_briefs (
+CREATE TABLE public.oauth_tokens (
+CREATE TABLE public.opportunities (
+CREATE TABLE public.project_touchpoints (
+CREATE TABLE public.projects (
+CREATE TABLE public.rate_limits (
+CREATE TABLE public.referral_partners (
+CREATE TABLE public.relationship_health_config (
+CREATE TABLE public.relationship_health_scores (
+CREATE TABLE public.relationship_health_touchpoint_weights (
+CREATE TABLE public.resources (
+CREATE TABLE public.tasks (
+CREATE TABLE public.templates (
+CREATE TABLE public.ticket_items (
+CREATE TABLE public.tickets (
+CREATE TRIGGER accounts_set_updated_at BEFORE UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER agent_metrics_set_updated_at BEFORE UPDATE ON public.agent_metrics FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER contacts_rep_pulse_touch BEFORE UPDATE ON public.contacts FOR EACH ROW EXECUTE FUNCTION public.touch_rep_pulse_updated_at();
+CREATE TRIGGER design_assets_updated_at BEFORE UPDATE ON public.design_assets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER email_log_set_updated_at BEFORE UPDATE ON public.email_log FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER material_requests_updated_at BEFORE UPDATE ON public.tickets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER message_events_status_sync AFTER INSERT ON public.message_events FOR EACH ROW EXECUTE FUNCTION public.update_message_log_status();
+CREATE TRIGGER opportunities_updated_at BEFORE UPDATE ON public.opportunities FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER set_campaign_enrollments_updated_at BEFORE UPDATE ON public.campaign_enrollments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_campaign_step_completions_updated_at BEFORE UPDATE ON public.campaign_step_completions FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_campaign_steps_updated_at BEFORE UPDATE ON public.campaign_steps FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_campaigns_updated_at BEFORE UPDATE ON public.campaigns FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_captures_updated_at BEFORE UPDATE ON public.captures FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.activities FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.contacts FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.referral_partners FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.resources FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER trg_attendees_updated_at BEFORE UPDATE ON public.attendees FOR EACH ROW EXECUTE FUNCTION public.set_attendees_updated_at();
+CREATE TRIGGER trg_email_drafts_updated_at BEFORE UPDATE ON public.email_drafts FOR EACH ROW EXECUTE FUNCTION public.set_email_drafts_updated_at();
+CREATE TRIGGER trg_event_templates_updated_at BEFORE UPDATE ON public.event_templates FOR EACH ROW EXECUTE FUNCTION public.set_event_templates_updated_at();
+CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON public.events FOR EACH ROW EXECUTE FUNCTION public.set_events_updated_at();
+CREATE TRIGGER trg_projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION public.set_projects_updated_at();
+CREATE TRIGGER trg_templates_updated_at BEFORE UPDATE ON public.templates FOR EACH ROW EXECUTE FUNCTION public.set_templates_updated_at();
+CREATE TRIGGER trg_touchpoint_recompute_health AFTER INSERT OR DELETE OR UPDATE ON public.project_touchpoints FOR EACH ROW EXECUTE FUNCTION public.recompute_relationship_health_on_touchpoint();
+CREATE TYPE public.deal_stage AS ENUM (
+CREATE TYPE public.design_asset_type AS ENUM (
+CREATE TYPE public.email_draft_status AS ENUM (
+CREATE TYPE public.event_occurrence_status AS ENUM (
+CREATE TYPE public.event_source AS ENUM (
+CREATE TYPE public.follow_up_status AS ENUM (
+CREATE TYPE public.interaction_type AS ENUM (
+CREATE TYPE public.material_request_priority AS ENUM (
+CREATE TYPE public.material_request_status AS ENUM (
+CREATE TYPE public.material_request_type AS ENUM (
+CREATE TYPE public.message_event_type AS ENUM (
+CREATE TYPE public.message_status AS ENUM (
+CREATE TYPE public.opportunity_stage AS ENUM (
+CREATE TYPE public.product_type AS ENUM (
+CREATE TYPE public.project_status AS ENUM (
+CREATE TYPE public.project_touchpoint_type AS ENUM (
+CREATE TYPE public.project_type AS ENUM (
+CREATE TYPE public.template_kind AS ENUM (
+CREATE TYPE public.template_send_mode AS ENUM (
+CREATE UNIQUE INDEX idx_templates_slug_version ON public.templates USING btree (slug, version);
+CREATE UNIQUE INDEX morning_briefs_brief_date_unique ON public.morning_briefs USING btree (brief_date) WHERE (deleted_at IS NULL);
+CREATE VIEW public.contacts_spec_view AS
+CREATE VIEW public.email_drafts_observation WITH (security_invoker='true') AS
+CREATE VIEW public.interactions AS

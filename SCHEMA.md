@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-27 (Slice 6 shipped)*
+*Last updated: 2026-04-30 (Slice 7A shipped)*
 
 ## Layer Map
 
@@ -14,6 +14,7 @@
 
 | Table | Tier | Status | Notes |
 |-------|------|--------|-------|
+| accounts | Raw | live | Slice 7A. Tenant root. PK id uuid; columns name, slug (unique), owner_user_id (FK auth.users), deleted_at. Single Alex seed row (`name='Alex Hollien' / slug='alex-hollien'`). Resolved by `tenantFromRequest()` via `owner_user_id = auth.uid()`. |
 | activity_events | Raw | live | Canonical write target from Slice 1. Ledger for all user-observable actions. |
 | contacts | Raw | live | Core CRM entity. |
 | interactions | Raw | view | Replaced with a VIEW over activity_events in Slice 2C. Part A: interactions_legacy (legacy rows). Part B: activity_events WHERE verb LIKE interaction.%. See interactions_legacy row. |
@@ -66,14 +67,15 @@
 | Slice 5A | Campaign runner cron + drip enrollments + Resend webhook -> message_events. `/api/cron/campaign-runner` 15-min tick, `message_events` table + status-sync trigger, `campaign_steps.template_slug`. Drip content seeded (4 New Agent Onboarding templates + Agent Nurture campaign + 2 templates + 2 steps). |
 | Slice 5B | Post-creation event hooks + weeklyWhere + touchpoint-reminder cron. `src/lib/hooks/` dispatcher with isolated handlers for project/contact/event creation. `weeklyWhere.ts` end-of-Sunday America/Phoenix bound. `/api/cron/touchpoint-reminder` 5am MST tick. project_touchpoints + tasks schema deltas; 3 template seeds (listing-launch-invite, listing-launch-social, daily-touchpoint-summary). |
 | Slice 6 | AI layer consolidation + budget guard. `src/lib/ai/` namespace consolidating every Claude call site (_client.ts, _budget.ts, _cache.ts, _pricing.ts + capability files morning-brief.ts, draft-revise.ts, capture-parse.ts, inbox-score.ts). `ai_usage_log` + `ai_cache` tables + `current_day_ai_spend_usd()` RPC. `AI_DAILY_BUDGET_USD` env var (default 5.00) with soft-cap warning at 80% + hard-cap BudgetExceededError. Site migrations: 7a brief-client shim, 7b captures opt-in AI gated on CAPTURES_AI_PARSE flag (default off), 7c draft-revise shim, 7d inbox/scorer shim. New ActivityVerb values: ai.budget_blocked, ai.budget_warning, ai.budget_default_used. |
-| Slice 7-8 | To be planned. |
+| Slice 7A | Multi-tenant auth + RLS rewrite. New `accounts` table (single Alex seed). `src/lib/auth/tenantFromRequest.ts` single resolver for user/account context with explicit failure modes. 15 add-column migrations seed `user_id uuid NOT NULL DEFAULT auth.uid()` + FK auth.users + index across ai_cache / attendees / email_drafts / emails / error_logs / event_templates / events / message_events / messages_log / morning_briefs / projects / relationship_health_config / relationship_health_scores / relationship_health_touchpoint_weights / templates. `oauth_tokens.user_id` text->uuid type fix (suppl-16). 21 RLS rewrites move every prior `(auth.jwt() ->> 'email') = 'alex@alexhollienco.com'` policy to column-based `user_id = auth.uid()` USING + WITH CHECK across the 15 added-column tables plus `ai_usage_log`, `oauth_tokens`, `project_touchpoints` (3 with pre-existing user_id). Code cleanup: writeEvent.ts hard-break (userId required), api-auth.verifySession is tenant-agnostic, OWNER_USER_ID env / ALEX_EMAIL constant removed from src/. Smoke harness at `scripts/slice7a-smoke.mjs`. |
+| Slice 7B+ | To be planned. |
 
 ## activity_events Column Reference
 
 | Column | Type | Nullable | Default | Purpose |
 |--------|------|----------|---------|---------|
 | id | uuid | no | gen_random_uuid() | Primary key |
-| user_id | uuid | no | -- | RLS owner (auth.uid()). Always OWNER_USER_ID in single-tenant. |
+| user_id | uuid | no | -- | RLS owner (auth.uid()). Single-tenant today; resolves to the Alex auth.users row. |
 | actor_id | uuid | no | -- | Who performed the action. Usually OWNER_USER_ID. |
 | verb | text | no | -- | Action type. One of the ActivityVerb union values. |
 | object_table | text | no | -- | Supabase table of the affected row (e.g. 'captures', 'email_drafts'). |

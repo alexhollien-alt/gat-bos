@@ -29,6 +29,7 @@ interface EmailRow {
   body_html: string | null;
   snippet: string | null;
   contact_id: string | null;
+  user_id: string;
 }
 
 interface ContactRow {
@@ -109,7 +110,7 @@ async function handleGenerate(request: NextRequest) {
   const { data: email, error: emailErr } = await adminClient
     .from("emails")
     .select(
-      "id, from_email, from_name, subject, body_plain, body_html, snippet, contact_id",
+      "id, from_email, from_name, subject, body_plain, body_html, snippet, contact_id, user_id",
     )
     .eq("id", emailId)
     .maybeSingle<EmailRow>();
@@ -162,7 +163,7 @@ async function handleGenerate(request: NextRequest) {
 
   let draft;
   try {
-    draft = await generateDraft(draftInput, draftContext);
+    draft = await generateDraft(draftInput, draftContext, email.user_id);
   } catch (err) {
     const message = err instanceof Error ? err.message : "claude generation failed";
     await logError(ROUTE, `claude generation failed: ${message}`, {

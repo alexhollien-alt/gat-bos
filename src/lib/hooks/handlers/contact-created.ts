@@ -81,6 +81,7 @@ export async function contactWelcomeTaskHandler(
   }
 
   await writeEvent({
+    userId: ownerUserId,
     actorId: ownerUserId,
     verb: 'contact.hook_fired',
     object: { table: 'contacts', id: contact.id },

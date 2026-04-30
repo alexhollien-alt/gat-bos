@@ -1,7 +1,9 @@
-// Phase 1.5 Calendar inbound sync. Hourly cron pulls events from Google
-// Calendar (now-1h .. now+7d) and upserts into public.events on gcal_event_id.
+// Calendar inbound sync. Hourly cron pulls events from Google Calendar
+// (now-1h .. now+7d) and upserts into public.events on gcal_event_id.
 // GCal wins on conflict: every field is overwritten from the inbound payload.
-// Dual auth: Bearer CRON_SECRET for cron + Supabase session (Alex) for manual trigger.
+// Dual auth: Bearer CRON_SECRET for cron + Supabase session for manual trigger.
+// Cron context has no auth.uid(), so user_id is derived from the accounts
+// table and passed explicitly into events.upsert + firePostCreationHooks.
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
 import { listEvents, type CalendarEventOutput } from "@/lib/calendar/client";
@@ -33,11 +35,15 @@ interface SyncResult {
   window_end: string;
 }
 
-async function upsertEvent(event: CalendarEventOutput): Promise<"upserted" | "skipped"> {
+async function upsertEvent(
+  event: CalendarEventOutput,
+  userId: string,
+): Promise<"upserted" | "skipped"> {
   const { data: row, error } = await adminClient
     .from("events")
     .upsert(
       {
+        user_id: userId,
         gcal_event_id: event.gcalEventId,
         title: event.title,
         description: event.description,
@@ -62,20 +68,40 @@ async function upsertEvent(event: CalendarEventOutput): Promise<"upserted" | "sk
   // Slice 5B: fire event-created hook per upserted row. The handler is
   // idempotent on (entity_table='events', entity_id) so re-pulls of the
   // same gcal_event_id never produce duplicate touchpoints.
-  const ownerId = process.env.OWNER_USER_ID;
-  if (ownerId) {
-    await firePostCreationHooks({
-      entityKind: "event",
-      entityId: row.id,
-      payload: { gcal_event_id: event.gcalEventId },
-      ownerUserId: ownerId,
-    });
-  }
+  await firePostCreationHooks({
+    entityKind: "event",
+    entityId: row.id,
+    payload: { gcal_event_id: event.gcalEventId },
+    ownerUserId: userId,
+  });
 
   return "upserted";
 }
 
+// Slice 7A: cron has no auth.uid(). Pull the account owner from the
+// accounts table to derive user_id for upsert + hook ownership. Single
+// account today; this becomes a per-account loop when multi-tenant.
+async function resolveAccountOwnerId(): Promise<string | null> {
+  const { data, error } = await adminClient
+    .from("accounts")
+    .select("owner_user_id")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    await logError(`accounts owner lookup failed: ${error.message}`, {});
+    return null;
+  }
+  return data?.owner_user_id ?? null;
+}
+
 async function runSync(): Promise<SyncResult> {
+  const userId = await resolveAccountOwnerId();
+  if (!userId) {
+    throw new Error("no account row found; cannot scope synced events");
+  }
+
   const now = new Date();
   const timeMin = new Date(now.getTime() - PULL_WINDOW_HOURS_BACK * 60 * 60 * 1000);
   const timeMax = new Date(now.getTime() + PULL_WINDOW_DAYS_FORWARD * 24 * 60 * 60 * 1000);
@@ -88,7 +114,7 @@ async function runSync(): Promise<SyncResult> {
 
   for (const event of pulled) {
     try {
-      const verdict = await upsertEvent(event);
+      const verdict = await upsertEvent(event, userId);
       if (verdict === "upserted") upserted++;
       else {
         skipped++;
