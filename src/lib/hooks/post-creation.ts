@@ -65,6 +65,7 @@ export async function firePostCreationHooks(
         entityId: input.entityId,
       });
       await writeEvent({
+        userId: input.ownerUserId,
         actorId: input.ownerUserId,
         verb: 'hook.failed',
         object: { table: tableForKind(input.entityKind), id: input.entityId },

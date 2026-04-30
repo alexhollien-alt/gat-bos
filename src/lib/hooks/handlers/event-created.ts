@@ -77,6 +77,7 @@ export async function eventCreatedHandler(
     }
 
     await writeEvent({
+      userId: ownerUserId,
       actorId: ownerUserId,
       verb: 'event.hook_fired',
       object: { table: 'events', id: event.id },
@@ -100,6 +101,7 @@ export async function eventCreatedHandler(
       return;
     }
     await writeEvent({
+      userId: ownerUserId,
       actorId: ownerUserId,
       verb: 'event.contact_only',
       object: { table: 'events', id: event.id },

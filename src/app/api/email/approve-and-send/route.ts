@@ -245,6 +245,7 @@ export async function POST(request: NextRequest) {
     fireMarkRead(email.id, origin);
 
     void writeEvent({
+      userId: process.env.OWNER_USER_ID!,
       actorId: process.env.OWNER_USER_ID!,
       verb: "email.sent",
       object: { table: "email_drafts", id: draftId },

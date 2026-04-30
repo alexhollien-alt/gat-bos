@@ -206,6 +206,7 @@ export async function POST(req: NextRequest) {
         : `Clicked link in: ${data.subject}`;
 
       void writeEvent({
+        userId: contact.user_id,
         actorId: contact.user_id,
         verb: "interaction.email",
         object: { table: "contacts", id: contact.id },

@@ -305,6 +305,7 @@ export async function processIntake(
   // ── Log first touch interaction for new contacts ──
   if (isNewContact && contactId) {
     void writeEvent({
+      userId: ownerId,
       actorId: ownerId,
       verb: "interaction.note",
       object: { table: "contacts", id: contactId },

@@ -74,6 +74,7 @@ export async function PATCH(
   // contact_id not reliably available on project PATCH without additional context.
   // Slice 2 improvement: include contact_id in context for per-contact timeline indexing.
   void writeEvent({
+    userId: process.env.OWNER_USER_ID ?? '',
     actorId: process.env.OWNER_USER_ID ?? '',
     verb: 'project.updated',
     object: { table: 'projects', id },

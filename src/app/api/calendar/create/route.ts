@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
   // event.created is not contact-specific. contact_id not included.
   // Slice 2 improvement if calendar events ever need per-contact timeline indexing.
   void writeEvent({
+    userId: process.env.OWNER_USER_ID ?? '',
     actorId: process.env.OWNER_USER_ID ?? '',
     verb: 'event.created',
     object: { table: 'events', id: localRow.id },

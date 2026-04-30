@@ -29,6 +29,7 @@ export async function updateTicketNotes(
   }
 
   void writeEvent({
+    userId: OWNER_USER_ID,
     actorId: OWNER_USER_ID,
     verb: 'ticket.notes_updated',
     object: { table: 'tickets', id: ticketId },
@@ -72,6 +73,7 @@ export async function updateTicketStatus(
   }
 
   void writeEvent({
+    userId: OWNER_USER_ID,
     actorId: OWNER_USER_ID,
     verb: 'ticket.status_changed',
     object: { table: 'tickets', id: ticketId },
