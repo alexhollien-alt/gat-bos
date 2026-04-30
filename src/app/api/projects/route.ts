@@ -79,7 +79,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Slice 7A: projects.user_id is NOT NULL with default auth.uid().
+  // Service-role insert under INTERNAL_API_TOKEN has no auth.uid(), so we
+  // derive user_id from the accounts table (single account today; this
+  // becomes a per-account routing decision when multi-tenant). Caller can
+  // override via body.user_id.
+  let userId: string | null = body.user_id ?? null;
+  if (!userId) {
+    const { data: acct } = await adminClient
+      .from("accounts")
+      .select("owner_user_id")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    userId = acct?.owner_user_id ?? null;
+  }
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Server misconfigured: no account owner resolvable" },
+      { status: 500 },
+    );
+  }
+
   const insertPayload = {
+    user_id: userId,
     type: body.type,
     title: body.title.trim(),
     status: body.status ?? "active",
@@ -100,13 +124,12 @@ export async function POST(request: NextRequest) {
   // Fire-and-forget: dispatch project-created hooks. Failures are logged
   // inside the dispatcher and never block project creation. Mirrors the
   // autoEnrollNewAgent contract used at contacts/route.ts:140-142.
-  const ownerId = process.env.OWNER_USER_ID;
-  if (data?.id && ownerId) {
+  if (data?.id) {
     await firePostCreationHooks({
       entityKind: "project",
       entityId: data.id,
       payload: data,
-      ownerUserId: ownerId,
+      ownerUserId: userId,
     });
   }
 
