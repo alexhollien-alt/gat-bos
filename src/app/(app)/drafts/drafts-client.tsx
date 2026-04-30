@@ -31,7 +31,6 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { ALEX_EMAIL } from "@/lib/constants";
 
 export interface EmailRow {
   id: string;
@@ -132,7 +131,7 @@ function escalationLabel(flag: DraftRow["escalation_flag"]) {
   return null;
 }
 
-export function DraftsClient() {
+export function DraftsClient({ userEmail }: { userEmail: string }) {
   const supabase = createClient();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -230,7 +229,7 @@ export function DraftsClient() {
         subhead={
           <span className="font-mono tracking-wide text-[12px]">
             {drafts.length} pending {drafts.length === 1 ? "draft" : "drafts"}
-            {" "}-- signed in as {ALEX_EMAIL}
+            {userEmail ? <> -- signed in as {userEmail}</> : null}
           </span>
         }
       />
