@@ -72,7 +72,7 @@ D6. Voice memo storage. Resolved 2026-04-20. Decision: transcribe immediately an
 
 D7. Agent portal auth model. Resolved 2026-04-20. Decision: Supabase Auth with magic link. Simpler, no added vendor, consistent with existing CRM auth stack.
 
-D5. Phase 1.3.2 auto-send vs approval-required agents. Resolved 2026-04-20. Decision: no one gets auto-send in 1.3.2. Approval gate stays on for every agent through one full cycle so we can observe where AI drafts actually land under volume. Auto-send promotion is a 1.3.3 decision, made per-agent after the observation window. Pre-named promotion candidates (for 1.3.3 evaluation, not yet active): Julie Jarmiolowski, Joey Hollien, Amber Hollien. Fiona Bigbee stays gated indefinitely because EDDM-focused sends are campaign-specific rather than routine. Phase 1.3.2 spec (to be written in its own plan) inherits this: escalation flag logic assumes approval-required for all; no auto-send branch in 1.3.2 code path.
+D5. Phase 1.3.2 auto-send vs approval-required agents. Resolved 2026-04-20. Decision: no one gets auto-send in 1.3.2. Approval gate stays on for every agent through one full cycle so we can observe where AI drafts actually land under volume. Auto-send promotion is a 1.3.3 decision, made per-agent after the observation window. Pre-named promotion candidates (for 1.3.3 evaluation, not yet active): Julie Jarmiolowski, Joey Gutierrez, Amber Hollien. Fiona Bigbee stays gated indefinitely because EDDM-focused sends are campaign-specific rather than routine. Phase 1.3.2 spec (to be written in its own plan) inherits this: escalation flag logic assumes approval-required for all; no auto-send branch in 1.3.2 code path.
 
 ---
 
