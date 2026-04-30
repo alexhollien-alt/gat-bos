@@ -8,12 +8,12 @@ const accountsMaybeSingleMock =
 const accountsIsMock = vi.fn(() => ({ maybeSingle: accountsMaybeSingleMock }));
 const accountsEqMock = vi.fn(() => ({ is: accountsIsMock }));
 const accountsSelectMock = vi.fn(() => ({ eq: accountsEqMock }));
-const fromMock = vi.fn((_table: string) => ({ select: accountsSelectMock }));
+const fromMock = vi.fn(() => ({ select: accountsSelectMock }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser: getUserMock },
-    from: (table: string) => fromMock(table),
+    from: () => fromMock(),
   }),
 }));
 
