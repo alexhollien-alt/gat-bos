@@ -85,13 +85,21 @@ export async function POST(request: NextRequest) {
   const unauth = requireApiToken(request);
   if (unauth) return unauth;
 
-  // Hard-pinned owner. Same env var as /api/intake. Must be a valid
-  // auth.users.id. Single-user system today; replace with session-derived
-  // ownership when multi-user is added.
-  const ownerId = process.env.OWNER_USER_ID;
+  // Slice 7A: derive owner from accounts table (single account today;
+  // becomes a per-account routing decision when multi-tenant). The
+  // INTERNAL_API_TOKEN gate is a service-role channel with no auth.uid(),
+  // so we cannot rely on the contacts.user_id default.
+  const { data: acct } = await adminClient
+    .from("accounts")
+    .select("owner_user_id")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const ownerId = acct?.owner_user_id;
   if (!ownerId) {
     return NextResponse.json(
-      { error: "Server misconfigured: OWNER_USER_ID not set" },
+      { error: "Server misconfigured: no account owner resolvable" },
       { status: 500 }
     );
   }

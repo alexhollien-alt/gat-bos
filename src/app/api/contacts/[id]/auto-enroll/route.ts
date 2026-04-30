@@ -9,20 +9,30 @@
 // Fire-and-forget from the client: this endpoint always returns 200 JSON,
 // even if enrollment was skipped, so a campaign-not-found (or a non-realtor
 // contact) never surfaces as a UI error.
+//
+// Slice 7A -- 2026-04-30: ownerUserId now derived from tenantFromRequest
+// (session) rather than process.env.OWNER_USER_ID.
 
 import { NextRequest, NextResponse } from "next/server";
 import { firePostCreationHooks } from "@/lib/hooks/post-creation";
+import { tenantFromRequest, TenantResolutionError } from "@/lib/auth/tenantFromRequest";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const ownerId = process.env.OWNER_USER_ID;
-  if (!ownerId) {
-    return NextResponse.json(
-      { error: "Server misconfigured: OWNER_USER_ID not set" },
-      { status: 500 },
-    );
+  let ownerId: string;
+  try {
+    const ctx = await tenantFromRequest(request);
+    if (ctx.kind !== "user") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    ownerId = ctx.userId;
+  } catch (err) {
+    if (err instanceof TenantResolutionError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    throw err;
   }
 
   // Slice 5B: route through the hook dispatcher. Runs auto-enroll +
