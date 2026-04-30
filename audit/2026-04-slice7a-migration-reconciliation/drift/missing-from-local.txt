@@ -1,0 +1,44 @@
+=== Remote tables NOT created by any local migration ===
+TABLE: attendees
+TABLE: email_drafts
+TABLE: emails
+TABLE: error_logs
+TABLE: event_templates
+TABLE: oauth_tokens
+TABLE: project_touchpoints
+TABLE: projects
+TABLE: relationship_health_config
+TABLE: relationship_health_scores
+TABLE: relationship_health_touchpoint_weights
+TABLE: ticket_items
+TABLE: tickets
+
+=== Remote types (enums) NOT created by any local migration ===
+TYPE: email_draft_status
+TYPE: event_occurrence_status
+TYPE: event_source
+TYPE: project_status
+TYPE: project_touchpoint_type
+TYPE: project_type
+
+=== Remote functions NOT created by any local migration ===
+FUNCTION: compute_relationship_health_score
+FUNCTION: recompute_all_relationship_health_scores
+FUNCTION: recompute_relationship_health_on_touchpoint
+FUNCTION: set_attendees_updated_at
+FUNCTION: set_email_drafts_updated_at
+FUNCTION: set_event_templates_updated_at
+FUNCTION: set_events_updated_at
+FUNCTION: set_projects_updated_at
+FUNCTION: upsert_relationship_health_score
+
+=== Remote views NOT created by any local migration ===
+VIEW: email_drafts_observation
+
+=== Remote triggers NOT created by any local migration ===
+TRIGGER: trg_attendees_updated_at
+TRIGGER: trg_email_drafts_updated_at
+TRIGGER: trg_event_templates_updated_at
+TRIGGER: trg_events_updated_at
+TRIGGER: trg_projects_updated_at
+TRIGGER: trg_touchpoint_recompute_health

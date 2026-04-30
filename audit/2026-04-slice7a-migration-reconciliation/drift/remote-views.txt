@@ -1,0 +1,3 @@
+contacts_spec_view
+email_drafts_observation
+interactions
