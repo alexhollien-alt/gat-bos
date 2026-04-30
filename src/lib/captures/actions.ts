@@ -135,7 +135,7 @@ export async function promoteCapture(
         markCapturePromoted(capture.id);
         void writeEvent({
           userId,
-          actorId: process.env.OWNER_USER_ID!,
+          actorId: userId,
           verb: 'capture.promoted.task',
           object: { table: 'captures', id: capture.id },
           context: {
@@ -174,7 +174,7 @@ export async function promoteCapture(
         markCapturePromoted(capture.id);
         void writeEvent({
           userId,
-          actorId: process.env.OWNER_USER_ID!,
+          actorId: userId,
           verb: 'capture.promoted.ticket',
           object: { table: 'captures', id: capture.id },
           context: {
@@ -198,7 +198,7 @@ export async function promoteCapture(
           markCapturePromoted(capture.id);
           void writeEvent({
             userId,
-            actorId: process.env.OWNER_USER_ID!,
+            actorId: userId,
             verb: 'capture.promoted.contact',
             object: { table: 'captures', id: capture.id },
             context: {
@@ -241,7 +241,7 @@ export async function promoteCapture(
         markCapturePromoted(capture.id);
         void writeEvent({
           userId,
-          actorId: process.env.OWNER_USER_ID!,
+          actorId: userId,
           verb: 'capture.promoted.contact',
           object: { table: 'captures', id: capture.id },
           context: {
@@ -289,7 +289,7 @@ export async function promoteCapture(
         markCapturePromoted(capture.id);
         void writeEvent({
           userId,
-          actorId: process.env.OWNER_USER_ID!,
+          actorId: userId,
           verb: 'capture.promoted.touchpoint',
           object: { table: 'captures', id: capture.id },
           context: {
@@ -343,7 +343,7 @@ export async function promoteCapture(
         markCapturePromoted(capture.id);
         void writeEvent({
           userId,
-          actorId: process.env.OWNER_USER_ID!,
+          actorId: userId,
           verb: 'capture.promoted.event',
           object: { table: 'captures', id: capture.id },
           context: {
@@ -416,7 +416,7 @@ export async function promoteCapture(
     markCapturePromoted(capture.id);
     void writeEvent({
       userId,
-      actorId: process.env.OWNER_USER_ID!,
+      actorId: userId,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
@@ -463,7 +463,7 @@ export async function promoteCapture(
     markCapturePromoted(capture.id);
     void writeEvent({
       userId,
-      actorId: process.env.OWNER_USER_ID!,
+      actorId: userId,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
@@ -506,7 +506,7 @@ export async function promoteCapture(
     markCapturePromoted(capture.id);
     void writeEvent({
       userId,
-      actorId: process.env.OWNER_USER_ID!,
+      actorId: userId,
       verb: 'capture.promoted',
       object: { table: 'captures', id: capture.id },
       context: {
