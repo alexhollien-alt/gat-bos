@@ -6,6 +6,16 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-04-30] (Slice 7A) `alex@alexhollienco.com` literal cleanup outside test fixtures
+- **Where:** `src/app/intake/layout.tsx` (UI footer mailto + display); `src/app/intake/page.tsx:722` (UI display); `src/app/api/auth/gmail/authorize/route.ts:2` (comment); `src/app/api/email/drafts/route.ts:2` (comment); `src/app/api/cron/touchpoint-reminder/route.ts:14,38` (PROD_RECIPIENT constant); `src/lib/events/invite-templates.ts:246` (template HTML); `src/lib/messaging/adapters/gmail.ts:15` (FROM_HEADER); `src/lib/hooks/handlers/project-created.ts:196` (RESEND_SAFE_RECIPIENT fallback); `src/lib/messaging/adapters/resend.ts:14` and `src/lib/resend/client.ts:6` (DEFAULT_FROM). Test fixtures at `src/lib/messaging/draftActions.test.ts` are intentionally excluded.
+- **What:** Replace each remaining literal with either (a) a session-derived owner email, (b) an account-bound `from_address` column, or (c) a single config token (e.g., `accounts.from_address`, `accounts.public_email`) so multi-tenancy doesn't leak Alex's email into other accounts' deliverables. UI display strings on the intake page need a different scope decision -- they're public contact info, not auth context.
+- **Why deferred:** Slice 7A scoped to ALEX_EMAIL constant + OWNER_USER_ID env. The literal cleanup is mechanically larger and intersects template/copy decisions (FROM headers, public-facing intake page) that warrant a focused slice rather than a side-effect of the auth rewrite.
+
+### [2026-04-30] (Slice 7A) writeEvent caller audit for HARD-BREAK userId requirement
+- **Where:** `src/lib/activity/writeEvent.ts` -- userId is now required (no env fallback). All current callers were updated in Phase E, but future writers must thread userId explicitly.
+- **What:** Add a one-time grep gate to CI (or a lint rule) that fails if any call to `writeEvent({...})` omits `userId`. Until then, code review is the only enforcement.
+- **Why deferred:** Out of slice scope; the immediate risk is mitigated by the type signature + Phase E migrations. The CI guard is hardening, not blocking.
+
 ### [2026-04-27] (Slice 6) Flip CAPTURES_AI_PARSE=true after 7-day soak
 - **Where:** `.env.local` + Vercel preview + Vercel production. Read in `src/app/api/captures/route.ts`.
 - **What:** After ~7 days of usage data lands in `ai_usage_log` (cost-per-capture, cache hit rate) and a sample-quality review against the rule-parser baseline shows AI intent quality >= rule parser, set `CAPTURES_AI_PARSE=true` in all three env locations to make AI the primary intent path. Rule parser stays as the fallback.
