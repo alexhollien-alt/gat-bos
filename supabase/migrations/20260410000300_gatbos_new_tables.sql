@@ -111,22 +111,43 @@ CREATE TABLE IF NOT EXISTS public.events (
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS events_user_start_idx
-  ON public.events (user_id, start_time DESC);
-CREATE INDEX IF NOT EXISTS events_user_type_idx
-  ON public.events (user_id, type);
--- GIN index on contact_ids so "events involving contact X" stays fast
-CREATE INDEX IF NOT EXISTS events_contact_ids_gin_idx
-  ON public.events USING gin (contact_ids);
+-- 7A.5 fix: events table was actually created by phase-1.5-calendar with a
+-- different schema (start_at/end_at/source). The CREATE TABLE IF NOT EXISTS
+-- above is a no-op when phase-1.5 ran first. Guard the gatbos_new_tables
+-- indexes/policy behind column existence so replay matches prod (where these
+-- never landed; slice7a later adds user_id and a different index set).
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'user_id'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'start_time'
+  ) THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS events_user_start_idx ON public.events (user_id, start_time DESC)';
+    EXECUTE 'CREATE INDEX IF NOT EXISTS events_user_type_idx ON public.events (user_id, type)';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'contact_ids'
+  ) THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS events_contact_ids_gin_idx ON public.events USING gin (contact_ids)';
+  END IF;
+END $$;
 
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Users manage own events" ON public.events;
-CREATE POLICY "Users manage own events" ON public.events
-  FOR ALL
-  TO authenticated
-  USING      (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'user_id'
+  ) THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Users manage own events" ON public.events';
+    EXECUTE $POL$CREATE POLICY "Users manage own events" ON public.events FOR ALL TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid())$POL$;
+  END IF;
+END $$;
 
 DROP TRIGGER IF EXISTS events_set_updated_at ON public.events;
 CREATE TRIGGER events_set_updated_at

@@ -11,8 +11,9 @@
 -- voice: warm, specific. No banned words, no exclamations, no em dashes.
 --
 -- Idempotency: ON CONFLICT (slug, version) DO UPDATE.
-
-BEGIN;
+-- 7A.5 fix: removed explicit BEGIN/COMMIT -- Supabase CLI auto-wraps each
+-- migration in a transaction and the explicit pair triggers
+-- "cannot insert multiple commands into a prepared statement" on replay.
 
 INSERT INTO public.templates (slug, version, name, send_mode, kind, subject, body_html, body_text)
 VALUES
@@ -35,5 +36,3 @@ SET
   body_html = EXCLUDED.body_html,
   body_text = EXCLUDED.body_text,
   updated_at = now();
-
-COMMIT;

@@ -1,4 +1,14 @@
 -- ============================================================
+-- Slice 7A.5 -- Reconstructed prod mirror
+-- Source: production schema_migrations row at version 20260430064003
+-- Reconstructed: 2026-04-30
+-- This file is byte-equivalent (or semantically equivalent) to the
+-- DDL applied to production at 20260430064003. Reconstructed as part of
+-- migration history reconciliation because the original local file
+-- was missing.
+-- ============================================================
+
+-- ============================================================
 -- SLICE 7A TASK B-17 -- relationship_health_scores READ RLS rewrite (forward)
 -- ============================================================
 -- Plan:    ~/.claude/plans/slice-7a-multi-tenant-auth-rls.md
@@ -23,8 +33,6 @@
 --     USING ((auth.jwt() ->> 'email') = 'alex@alexhollienco.com');
 -- ============================================================
 
-BEGIN;
-
 ALTER TABLE public.relationship_health_scores ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS rhs_alex_read ON public.relationship_health_scores;
@@ -37,5 +45,3 @@ CREATE POLICY rhs_user_isolation_read
 
 COMMENT ON POLICY rhs_user_isolation_read ON public.relationship_health_scores IS
   'Slice 7A: replaces email-based rhs_alex_read; column user_id checked against auth.uid().';
-
-COMMIT;
