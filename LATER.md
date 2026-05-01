@@ -6,6 +6,26 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-05-01] (Slice 7B) Joey + Amber tagline copy resolution
+- **Where:** `contacts` rows for slugs `joey-gutierrez` and `amber-hollien`. Currently `tagline IS NULL`; route at `src/app/agents/[slug]/page.tsx` hides the tagline block when null (Q3=c).
+- **What:** Draft a tagline for each, then `UPDATE public.contacts SET tagline = '...' WHERE slug = ...` via a small migration. Use the same Sotheby's/Flodesk/Apple voice axis the Julie/Fiona/Denise taglines hit (approved 2026-04-21 drafts).
+- **Why deferred:** Q3 resolution explicitly chose null-allowed-with-route-guard over a placeholder string so the agent rows ship without copy. Real copy needs Alex's editorial pass, not a mechanical fill-and-flag.
+
+### [2026-05-01] (Slice 7B) Audit auth.uid()-keyed tables NOT scoped to account_id in 7B
+- **Where:** Slice 7A landed 22 RLS-on-user_id tables; Slice 7B added `account_id` + account-scoped RLS to only 7 of those (contacts, tasks, captures, opportunities, campaign_enrollments, events, email_drafts). Remainder still keys RLS on `user_id = auth.uid()` only: ai_cache, ai_usage_log, attendees, emails, error_logs, event_templates, message_events, messages_log, morning_briefs, oauth_tokens, project_touchpoints, projects, relationship_health_config, relationship_health_scores, relationship_health_touchpoint_weights, templates.
+- **What:** Decide for each table whether the row is account-bound (single-tenant business data) or user-bound (auth/secret/personal-prefs). Account-bound tables need an `account_id` column + backfill + RLS rewrite to account-scoped subquery before any second user-account is provisioned. User-bound tables (oauth_tokens, ai_usage_log if scoped to caller, morning_briefs if personal) stay user-keyed.
+- **Why deferred:** Slice 7B scope was limited to the 6 user-data tables most directly tied to agent partner work + the contacts table itself. The 16 remaining tables warrant a focused audit slice rather than a side-effect of the agent-page enablement.
+
+### [2026-05-01] (Slice 7B) `'realtor'` vs `'agent'` classification overlap on contacts.type
+- **Where:** `contacts_type_check` constraint now allows both `'realtor'` (professional title) and `'agent'` (business relationship to Alex). Slice 7B promoted Julie + Fiona + Denise + Joey + Amber from `type='realtor'` to `type='agent'` via Path A upsert-by-email. Julie is both -- a working real estate agent (realtor) AND an active business partner (agent) of Alex.
+- **What:** If the overlap causes query confusion in future slices, consider one of: (a) migrating to a separate `kind` column with clearer semantics, (b) building a `contact_tags` join table for many-to-many classification, or (c) documenting the convention more explicitly (`type='agent'` means "Alex's agent partner; everything else is descriptive"). Decision belongs in Slice 7C or 8A planning.
+- **Why deferred:** The single-classification CHECK contract was preserved in 7B by adding a 13th value rather than restructuring. Restructure on real signal, not on speculation about future confusion.
+
+### [2026-05-01] (Slice 7B) Comment drift in seed_agents.sql ON CONFLICT predicate reference
+- **Where:** `supabase/migrations/20260501173214_slice7b_seed_agents.sql:18` comment references the partial unique index by an old name. Functional impact: zero (Postgres normalizes the WHERE-clause for partial-index matching). Cosmetic only.
+- **What:** Update the comment to match the actual index name `contacts_account_slug_unique` if/when this migration is touched again. Don't churn a separate edit just for the comment.
+- **Why deferred:** Pure documentation drift. The seed runs correctly. Caught during A2 audit; logged for the next migration touch.
+
 ### [2026-04-30] (Naming rule, permanent) Joey is "Joey Gutierrez" -- never "Joey Hollien"
 - **Where:** All agent partner work, plan files, starter files, seed data, migrations, fixtures, copy, comments, friction logs, handoffs.
 - **What:** Joey is Joey Gutierrez. The `~/Documents/Alex Hub(Obs)/05_AGENTS/Joey Gutierrez/` directory is the canonical source. Slug for any contacts row or `/agents/[slug]` route is `joey-gutierrez`. If "Joey Hollien" appears anywhere going forward, treat it as an error to flag and correct in the same turn. Cross-reference: Slice 7B starter at `/Users/alex/Desktop/slice-starters/slice-7b-starter.md` is the first downstream consumer; seed data inserts him as Joey Gutierrez.

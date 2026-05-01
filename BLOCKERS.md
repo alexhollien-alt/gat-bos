@@ -18,11 +18,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
 - **Fix needed:** None required. Future: if anyone investigates `interaction.backfilled WHERE deleted_at IS NOT NULL`, these are the 2 known soft-deletes -- not a data integrity issue.
 
-### [2026-04-21] `contacts` table missing `slug`, `photo_url`, `tagline` columns
-- **Broken:** No DB-backed source for agent landing page data. `/agents/[slug]` cannot query Supabase for the agent record.
-- **Where:** `src/app/agents/[slug]/page.tsx` -- `AGENTS` const hardcoded at top of file (Julie + Fiona + Denise for Sessions 2-4).
-- **Fix needed:** Supabase migration adding `contacts.slug text unique`, `contacts.photo_url text`, `contacts.tagline text`; backfill Julie + Fiona + Denise; then refactor the page to `await supabase.from('contacts').select(...).eq('slug', slug).single()`. Keep RLS open for anon SELECT on those three columns only.
-
 ### [2026-04-21] Fiona Bigbee + Denise van den Bossche phone/website missing from CONTACT.md
 - **Broken:** Contact block on `/agents/fiona-bigbee` and `/agents/denise-van-den-bossche` renders email only. `AgentRecord.phone|phoneHref|website|websiteHref` set to `null`; conditional render hides the rows. `RealEstateAgent` JSON-LD `telephone` + `url` fields ship as `null` on both pages.
 - **Where:** `src/app/agents/[slug]/page.tsx` -- `AGENTS["fiona-bigbee"]` and `AGENTS["denise-van-den-bossche"]`. Upstream source: `~/Documents/Alex Hub(Obs)/05_AGENTS/Fiona Bigbee/CONTACT.md` and `~/Documents/Alex Hub(Obs)/05_AGENTS/Denise van den Bossche/CONTACT.md` (email-only at present).
@@ -81,6 +76,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-21] `contacts` table missing `slug`, `photo_url`, `tagline` columns -- RESOLVED 2026-05-01 (Slice 7B)
+- Resolution: Slice 7B Task 1 added `slug text` (UNIQUE per account via partial index `contacts_account_slug_unique`), `tagline text`, and `account_id uuid` (FK accounts on DELETE RESTRICT). `photo_url` was NOT added -- Q-drift-2 resolved per Standing Rule 16 in favor of the existing `headshot_url` column (same concept, codebase wins). Task 1 also extended `contacts_type_check` with `'agent'` (12th sanctioned classification) and `'escrow'` (fold-in: 10 prod rows already used `type='escrow'`, surfaced by constraint-rebuild row-level revalidation).
+- Anon read mechanism resolved per Q2 = security-definer RPCs: `get_public_agent_slugs()` returns the 5 seeded slugs; `get_public_agent_by_slug(text)` returns whitelisted columns only (slug, first_name, last_name, brokerage, title, headshot_url, website_url, tagline; 31 private columns rejected by harness). `/agents/[slug]` route at `src/app/agents/[slug]/page.tsx` now reads from the RPC instead of the hardcoded `AGENTS` const.
+- Closing commits: `4ffc3fc` (Task 1 schema delta + RLS rewrite), `3b1114a` + `4adc707` (Task 3 seed + Path A upsert-by-email amendment), `0fadd71` (Task 5 RPCs), `80d1417` (Task 4 route refactor), `4adc707` (Task 6 smoke harness `scripts/slice7b-smoke.mjs`). Smoke harness Layers 1+2 = 10/10 green against local Docker; Layer 3 (HTTP route) deferred to post-prod-deploy verification per Path A decision.
 
 ### [2026-04-21] Claude API intent parser upgrade deferred -- RESOLVED 2026-04-27 (Slice 6)
 - Resolution: `src/lib/ai/capture-parse.ts` ships `parseCaptureWithAI()` -- structured-JSON intent parser routed through `callClaude` (cache + budget guard + ai_usage_log). Wired into `src/app/api/captures/route.ts` POST handler behind `CAPTURES_AI_PARSE=true` feature flag (default off pending 7-day soak; flag flip logged to LATER.md). Rule parser at `src/lib/captures/rules.ts` remains primary path and is the guaranteed fallback when AI returns invalid JSON or fails. Live preview line in `capture-bar.tsx` continues to use the rule parser for instant feedback; AI pass runs only on submit.
