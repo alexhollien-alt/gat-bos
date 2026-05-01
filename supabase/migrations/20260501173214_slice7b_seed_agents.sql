@@ -1,21 +1,36 @@
--- Slice 7B Task 3 -- Seed 5 agent contact rows
+-- Slice 7B Task 3 -- Seed 5 agent contact rows (PATH A: upsert-by-email)
 --
--- Inserts the canonical agent roster: Julie Jarmiolowski, Fiona Bigbee,
--- Denise van den Bossche, Joey Gutierrez, Amber Hollien.
+-- Promotes the canonical agent roster to type='agent' with slug + tagline +
+-- headshot_url: Julie Jarmiolowski, Fiona Bigbee, Denise van den Bossche,
+-- Joey Gutierrez, Amber Hollien.
+--
+-- COLLISION CONTEXT
+-- -----------------
+-- The baseline (~/crm/supabase/migrations/20260407012800_baseline.sql:892)
+-- enforces a global UNIQUE constraint `contacts_email_unique UNIQUE (email)`.
+-- Four of the five seed targets are pre-existing prod contacts (type='realtor'
+-- and similar) tied to live deals, opportunities, and interactions by FK.
+-- A naive INSERT would collide on email before the slug ON CONFLICT could
+-- fire, and a hard-replace would drop FK history.
+--
+-- PATH A RESOLUTION
+-- -----------------
+-- Use `ON CONFLICT (email) DO UPDATE` so existing rows are promoted in place.
+-- We overwrite only the agent-classification fields (type, slug, tagline,
+-- headshot_url, brokerage, title) plus first_name/last_name (canonical here).
+-- We do NOT overwrite `source` (preserve provenance) and we do NOT clobber an
+-- existing phone with a NULL from the seed.
 --
 -- Per plan (~/.claude/plans/2026-04-30-slice-7b-locked.md):
 --   - type = 'agent' (added to contacts_type_check in Task 1)
 --   - headshot_url populated (NOT photo_url; see Q-drift-2)
---   - account_id resolved from accounts.owner_user_id = Alex's auth.users.id
---   - source = 'manual_seed' (rollback marker per Rule 3 soft-delete)
---   - Julie/Fiona/Denise taglines from approved 2026-04-21 drafts (also live
---     in src/app/agents/[slug]/page.tsx until Task 4 cuts the const over)
+--   - account_id resolved from accounts.owner_user_id (single-tenant pre-7C)
+--   - Julie/Fiona/Denise taglines from approved 2026-04-21 drafts
 --   - Joey + Amber tagline NULL per Q3 answer (c) -- route hides null tagline
 --   - Joey slug = 'joey-gutierrez' per permanent naming rule (LATER.md)
 --
--- Idempotency: ON CONFLICT (account_id, slug) WHERE deleted_at IS NULL AND
--- slug IS NOT NULL DO UPDATE -- predicate matches Task 1's partial unique index
--- contacts_account_id_slug_uniq exactly.
+-- Idempotency: ON CONFLICT (email) matches the global constraint exactly.
+-- Re-running this migration is a no-op on field values that already match.
 --
 -- Backfill row-count assertion per LATER.md [2026-04-26] practice rule.
 
@@ -25,13 +40,10 @@ DO $$
 DECLARE
   v_user_id    uuid;
   v_account_id uuid;
-  v_inserted   integer;
   v_total      integer;
 BEGIN
   -- 1. Resolve seed-target account + owner_user_id.
   --    Pre-7C is single-tenant: exactly one active account exists.
-  --    Matches Task 1 + Tasks 2a-2f (no hardcoded email; join via
-  --    accounts.owner_user_id is the canonical link).
   SELECT id, owner_user_id INTO v_account_id, v_user_id
   FROM public.accounts
   WHERE deleted_at IS NULL
@@ -48,7 +60,9 @@ BEGIN
       'Slice 7B Task 3: multiple active accounts found; pre-7C single-tenant assumption violated. Re-scope this seed before re-running.';
   END IF;
 
-  -- 2. Insert (or upsert) the 5 agent rows.
+  -- 2. Upsert the 5 agent rows by email.
+  --    DO UPDATE preserves source + created_at + user_id and only clobbers
+  --    fields where the seed is canonical truth.
   INSERT INTO public.contacts (
     first_name,
     last_name,
@@ -131,31 +145,28 @@ BEGIN
       NULL,
       v_account_id, v_user_id, 'manual_seed'
     )
-  ON CONFLICT (account_id, slug) WHERE deleted_at IS NULL AND slug IS NOT NULL
-  DO UPDATE SET
+  ON CONFLICT (email) DO UPDATE SET
     first_name   = EXCLUDED.first_name,
     last_name    = EXCLUDED.last_name,
-    email        = EXCLUDED.email,
-    phone        = EXCLUDED.phone,
+    phone        = COALESCE(public.contacts.phone, EXCLUDED.phone),
     type         = EXCLUDED.type,
     brokerage    = EXCLUDED.brokerage,
     title        = EXCLUDED.title,
     headshot_url = EXCLUDED.headshot_url,
-    website_url  = EXCLUDED.website_url,
+    website_url  = COALESCE(EXCLUDED.website_url, public.contacts.website_url),
+    slug         = EXCLUDED.slug,
     tagline      = EXCLUDED.tagline,
-    source       = EXCLUDED.source,
+    account_id   = EXCLUDED.account_id,
+    deleted_at   = NULL,
     updated_at   = now();
 
-  GET DIAGNOSTICS v_inserted = ROW_COUNT;
-
   -- 3. Row-count assertion: post-condition is exactly 5 active 'agent' rows
-  --    for this account (idempotent on re-run).
+  --    with these slugs for this account (idempotent on re-run).
   SELECT count(*) INTO v_total
   FROM public.contacts
   WHERE account_id = v_account_id
     AND type = 'agent'
     AND deleted_at IS NULL
-    AND source = 'manual_seed'
     AND slug IN (
       'julie-jarmiolowski',
       'fiona-bigbee',
@@ -165,12 +176,12 @@ BEGIN
     );
 
   RAISE NOTICE
-    'Slice 7B Task 3 seed: % rows inserted/updated this run; % total active agent rows for account.',
-    v_inserted, v_total;
+    'Slice 7B Task 3 seed (Path A): % active agent rows for account % matching seed slugs.',
+    v_total, v_account_id;
 
   IF v_total <> 5 THEN
     RAISE EXCEPTION
-      'Slice 7B Task 3: expected 5 active seeded agent rows for account %, got %.',
+      'Slice 7B Task 3: expected 5 active agent rows for account %, got %.',
       v_account_id, v_total;
   END IF;
 END $$;
@@ -180,48 +191,51 @@ NOTIFY pgrst, 'reload schema';
 COMMIT;
 
 -- ============================================================================
--- Verification (run after the COMMIT; eyeball expected results)
+-- Verification (run after the COMMIT)
 -- ============================================================================
 -- 3a. Row presence + correctness:
 --   SELECT slug, first_name, last_name, type, source, brokerage,
 --          (tagline IS NOT NULL) AS has_tagline
 --     FROM public.contacts
---    WHERE source = 'manual_seed'
---      AND type = 'agent'
+--    WHERE slug IN ('julie-jarmiolowski','fiona-bigbee','denise-van-den-bossche',
+--                   'joey-gutierrez','amber-hollien')
 --      AND deleted_at IS NULL
 --    ORDER BY slug;
---   EXPECTED: 5 rows; has_tagline = t for julie/fiona/denise, f for joey/amber.
+--   EXPECTED: 5 rows; type='agent'; has_tagline = t for julie/fiona/denise,
+--             f for joey/amber. Source may vary (preserved from prior rows).
 --
--- 3b. Confirm headshot_url populated, photo_url not used:
---   SELECT slug, headshot_url FROM public.contacts WHERE source='manual_seed' ORDER BY slug;
+-- 3b. Confirm headshot_url populated:
+--   SELECT slug, headshot_url FROM public.contacts
+--    WHERE slug IN ('julie-jarmiolowski','fiona-bigbee','denise-van-den-bossche',
+--                   'joey-gutierrez','amber-hollien')
+--    ORDER BY slug;
 --   EXPECTED: 5 rows, each headshot_url = '/agents/<slug>.jpg'.
 --
 -- 3c. Confirm account_id is single-tenant (Alex's account):
---   SELECT count(DISTINCT account_id) FROM public.contacts WHERE source='manual_seed';
+--   SELECT count(DISTINCT account_id) FROM public.contacts
+--    WHERE slug IN ('julie-jarmiolowski','fiona-bigbee','denise-van-den-bossche',
+--                   'joey-gutierrez','amber-hollien');
 --   EXPECTED: 1.
---
--- 3d. Confirm idempotency (re-run via supabase db reset -> still 5 active rows).
 --
 -- ============================================================================
 -- Rollback (manual; soft-delete only per Standing Rule 3)
 -- ============================================================================
--- Run as a separate transaction if the seed needs to be reversed:
+-- Path A note: rollback finds rows by slug, NOT by source, since this seed
+-- preserves whatever source value existed before promotion.
 --
 --   BEGIN;
 --   UPDATE public.contacts
 --      SET deleted_at = now(),
 --          updated_at = now()
---    WHERE source = 'manual_seed'
---      AND type = 'agent'
---      AND deleted_at IS NULL
---      AND slug IN (
---        'julie-jarmiolowski',
---        'fiona-bigbee',
---        'denise-van-den-bossche',
---        'joey-gutierrez',
---        'amber-hollien'
---      );
+--    WHERE slug IN (
+--            'julie-jarmiolowski',
+--            'fiona-bigbee',
+--            'denise-van-den-bossche',
+--            'joey-gutierrez',
+--            'amber-hollien'
+--          )
+--      AND deleted_at IS NULL;
 --   COMMIT;
 --
--- The partial unique index contacts_account_id_slug_uniq filters
+-- The partial unique index contacts_account_slug_unique filters
 -- WHERE deleted_at IS NULL, so rolled-back slugs free up for re-seed.

@@ -1,10 +1,14 @@
 -- Slice 7B Task 1 -- contacts schema delta + RLS rewrite for account-scoping
 --
 -- Changes:
---   1. Add 'agent' to contacts_type_check (12th sanctioned value, joins the 11
+--   1. Add 'agent' to contacts_type_check (13th sanctioned value, joins the 12
 --      existing classifications: realtor, lender, builder, vendor, buyer,
---      seller, past_client, warm_lead, referral_partner, sphere, other).
+--      seller, past_client, warm_lead, referral_partner, sphere, escrow, other).
 --      See LATER.md [2026-04-30] for the realtor/agent overlap note.
+--      `escrow` added 2026-05-01 -- prod had 10 active rows already using it
+--      (escrow officers like Marlene Ruggeri); it was a pre-existing real
+--      classification missed by the original sanctioned-12 list and surfaced
+--      by the constraint-rebuild's row-level revalidation.
 --   2. Add slug column (text, nullable until backfilled, then UNIQUE per account).
 --   3. Add tagline column (text, nullable -- empty taglines hidden by route).
 --   4. Add account_id column (uuid, FK -> accounts.id, nullable until backfill).
@@ -39,6 +43,7 @@ ALTER TABLE public.contacts
     'warm_lead'::text,
     'referral_partner'::text,
     'sphere'::text,
+    'escrow'::text,
     'other'::text,
     'agent'::text
   ]));
