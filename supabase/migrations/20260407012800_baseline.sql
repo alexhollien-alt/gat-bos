@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict 9vsCIiPnq9FSLqBg6gksaDYhu0mIJDo8YZVxeUbxmhVmuqQa5K3B8Lad7RKBDZt
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Postgres.app)
@@ -23,7 +22,7 @@ SET row_security = off;
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA public;
+CREATE SCHEMA IF NOT EXISTS public;
 
 
 --
@@ -2193,9 +2192,13 @@ ALTER TABLE public.resources ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 
+-- 7A.5 fix: populate agent_relationship_health so subsequent migrations
+-- whose DML fires the refresh_arh_on_* triggers don't fail with
+-- "CONCURRENTLY cannot be used when the materialized view is not populated".
+REFRESH MATERIALIZED VIEW public.agent_relationship_health;
+
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 9vsCIiPnq9FSLqBg6gksaDYhu0mIJDo8YZVxeUbxmhVmuqQa5K3B8Lad7RKBDZt
 

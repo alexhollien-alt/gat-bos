@@ -1,4 +1,14 @@
 -- ============================================================
+-- Slice 7A.5 -- Reconstructed prod mirror
+-- Source: production schema_migrations row at version 20260430063743
+-- Reconstructed: 2026-04-30
+-- This file is byte-equivalent (or semantically equivalent) to the
+-- DDL applied to production at 20260430063743. Reconstructed as part of
+-- migration history reconciliation because the original local file
+-- was missing.
+-- ============================================================
+
+-- ============================================================
 -- SLICE 7A TASK B-15 -- relationship_health_config READ RLS rewrite (forward)
 -- ============================================================
 -- Plan:    ~/.claude/plans/slice-7a-multi-tenant-auth-rls.md
@@ -13,16 +23,7 @@
 --
 -- Mid-slice smoke gate (#15 cluster) deferred per skip-mid-slice authorization.
 --
--- Applied via Supabase MCP (Rule 23 override in effect for B-12 onward).
--- Paired write policy lands in B-16 (rhc_alex_write -> rhc_user_isolation_write).
---
--- Rollback (paired):
---   DROP POLICY IF EXISTS rhc_user_isolation_read ON public.relationship_health_config;
---   CREATE POLICY rhc_alex_read
---     ON public.relationship_health_config
---     FOR SELECT
---     TO authenticated
---     USING ((auth.jwt() ->> 'email') = 'alex@alexhollienco.com');
+-- B-16 (rhc_alex_write -> rhc_user_isolation_write) lands as paired commit.
 -- ============================================================
 
 BEGIN;

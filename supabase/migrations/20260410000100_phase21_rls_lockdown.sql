@@ -58,11 +58,16 @@ BEGIN
   SELECT EXISTS (SELECT 1 FROM auth.users WHERE id = alex_user_id)
     INTO alex_exists;
 
-  IF NOT alex_exists THEN
-    RAISE EXCEPTION 'Alex auth.users row % not found. Aborting backfill.', alex_user_id;
-  END IF;
-
   SELECT count(*) INTO null_count FROM contacts WHERE user_id IS NULL;
+
+  IF NOT alex_exists THEN
+    IF null_count > 0 THEN
+      RAISE EXCEPTION 'Alex auth.users row % not found but % contacts need backfill. Aborting.', alex_user_id, null_count;
+    ELSE
+      RAISE NOTICE 'Phase21/piece5: Alex auth.users row not present and no contacts to backfill (fresh local replay). Skipping.';
+      RETURN;
+    END IF;
+  END IF;
 
   IF null_count > 0 THEN
     UPDATE contacts SET user_id = alex_user_id WHERE user_id IS NULL;
@@ -145,17 +150,27 @@ BEGIN
     FROM auth.users
    WHERE id = alex_id;
 
-  IF alex_active IS NULL THEN
-    RAISE EXCEPTION 'Phase21/piece8: Alex auth.users row % not found. Aborting reassign.', alex_id;
-  END IF;
-
-  IF NOT alex_active THEN
-    RAISE EXCEPTION 'Phase21/piece8: Alex auth.users row % is soft-deleted. Aborting reassign.', alex_id;
-  END IF;
-
   SELECT count(*) INTO reassign_count
     FROM contacts
    WHERE user_id = dormant_id;
+
+  IF alex_active IS NULL THEN
+    IF reassign_count > 0 THEN
+      RAISE EXCEPTION 'Phase21/piece8: Alex auth.users row % not found but % contacts need reassignment. Aborting.', alex_id, reassign_count;
+    ELSE
+      RAISE NOTICE 'Phase21/piece8: Alex auth.users row not present and no dormant-owned contacts (fresh local replay). Skipping.';
+      RETURN;
+    END IF;
+  END IF;
+
+  IF NOT alex_active THEN
+    IF reassign_count > 0 THEN
+      RAISE EXCEPTION 'Phase21/piece8: Alex auth.users row % is soft-deleted but % contacts need reassignment. Aborting.', alex_id, reassign_count;
+    ELSE
+      RAISE NOTICE 'Phase21/piece8: Alex soft-deleted and no dormant-owned contacts. Skipping.';
+      RETURN;
+    END IF;
+  END IF;
 
   IF reassign_count > 0 THEN
     UPDATE contacts

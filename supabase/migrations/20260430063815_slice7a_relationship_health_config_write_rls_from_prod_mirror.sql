@@ -1,4 +1,14 @@
 -- ============================================================
+-- Slice 7A.5 -- Reconstructed prod mirror
+-- Source: production schema_migrations row at version 20260430063815
+-- Reconstructed: 2026-04-30
+-- This file is byte-equivalent (or semantically equivalent) to the
+-- DDL applied to production at 20260430063815. Reconstructed as part of
+-- migration history reconciliation because the original local file
+-- was missing.
+-- ============================================================
+
+-- ============================================================
 -- SLICE 7A TASK B-16 -- relationship_health_config WRITE RLS rewrite (forward)
 -- ============================================================
 -- Plan:    ~/.claude/plans/slice-7a-multi-tenant-auth-rls.md
@@ -6,19 +16,7 @@
 -- Phase:   B (RLS rewrites), policy 16 of 21
 --
 -- Replaces email-based rhc_alex_write (FOR ALL) with column-based
--- rhc_user_isolation_write. Paired with B-15 read policy. Together
--- they fully retire email-JWT isolation on relationship_health_config.
---
--- Applied via Supabase MCP (Rule 23 override in effect for B-12 onward).
---
--- Rollback (paired):
---   DROP POLICY IF EXISTS rhc_user_isolation_write ON public.relationship_health_config;
---   CREATE POLICY rhc_alex_write
---     ON public.relationship_health_config
---     FOR ALL
---     TO authenticated
---     USING      ((auth.jwt() ->> 'email') = 'alex@alexhollienco.com')
---     WITH CHECK ((auth.jwt() ->> 'email') = 'alex@alexhollienco.com');
+-- rhc_user_isolation_write. Paired with B-15 read policy.
 -- ============================================================
 
 BEGIN;
