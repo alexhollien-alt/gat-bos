@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
     const result = await sendMessage({
       templateSlug: PORTAL_INVITE_TEMPLATE_SLUG,
       recipient: contact.email,
+      userId: tenant.userId,
       variables: {
         agent_first_name: contact.first_name ?? "",
         agent_slug: contact.slug,
