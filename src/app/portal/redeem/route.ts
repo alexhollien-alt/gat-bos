@@ -36,6 +36,23 @@ type RedeemRow = {
   contact_id: string;
 };
 
+// Self-contained server-rendered error HTML page. CSS variables from
+// globals.css are not loaded here (no Next.js shell, no Tailwind), so the
+// inline <style> block must use literal hex. Tokens mirror Kit Screen surface
+// values (--surface-base #09090b, --surface-raised #18181b, --border-dark
+// #27272a, --text-primary #f4f4f5, --text-secondary #a1a1aa, --text-muted
+// #71717a per brand-reference.md > Screen Variants).
+/* eslint-disable no-restricted-syntax */
+const COLORS = {
+  surfaceBase: "#09090b",
+  surfaceRaised: "#18181b",
+  borderDark: "#27272a",
+  textPrimary: "#f4f4f5",
+  textSecondary: "#a1a1aa",
+  textMuted: "#71717a",
+} as const;
+/* eslint-enable no-restricted-syntax */
+
 function errorResponse(status: number, code: string, detail?: string) {
   const body = `<!doctype html>
 <html lang="en">
@@ -44,11 +61,11 @@ function errorResponse(status: number, code: string, detail?: string) {
     <title>Sign-in link unavailable</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
-      body { margin: 0; background: #09090b; color: #f4f4f5; font-family: ui-sans-serif, system-ui, sans-serif; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; }
-      .card { max-width: 28rem; border: 1px solid #27272a; background: #18181b; border-radius: 0.5rem; padding: 2.5rem 1.75rem; }
+      body { margin: 0; background: ${COLORS.surfaceBase}; color: ${COLORS.textPrimary}; font-family: ui-sans-serif, system-ui, sans-serif; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; }
+      .card { max-width: 28rem; border: 1px solid ${COLORS.borderDark}; background: ${COLORS.surfaceRaised}; border-radius: 0.5rem; padding: 2.5rem 1.75rem; }
       h1 { margin: 0 0 0.75rem; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
-      p { margin: 0.5rem 0 0; line-height: 1.6; color: #a1a1aa; font-size: 0.9rem; }
-      code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.7rem; letter-spacing: 0.18em; color: #71717a; text-transform: uppercase; display: block; margin-top: 1.5rem; }
+      p { margin: 0.5rem 0 0; line-height: 1.6; color: ${COLORS.textSecondary}; font-size: 0.9rem; }
+      code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.7rem; letter-spacing: 0.18em; color: ${COLORS.textMuted}; text-transform: uppercase; display: block; margin-top: 1.5rem; }
     </style>
   </head>
   <body>
