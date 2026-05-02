@@ -59,6 +59,11 @@ export interface MessageLogRow {
 export interface SendMessageInput {
   templateSlug: string;
   recipient: string;
+  // Slice 7A NOT NULL: messages_log.user_id is required. adminClient bypasses
+  // auth.uid() default, so callers must supply explicitly. User-path callers
+  // pass tenant.userId; cron callers resolve via accounts.owner_user_id or a
+  // per-row user_id (campaign enrollments).
+  userId: string;
   mode?: TemplateSendMode;
   variables?: Record<string, string>;
   // version pin: when set, resolves to that exact version instead of max(version)

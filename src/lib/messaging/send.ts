@@ -66,6 +66,7 @@ async function insertLogRow(row: {
   send_mode: TemplateSendMode;
   status: MessageStatus;
   event_sequence: MessageLogEvent[];
+  user_id: string;
 }): Promise<MessageLogRow> {
   const { data, error } = await adminClient
     .from("messages_log")
@@ -146,6 +147,7 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageR
     send_mode: mode,
     status: "queued",
     event_sequence: events,
+    user_id: input.userId,
   });
 
   events = appendEvent(events, {

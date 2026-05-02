@@ -129,6 +129,25 @@ async function loadTasks(endIso: string): Promise<TaskRow[]> {
   return (data ?? []) as TaskRow[];
 }
 
+// Slice 7A: cron has no auth.uid(). Pull the account owner from the accounts
+// table to derive user_id for the messages_log row. Single account today;
+// this becomes a per-account loop when multi-tenant. Mirrors the resolver
+// in src/app/api/calendar/sync-in/route.ts.
+async function resolveAccountOwnerId(): Promise<string | null> {
+  const { data, error } = await adminClient
+    .from("accounts")
+    .select("owner_user_id")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    await logError(ROUTE, `accounts owner lookup failed: ${error.message}`, {});
+    return null;
+  }
+  return data?.owner_user_id ?? null;
+}
+
 async function handleRun(request: NextRequest) {
   if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -215,11 +234,21 @@ async function handleRun(request: NextRequest) {
       ? PROD_RECIPIENT
       : process.env.RESEND_SAFE_RECIPIENT ?? PROD_RECIPIENT;
 
+  const ownerUserId = await resolveAccountOwnerId();
+  if (!ownerUserId) {
+    await logError(ROUTE, "no account row found; cannot scope messages_log", {});
+    return NextResponse.json(
+      { ok: false, error: "no_account_owner", surfaced: surfaced.length, total: totalAvailable },
+      { status: 500 },
+    );
+  }
+
   let sendResult: Awaited<ReturnType<typeof sendMessage>> | null = null;
   try {
     sendResult = await sendMessage({
       templateSlug: TEMPLATE_SLUG,
       recipient,
+      userId: ownerUserId,
       mode: "resend",
       variables: {
         date: dateLabel,

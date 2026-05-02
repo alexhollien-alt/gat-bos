@@ -1,5 +1,7 @@
 // OAuth flow helpers for Phase 1.3.1 Gmail MVP.
-// Stores encrypted tokens in public.oauth_tokens (user_id='alex', provider='google').
+// Stores encrypted tokens in public.oauth_tokens scoped by Alex's auth.users.id
+// (single-tenant pivot; Slice 7A migrated the column text->uuid and remapped
+// the literal 'alex' to this UUID -- see 20260427300212_slice7a_oauth_tokens_0_user_id_type_fix.sql).
 // CSRF protection via HMAC-signed state token (10-min TTL).
 import { google } from "googleapis";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
@@ -16,7 +18,12 @@ export const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events",
 ];
 
-const USER_ID = "alex";
+// Slice 7A: oauth_tokens.user_id is now uuid FK -> auth.users(id). Single-tenant
+// pivot: this is Alex's owner_user_id (matches accounts.owner_user_id for the
+// sole account row today). When a second Google account lands, thread user_id
+// through saveTokens/loadTokens/touchLastUsed signatures and resolve at call
+// time -- see LATER.md "Per-user OAuth token threading".
+const USER_ID = "b735d691-4d86-4e31-9fd3-c2257822dca3";
 const PROVIDER = "google";
 const STATE_TTL_MS = 10 * 60 * 1000;
 

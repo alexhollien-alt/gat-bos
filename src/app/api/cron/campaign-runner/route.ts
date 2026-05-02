@@ -257,6 +257,7 @@ export async function GET(request: NextRequest) {
         send = await sendMessage({
           templateSlug: step.template_slug,
           recipient: contact.email,
+          userId: enrollment.user_id,
           variables: {
             first_name: contact.first_name ?? "",
             last_name: contact.last_name ?? "",
