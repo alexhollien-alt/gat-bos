@@ -8,6 +8,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-05-02] Portal-read RPC layer not yet built (Slice 7C dashboard data sections)
+- **Broken:** `/portal/[slug]/dashboard` ships with empty-state cards for touchpoints, messages, and upcoming events. The underlying tables (`project_touchpoints`, `messages_log`, `events`) are gated by 7B account-scoping RLS to the account owner (Alex). The agent's authenticated portal session cannot read them directly.
+- **Where:** `src/app/portal/[slug]/dashboard/page.tsx` (Slice 7C Task 4a). Sections render hard-coded empty states.
+- **Fix needed:** Add three SECURITY DEFINER RPCs scoped to the calling auth.uid() -> contacts.id -> account_id binding: `get_portal_touchpoints(p_slug)`, `get_portal_messages(p_slug)`, `get_portal_upcoming_events(p_slug)`. Each returns rows filtered to the agent's contact_id. Wire into the dashboard page sections. Likely Slice 7D or a follow-up Slice 7C.5.
+
 ### [2026-04-27] Six non-conforming migration filenames silently skipped by Supabase CLI
 - **Broken:** `supabase migration list` (and the CLI's apply / repair flow) skips any file in `supabase/migrations/` whose name doesn't match `<14-digit-timestamp>_<name>.sql`. Six legacy files predate that convention and are therefore invisible to the CLI: `phase-1.3.1-gmail-mvp.sql`, `phase-1.3.2-observation.sql`, `phase-1.4-projects.sql`, `phase-1.5-calendar.sql`, `phase-9-realtime-email-drafts.sql`, `slice-2a-drop-spine.sql`. Their contents have already been applied to remote (`db reset` would not recreate them, but they already exist), so this is registry hygiene, not data risk. Risk surface: any future contributor running `supabase db reset` against a clean local instance would not re-apply them and would diverge from prod.
 - **Where:** `supabase/migrations/` -- the six filenames above.
