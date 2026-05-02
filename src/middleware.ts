@@ -29,18 +29,40 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+
   const isAuthPage =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/signup");
+    pathname.startsWith("/login") || pathname.startsWith("/signup");
+
+  // Portal-scoped public routes: redeem handler + per-slug login page.
+  // Slice 7C: agent portal sessions are separate from Alex's account session;
+  // these endpoints must be reachable without a session to bootstrap one.
+  const isPortalPublic =
+    pathname === "/portal/redeem" ||
+    pathname.startsWith("/portal/redeem/") ||
+    /^\/portal\/[^/]+\/login(?:\/|$)/.test(pathname);
+
+  const isPortalRoute = pathname.startsWith("/portal/");
 
   const isPublicRoute =
-    request.nextUrl.pathname.startsWith("/api/") ||
-    request.nextUrl.pathname.startsWith("/intake") ||
-    request.nextUrl.pathname.startsWith("/agents/");
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/intake") ||
+    pathname.startsWith("/agents/") ||
+    isPortalPublic;
 
-  // Public routes skip auth (API uses service-role key, intake is shareable)
   if (isPublicRoute) {
     return supabaseResponse;
+  }
+
+  // Authed portal routes: redirect to slug-scoped login on no session.
+  // requirePortalSession enforces the email/slug binding inside the layout;
+  // middleware only enforces presence of any Supabase session.
+  if (isPortalRoute && !user) {
+    const slugMatch = pathname.match(/^\/portal\/([^/]+)/);
+    const slug = slugMatch?.[1];
+    const url = request.nextUrl.clone();
+    url.pathname = slug ? `/portal/${slug}/login` : "/login";
+    return NextResponse.redirect(url);
   }
 
   if (!user && !isAuthPage) {
