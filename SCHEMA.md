@@ -1,6 +1,6 @@
 # SCHEMA.md -- GAT-BOS Architecture Reference
 
-*Last updated: 2026-04-30 (Slice 7A shipped)*
+*Last updated: 2026-05-02 (Slice 7C shipped)*
 
 ## Layer Map
 
@@ -14,6 +14,7 @@
 
 | Table | Tier | Status | Notes |
 |-------|------|--------|-------|
+| agent_invites | Raw | live | Slice 7C. Magic-link invitation tokens for portal onboarding. PK id uuid; account_id (FK accounts ON DELETE RESTRICT) + contact_id (FK contacts ON DELETE RESTRICT, type='agent' validated by route handler upstream) + token_hash text NOT NULL (sha256 of plaintext token; plaintext only ever in email body + 201 response payload, never persisted) + expires_at timestamptz default `now() + interval '7 days'` + redeemed_at timestamptz NULL + deleted_at timestamptz. Partial unique index `agent_invites_token_hash_unique WHERE redeemed_at IS NULL AND deleted_at IS NULL` enforces single-use. Account-scoped RLS via the 7B `(SELECT id FROM accounts WHERE owner_user_id = auth.uid() AND deleted_at IS NULL)` subquery pattern. Consumed via SECURITY DEFINER RPC `redeem_agent_invite(p_token_hash text)` granted EXECUTE TO anon (route at `src/app/portal/redeem/route.ts` invokes anon to match unauthenticated visitor path); RPC validates not-expired AND redeemed_at IS NULL AND deleted_at IS NULL, flips redeemed_at, returns `(email, slug, account_id, contact_id)`, raises P0002 on any unredeemable case. |
 | accounts | Raw | live | Slice 7A. Tenant root. PK id uuid; columns name, slug (unique), owner_user_id (FK auth.users), deleted_at. Single Alex seed row (`name='Alex Hollien' / slug='alex-hollien'`). Resolved by `tenantFromRequest()` via `owner_user_id = auth.uid()`. |
 | activity_events | Raw | live | Canonical write target from Slice 1. Ledger for all user-observable actions. |
 | contacts | Raw | live | Core CRM entity. Slice 7B added `slug text` (NULL until backfilled, UNIQUE per account via partial index `contacts_account_slug_unique` WHERE deleted_at IS NULL AND slug IS NOT NULL), `tagline text` (NULL OK; route hides null), `account_id uuid` (FK accounts ON DELETE RESTRICT, backfilled to single Alex account, RLS account-scoped via `(SELECT id FROM accounts WHERE owner_user_id = auth.uid() AND deleted_at IS NULL)`). `contacts_type_check` extended with `'agent'` (12th sanctioned value, joins existing classifications; replaces old AGENTS const) and `'escrow'` (13th -- fold-in: 10 prod rows already used `type='escrow'` for escrow officers like Marlene Ruggeri; surfaced by constraint-rebuild row-level revalidation). `photo_url` NOT added; reused existing `headshot_url` per Q-drift-2 (Standing Rule 16). Public-agent anon read via security-definer RPCs `get_public_agent_slugs()` + `get_public_agent_by_slug(text)`; whitelisted columns only (8 public, 31 private rejected). `/agents/[slug]` SSGs the 5 seeded agent rows (julie-jarmiolowski / fiona-bigbee / denise-van-den-bossche / joey-gutierrez / amber-hollien). |

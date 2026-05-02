@@ -6,6 +6,41 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-05-02] (Slice 7C) account_members table -- multi-user-per-account portal access
+- **Where:** `accounts` is currently 1:1 with `auth.users` via `owner_user_id`. Slice 7C portal access also keys on `auth.users.email == contacts.email` for the agent partner side, but there is no formal join from a portal-authenticated user to the account they belong to except by email match in `requirePortalSession`. A second admin user on Alex's account (e.g., assistant) cannot currently be granted portal-issuance rights without ownership transfer.
+- **What:** Add `public.account_members (account_id uuid FK accounts, user_id uuid FK auth.users, role text CHECK IN ('owner','admin','viewer'), created_at, deleted_at)` with PK (account_id, user_id). Migrate `tenantFromRequest` to resolve account via account_members lookup before falling back to `accounts.owner_user_id`. RLS on agent_invites + every 7B account-scoped table moves from `(SELECT id FROM accounts WHERE owner_user_id = auth.uid()...)` to `(SELECT account_id FROM account_members WHERE user_id = auth.uid() AND deleted_at IS NULL...)`.
+- **Why deferred:** Per Slice 7C OQ#9. Alex is the sole admin user today; multi-user-per-account is speculative. Restructure on real signal.
+
+### [2026-05-02] (Slice 7C) Portal mobile-responsive pass
+- **Where:** All four portal pages (`src/app/portal/[slug]/{dashboard,request,events,messages}/page.tsx`) + login page + redeem error HTML. Currently desktop-first Kit Screen layouts with no breakpoint tuning.
+- **What:** Audit on actual mobile viewports (375 / 414 / 768); fix touch targets to 44x44 minimum per `dashboard-architecture.md` Section 7; verify form inputs don't trigger zoom on iOS (font-size >= 16px); test the magic-link login + redirect handoff on iOS Safari and Android Chrome.
+- **Why deferred:** Slice 7C scope locked to desktop-first first-ship; Alex's agent partners are largely desktop-bound for partner-facing portals. Defer until mobile traffic data warrants the work.
+
+### [2026-05-02] (Slice 7C) Portal mutation surface (profile edit / RSVP / email reply)
+- **Where:** Portal pages currently read-only. Agent cannot edit own profile (taglines, headshot, brokerage), RSVP to calendar events from `/portal/[slug]/events`, or reply to messages from `/portal/[slug]/messages`.
+- **What:** Add Server Actions on each page: `updatePortalContact(formData)` writing to `contacts` under agent's portal session (RLS check that contact.id == requirePortalSession().contactId); `respondToEvent(eventId, response)` writing to `attendees`; `replyToMessage(messageId, body)` writing to `email_drafts` or directly to `messages_log` depending on inbound vs outbound. All mutations require the slug-bound portal session.
+- **Why deferred:** Slice 7C scope locked to read-only first-ship to validate the auth flow before opening write paths. Mutation surface is a coherent Slice 7E candidate after Slice 7D's portal-read RPC layer (BLOCKERS.md [2026-05-02]) lands.
+
+### [2026-05-02] (Slice 7C) Portal-scoped custom theme deviating from Kit Screen
+- **Where:** `src/app/portal/layout.tsx` currently inherits Kit Screen tokens (Syne + Inter + Space Mono, dark surface palette).
+- **What:** If agent partners need a more agent-forward portal aesthetic (e.g., per-account theming, brand-color overrides, light-mode option), define a portal-theme variable layer at `:root[data-portal]` in `globals.css` and surface theme selection per account in the future `accounts.portal_theme` column.
+- **Why deferred:** Per Slice 7C OQ#6. Kit Screen is the locked default; custom theming on real-signal demand only.
+
+### [2026-05-02] (Slice 7C) HMAC token hardening for agent_invites
+- **Where:** `agent_invites.token_hash` currently stores sha256(plaintext); plaintext is 32 bytes randomBytes base64url (256 bits of entropy). Single-use enforcement via partial unique index + RLS account binding.
+- **What:** If a future incident shows token replay or extraction risk, harden by switching to HMAC-SHA256(secret, plaintext) where `secret` is a per-environment server-side key (e.g., `INVITE_TOKEN_HMAC_KEY` env var). Plaintext stays in the email body; HMAC stops a database-only compromise from reproducing valid tokens.
+- **Why deferred:** Per Slice 7C OQ#4. Single-use + 7-day expiry + unique partial index already mitigate replay; HMAC is defense-in-depth not currently warranted.
+
+### [2026-05-02] (Slice 7C) Portal SSO (Google / Microsoft)
+- **Where:** Portal magic-link is the sole onboarding path (`src/app/portal/redeem/route.ts` -> `admin.auth.admin.generateLink({type:'magiclink'})`). No OAuth provider buttons on `src/app/portal/[slug]/login/page.tsx`.
+- **What:** Wire Supabase Auth Google + Microsoft providers; add provider buttons to portal login page; verify the post-OAuth redirect lands at `/portal/[slug]/dashboard` and that `requirePortalSession` still binds correctly when the agent's email matches the OAuth-provided email.
+- **Why deferred:** Magic link itself proves email control (per OQ#7); SSO adds one-click convenience but not security. Defer until agent feedback signals friction.
+
+### [2026-05-02] (Slice 7C) Per-agent custom subdomain
+- **Where:** Portal lives at `https://gat-bos.vercel.app/portal/<slug>/...`. No vanity subdomain support (e.g., `julie.alexhollien.co/portal`).
+- **What:** Configure Vercel wildcard domain + middleware host-rewrite that resolves `<slug>.alexhollien.co` -> `/portal/<slug>/dashboard`. Update redeem URLs in invite emails to use the vanity domain when the slug has a `vanity_subdomain_enabled` flag. Requires DNS work + per-agent subdomain provisioning.
+- **Why deferred:** No agent-partner request for it; engineering cost vs polish trade-off doesn't pay until at least 5 active portal users exist.
+
 ### [2026-05-01] (Slice 7B) Joey + Amber tagline copy resolution
 - **Where:** `contacts` rows for slugs `joey-gutierrez` and `amber-hollien`. Currently `tagline IS NULL`; route at `src/app/agents/[slug]/page.tsx` hides the tagline block when null (Q3=c).
 - **What:** Draft a tagline for each, then `UPDATE public.contacts SET tagline = '...' WHERE slug = ...` via a small migration. Use the same Sotheby's/Flodesk/Apple voice axis the Julie/Fiona/Denise taglines hit (approved 2026-04-21 drafts).
