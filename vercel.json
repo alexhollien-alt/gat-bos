@@ -35,6 +35,18 @@
     {
       "path": "/api/cron/touchpoint-reminder",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/altos-pull",
+      "schedule": "0 13 * * 1"
+    },
+    {
+      "path": "/api/cron/weekly-edge-assemble",
+      "schedule": "0 18 * * 2"
+    },
+    {
+      "path": "/api/cron/weekly-edge-send",
+      "schedule": "0 20 * * 2"
     }
   ]
 }

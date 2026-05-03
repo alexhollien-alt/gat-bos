@@ -6,6 +6,11 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-05-03] (Slice 8 Phase 5) Generalize dry-run-alex recipient list
+- **Where:** `src/lib/campaigns/recipients.ts` (`KNOWN_LISTS` set + `dry-run-alex` branch).
+- **What:** v1 hardcodes a single dry-run recipient for the Phase 5 first-send verification. Generalize into a `single-recipient` mechanism that accepts `?recipient=<email>` on the send route or reads from a `dry_run_recipients` config table when subscriber preferences ship. Until then, `dry-run-alex` stays as a simple, surgical resolver for ad-hoc dry-runs.
+- **Why deferred:** Single hardcoded slug is the smallest surface that satisfies Phase 5; broader API redesign blocks cleanly until subscriber-list work begins.
+
 ### [2026-05-02] (Slice 8 Phase 4) First-class recipient_lists table
 - **Where:** `src/lib/campaigns/recipients.ts` (`KNOWN_LISTS = new Set(['agents-active'])`).
 - **What:** v1 hardcodes the `agents-active` list as a query against `contacts WHERE type='agent' AND deleted_at IS NULL`. Promote to a real `recipient_lists` table with per-list opt-in / opt-out subscriber preferences, list-membership rows, and `unsubscribe_token` per recipient. Required before any non-Alex agent can manage their own subscriber lists or before launching a second campaign template (e.g., monthly title-tip newsletter) with a different audience.
