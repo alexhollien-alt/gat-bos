@@ -44,7 +44,13 @@ export type ActivityVerb =
   | 'contact.hook_fired'
   | 'event.hook_fired'
   | 'weekly_snapshot.pulled'
-  | 'weekly_snapshot.pull_failed';
+  | 'weekly_snapshot.pull_failed'
+  | 'campaign.draft_created'
+  | 'campaign.draft_approved'
+  | 'campaign.draft_rejected'
+  | 'campaign.draft_edited'
+  | 'campaign.sent'
+  | 'campaign.send_skipped_unapproved';
 
 export interface ActivityEvent {
   id: string;

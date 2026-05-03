@@ -6,6 +6,21 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-05-02] (Slice 8 Phase 4) First-class recipient_lists table
+- **Where:** `src/lib/campaigns/recipients.ts` (`KNOWN_LISTS = new Set(['agents-active'])`).
+- **What:** v1 hardcodes the `agents-active` list as a query against `contacts WHERE type='agent' AND deleted_at IS NULL`. Promote to a real `recipient_lists` table with per-list opt-in / opt-out subscriber preferences, list-membership rows, and `unsubscribe_token` per recipient. Required before any non-Alex agent can manage their own subscriber lists or before launching a second campaign template (e.g., monthly title-tip newsletter) with a different audience.
+- **Why deferred:** Pilot scope is one weekly send to a known 5-agent set. Subscriber preferences add CRUD UI + email-footer unsubscribe link + token-validation route; out of Phase 4 budget.
+
+### [2026-05-02] (Slice 8 Phase 4) Bulk approve in /drafts Campaign tab
+- **Where:** `src/components/drafts/campaign-drafts-view.tsx` (single-row Approve button).
+- **What:** Plan v1 dropped bulk approve because the Tuesday cron writes one campaign draft per week. Revisit when (a) multi-segment Weekly Edge variants ship (different narrative per agent tier), (b) a second weekly campaign template launches, or (c) the assembly cron starts queuing drafts for multiple weeks ahead.
+- **Why deferred:** Over-engineering for one-button-per-week reality.
+
+### [2026-05-02] (Slice 8 Phase 4) Visual placeholder fills in render-weekly-edge.ts
+- **Where:** `src/lib/campaigns/render-weekly-edge.ts` (`PLACEHOLDER_STATS_IMAGE`, `PLACEHOLDER_WEEKENDER_IMAGE`, `PLACEHOLDER_LISTINGS_SECTION`).
+- **What:** The renderer leaves visible bracketed placeholder blocks in the three visual slots (`stats_image_html`, `weekender_image_html`, `listings_section_html`) so the reviewer manually pastes the chart image / Weekender image / featured listings markup before approving. Promote to first-class auto-population: stats image generated from `weekly_snapshot.data` via a chart endpoint; Weekender image pulled from a curated weekly source; featured listings auto-built from `listings` table with this week's selected three.
+- **Why deferred:** Each auto-population is its own sub-feature. Reviewer-fill-then-approve is the safer pilot loop; once Alex has shipped 4-6 issues, audit which placeholder slots are highest reviewer pain and automate first.
+
 ### [2026-05-02] (Slice 7C close) OQ#5 mis-spec -- smoke `body_html` extraction path
 - **Where:** `scripts/slice7c-portal-smoke.mjs:524-569` (Layer 4 token extraction); `src/lib/messaging/send.ts:123-200` (`sendMessage` body_html handling).
 - **What:** OQ#5=(a) specified parsing the redeem token from `messages_log.event_sequence[*].payload.body_html`. Reality: `sendMessage` renders `body_html` and dispatches it to the provider but never persists the rendered HTML into `event_sequence` (only `slug`, `version`, `unresolved[]`, `provider_message_id`, etc.). Smoke falls back to extracting from the route response's `redeem_url` and emits 2 WARN per run (one per agent). 18/0/2 smoke is functionally green; redemption end-to-end works for both Julie and Joey. Pick one when the WARN becomes blocking: (B) modify `sendMessage` to append a `rendered` event with `payload.body_html` (storage cost: 5-50KB per message forever, no current consumer); (C) flip smoke to validate response payload by design (effectively OQ#5=(b)) and update plan doc OQ#5 cell. Recommend (C) the next time anyone touches the smoke harness.

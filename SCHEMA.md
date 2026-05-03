@@ -123,3 +123,46 @@ Per-feature durable result cache. Distinct from Anthropic's prompt cache. Each c
 | accessed_at | timestamptz | no | now() | Best-effort updated on every cache hit. |
 | created_at | timestamptz | no | now() | Row insertion time. |
 | deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+
+## weekly_snapshot Column Reference (Slice 8 Phase 1)
+
+One row per (week_of, market_slug). Idempotent upsert by Altos pull cron at `/api/cron/altos-pull`. Read by Weekly Edge assembly cron. Single-tenant pilot (no account scoping yet); RLS service-role full + authenticated read on `deleted_at IS NULL`.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| id | uuid | no | gen_random_uuid() | PK. |
+| week_of | date | no | -- | Monday of the ISO week (UTC). Unique with market_slug where deleted_at IS NULL. |
+| market_slug | text | no | -- | Stable identifier; matches `src/lib/markets/tracked.ts` slugs. |
+| market_label | text | no | -- | Human-readable, surfaces in rendered email. |
+| data | jsonb | no | -- | Altos payload (median_price, dom, inventory, absorption, MoM/YoY deltas). `{status:'pending_credentials'}` until Altos onboarding. |
+| narrative_seed | text | yes | null | Optional human note prepended to writer prompt. |
+| pulled_at | timestamptz | no | now() | Altos fetch timestamp. |
+| created_at | timestamptz | no | now() | Row insertion time. |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
+
+## campaign_drafts Column Reference (Slice 8 Phase 4)
+
+Cron-assembled mass-send campaign drafts (Weekly Edge first user). Distinct from `email_drafts` (Gmail reply schema). Single-tenant alex-only RLS via `auth.jwt() ->> 'email' = 'alex@alexhollienco.com'`. Service-role bypasses for cron writes. Multi-account scoping deferred until Slice 8 goes multi-tenant.
+
+| Column | Type | Nullable | Default | Purpose |
+|--------|------|----------|---------|---------|
+| id | uuid | no | gen_random_uuid() | PK. |
+| template_slug | text | no | -- | Template lookup key (e.g. `weekly-edge`). |
+| template_version | integer | yes | null | Version pin captured at assembly time; null = floats to latest at send. |
+| week_of | date | no | -- | ISO Monday the draft represents. Unique with template_slug WHERE status <> 'rejected' AND deleted_at IS NULL. |
+| recipient_list_slug | text | no | -- | Resolved by `src/lib/campaigns/recipients.ts` (`agents-active` for v1). |
+| subject | text | no | -- | Rendered subject. |
+| body_html | text | no | -- | Rendered HTML body; reviewer can edit via `/drafts` Campaign tab. |
+| body_text | text | no | -- | Rendered plain-text body. |
+| narrative_payload | jsonb | no | '{}' | Per-market writer output for re-render or audit. |
+| variables | jsonb | no | '{}' | Variables passed to `sendMessage()` at send time. |
+| status | text | no | 'pending_review' | One of pending_review, approved, rejected, sent, send_failed. |
+| approved_at | timestamptz | yes | null | Set by `/api/campaigns/drafts` PATCH approve. |
+| approved_by | text | yes | null | Reviewer email. |
+| rejected_at | timestamptz | yes | null | Set by reject action. |
+| rejected_reason | text | yes | null | Optional reviewer note. |
+| sent_at | timestamptz | yes | null | Set by `/api/cron/weekly-edge-send` after dispatch. |
+| send_summary | jsonb | yes | null | `{sent, failed, total, errors[]}` after send. |
+| created_at | timestamptz | no | now() | Insertion time. |
+| updated_at | timestamptz | no | now() | Last mutation time. |
+| deleted_at | timestamptz | yes | null | Soft-delete timestamp. |
