@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/weekly-edge-send",
       "schedule": "0 20 * * 2"
+    },
+    {
+      "path": "/api/captures/cleanup-audio",
+      "schedule": "0 12 * * *"
     }
   ]
 }
