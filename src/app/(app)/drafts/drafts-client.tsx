@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { AttachToProject } from "@/components/drafts/attach-to-project";
+import { CampaignDraftsView } from "@/components/drafts/campaign-drafts-view";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -131,9 +132,12 @@ function escalationLabel(flag: DraftRow["escalation_flag"]) {
   return null;
 }
 
+type DraftsTab = "reply" | "campaign";
+
 export function DraftsClient({ userEmail }: { userEmail: string }) {
   const supabase = createClient();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<DraftsTab>("reply");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [revising, setRevising] = useState(false);
   const [revisedBody, setRevisedBody] = useState("");
@@ -235,6 +239,31 @@ export function DraftsClient({ userEmail }: { userEmail: string }) {
       />
       <AccentRule variant="hairline" className="mt-4 mb-6" />
 
+      <div className="mb-6 flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={tab === "reply" ? "default" : "outline"}
+          onClick={() => setTab("reply")}
+        >
+          Reply
+          <span className="ml-2 font-mono text-[10px] text-muted-foreground">
+            {drafts.length}
+          </span>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={tab === "campaign" ? "default" : "outline"}
+          onClick={() => setTab("campaign")}
+        >
+          Campaign
+        </Button>
+      </div>
+
+      {tab === "campaign" ? (
+        <CampaignDraftsView />
+      ) : (
       <div className="grid grid-cols-12 gap-6 min-h-[70vh]">
         <aside className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-2">
           <Eyebrow tone="muted">Pending</Eyebrow>
@@ -279,6 +308,7 @@ export function DraftsClient({ userEmail }: { userEmail: string }) {
           )}
         </section>
       </div>
+      )}
     </SectionShell>
   );
 }
