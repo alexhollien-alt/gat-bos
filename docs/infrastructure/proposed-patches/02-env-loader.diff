@@ -1,0 +1,104 @@
+# Patch 02 -- src/lib/env.ts (zod-validated env loader)
+
+**Target path:** `~/crm/src/lib/env.ts`
+**Action:** Create new file. Existing 52 `process.env.*!` sites are not changed in this patch -- migrate them on next-touch.
+
+---
+
+```ts
+// src/lib/env.ts
+//
+// Centralized, zod-validated environment loader. Validates at module-load
+// time; a missing required var fails the import path, not a request handler.
+//
+// Existing routes still read process.env directly today (52 call sites).
+// Migrate them to `import { env } from "@/lib/env"` on next-touch; do NOT
+// big-bang refactor.
+//
+// Source: ~/crm/docs/infrastructure/plumbing-audit.md P1, security-audit.md S2
+
+import { z } from "zod";
+
+// Coerce "true"/"false" strings to booleans; default false on absent/malformed.
+const boolFlag = z
+  .union([z.literal("true"), z.literal("false"), z.undefined()])
+  .transform((v) => v === "true");
+
+const envSchema = z.object({
+  // --- Supabase (required) ---
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+  // --- Site (required) ---
+  NEXT_PUBLIC_SITE_URL: z.string().url(),
+
+  // --- Auth secrets (required) ---
+  INTERNAL_API_TOKEN: z.string().min(16),
+  CRON_SECRET: z.string().min(16),
+  OAUTH_ENCRYPTION_KEY: z.string().min(32),
+  OAUTH_STATE_SIGNING_KEY: z.string().min(16),
+
+  // --- Email: Resend ---
+  RESEND_API_KEY: z.string().min(1),
+  RESEND_WEBHOOK_SECRET: z.string().min(1),
+  RESEND_SAFE_RECIPIENT: z.string().email().optional(),
+  MARLENE_CC_EMAIL: z.string().email().optional(),
+
+  // --- AI ---
+  ANTHROPIC_API_KEY: z.string().min(1),
+  // Optional today; only required if voice capture is enabled.
+  OPENAI_API_KEY: z.string().optional(),
+
+  // --- Google Workspace ---
+  GMAIL_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_SECRET: z.string().optional(),
+  GMAIL_REDIRECT_URI: z.string().url().optional(),
+  GOOGLE_USER_EMAIL: z.string().email().optional(),
+
+  // --- AI budget ---
+  AI_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(5.0),
+
+  // --- Feature flags ---
+  CAPTURES_AI_PARSE: boolFlag,
+  ESCALATION_NOTIFY: boolFlag,
+
+  // --- Rollback flags ---
+  ROLLBACK_GMAIL_SYNC: boolFlag,
+  ROLLBACK_DRAFT_GEN: boolFlag,
+  ROLLBACK_SEND: boolFlag,
+  ROLLBACK_CAL_WRITE: boolFlag,
+  ROLLBACK_CAL_SYNC: boolFlag,
+
+  // --- Runtime ---
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
+});
+
+const parsed = envSchema.safeParse(process.env);
+if (!parsed.success) {
+  // Boot-time failure: build/start is blocked, not a request.
+  // Log the issues; do not throw the raw zod error (it can leak partial values).
+  const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+  // eslint-disable-next-line no-console
+  console.error(`[env] invalid environment:\n${issues}`);
+  throw new Error("Invalid environment configuration. See logs.");
+}
+
+export const env = parsed.data;
+
+/** Canonical "is production?" predicate. Treat Vercel preview as non-prod. */
+export const isProd = (): boolean =>
+  env.VERCEL_ENV === "production" ||
+  (env.VERCEL_ENV === undefined && env.NODE_ENV === "production");
+```
+
+---
+
+## Migration plan (post-7A.5)
+
+1. Land this file under `src/lib/env.ts`.
+2. Add `import { env, isProd } from "@/lib/env"` to one route at a time (start with `src/app/api/cron/morning-brief/route.ts`).
+3. Replace `process.env.X!` with `env.X` and `process.env.NODE_ENV === "production"` with `isProd()`.
+4. Each migration is a one-file PR; CI catches schema mismatches at type-check time.
+5. Once all 52 sites use `env`, delete the loose `process.env.*!` pattern from `eslint.config` rules.

@@ -23,11 +23,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `src/app/portal/[slug]/dashboard/page.tsx` (Slice 7C Task 4a). Sections render hard-coded empty states.
 - **Fix needed:** Add three SECURITY DEFINER RPCs scoped to the calling auth.uid() -> contacts.id -> account_id binding: `get_portal_touchpoints(p_slug)`, `get_portal_messages(p_slug)`, `get_portal_upcoming_events(p_slug)`. Each returns rows filtered to the agent's contact_id. Wire into the dashboard page sections. Likely Slice 7D or a follow-up Slice 7C.5.
 
-### [2026-04-27] Six non-conforming migration filenames silently skipped by Supabase CLI
-- **Broken:** `supabase migration list` (and the CLI's apply / repair flow) skips any file in `supabase/migrations/` whose name doesn't match `<14-digit-timestamp>_<name>.sql`. Six legacy files predate that convention and are therefore invisible to the CLI: `phase-1.3.1-gmail-mvp.sql`, `phase-1.3.2-observation.sql`, `phase-1.4-projects.sql`, `phase-1.5-calendar.sql`, `phase-9-realtime-email-drafts.sql`, `slice-2a-drop-spine.sql`. Their contents have already been applied to remote (`db reset` would not recreate them, but they already exist), so this is registry hygiene, not data risk. Risk surface: any future contributor running `supabase db reset` against a clean local instance would not re-apply them and would diverge from prod.
-- **Where:** `supabase/migrations/` -- the six filenames above.
-- **Fix needed:** Dedicated plumbing session: rename each to a chronologically-correct timestamp prefix (or leave on disk and explicitly delete from `migrations/` if their DDL is now redundant), then `supabase migration repair --status applied <new-version>` to register. Suggest grouping with future migration-hygiene cleanups.
-
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
@@ -91,6 +86,10 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-04-27] Six non-conforming migration filenames silently skipped by Supabase CLI -- RESOLVED 2026-05-03 (plumbing audit closure)
+- Resolution: Verified 2026-05-03 during system-wide audit pre-flight (`supabase migration list --linked`): all six previously-flagged filenames (`phase-1.3.1-gmail-mvp.sql`, `phase-1.3.2-observation.sql`, `phase-1.4-projects.sql`, `phase-1.5-calendar.sql`, `phase-9-realtime-email-drafts.sql`, `slice-2a-drop-spine.sql`) are already renamed to compliant `<14-digit-timestamp>_<name>.sql` format (timestamps `20260407013000`-`20260407013050` plus `20260410000100`) and registered Local==Remote. Audit Y5 prescription was based on stale BLOCKERS.md state from 2026-04-27 -- the rename had already landed in an earlier session. No `supabase migration repair` invocation was required. Closure-only entry; no commit on the rename itself.
+- Closing PR: this plumbing PR (Y4 root-docs commit + Y5 closure-only). Source plan: `~/.claude/plans/2026-05-03-root-docs-plumbing-pr.md`.
 
 ### [2026-05-03] Phase 5.6 webhook fix shipped but `.contains()` call serializes wrong -- RESOLVED 2026-05-03 (Slice 8 Phase 5.7)
 - Resolution: Wrapped the `.contains("event_sequence", [...])` argument in `JSON.stringify(...)` at `src/app/api/webhooks/resend/route.ts:159-169` so supabase-js sends the wire format `cs.[{...}]` (a JSON literal PostgREST accepts) instead of `cs.{...}` (a Postgres array literal that triggered `22P02 invalid input syntax for type json` on every webhook hit).

@@ -1,0 +1,161 @@
+# Patch 05 -- App Router error boundaries
+
+**Target paths:** `~/crm/src/app/error.tsx` + `~/crm/src/app/global-error.tsx`
+**Action:** Two new files. No existing edits. Additive.
+
+---
+
+## File 1: `~/crm/src/app/error.tsx`
+
+```tsx
+"use client";
+
+// App Router error boundary -- catches uncaught errors in any nested route
+// segment under app/. Shows a recover-friendly UI and logs to error_logs
+// via the existing fire-and-forget shim.
+//
+// Per Next.js docs, this MUST be a client component. The `error` arg is the
+// thrown value; `reset()` triggers a re-render of the segment.
+//
+// Source: ~/crm/docs/infrastructure/reliability-report.md R4
+
+import { useEffect } from "react";
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    // Report to error_logs via the public route (server-side route handler
+    // would couple this client file to the admin client). Fire-and-forget.
+    void fetch("/api/log-frontend-error", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        path: typeof window !== "undefined" ? window.location.pathname : "",
+        message: error.message,
+        digest: error.digest ?? null,
+        stack: error.stack ?? null,
+      }),
+    }).catch(() => {
+      // Swallow -- logging is best-effort.
+    });
+  }, [error]);
+
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <h2 className="font-display text-2xl text-zinc-100">Something went wrong</h2>
+        <p className="mt-3 text-sm text-zinc-400">
+          The page hit an unexpected error. The team has been notified.
+        </p>
+        <button
+          onClick={reset}
+          className="mt-6 rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
+        >
+          Try again
+        </button>
+        {error.digest && (
+          <p className="mt-4 text-xs text-zinc-500">Reference: {error.digest}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+## File 2: `~/crm/src/app/global-error.tsx`
+
+```tsx
+"use client";
+
+// Root-layout error boundary -- catches errors that escape the segment
+// boundary (e.g. errors in app/layout.tsx itself). MUST render its own
+// <html> and <body> because the root layout failed.
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <html>
+      <body>
+        <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
+          <div style={{ maxWidth: "28rem", textAlign: "center" }}>
+            <h2>Application error</h2>
+            <p style={{ marginTop: "0.5rem", color: "#666" }}>
+              The application encountered a fatal error. Please refresh the page.
+            </p>
+            <button
+              onClick={reset}
+              style={{ marginTop: "1.5rem", padding: "0.5rem 1rem", borderRadius: "0.375rem", background: "#111", color: "#fff", border: "none", cursor: "pointer" }}
+            >
+              Reload
+            </button>
+            {error.digest && (
+              <p style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#888" }}>
+                Reference: {error.digest}
+              </p>
+            )}
+          </div>
+        </div>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+## Optional (deferred): the `/api/log-frontend-error` sink
+
+`error.tsx` POSTs to `/api/log-frontend-error` which doesn't exist yet. To make the logging actually work, also land:
+
+`~/crm/src/app/api/log-frontend-error/route.ts`:
+
+```ts
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { logError } from "@/lib/error-log";
+import { checkRateLimit } from "@/lib/rate-limit/check";
+import { extractIp } from "@/lib/rate-limit/extract-ip";
+
+const Schema = z.object({
+  path: z.string().max(2000),
+  message: z.string().max(4000),
+  digest: z.string().nullable(),
+  stack: z.string().max(10000).nullable(),
+});
+
+export async function POST(request: Request) {
+  const ip = extractIp(request.headers);
+  const rl = await checkRateLimit(`ratelimit:fe-error:${ip}`, 30, 60);
+  if (!rl.allowed) return NextResponse.json({ ok: true }, { status: 200 });
+
+  const raw = await request.json().catch(() => null);
+  const parsed = Schema.safeParse(raw);
+  if (!parsed.success) return NextResponse.json({ ok: true }, { status: 200 });
+
+  await logError("/api/log-frontend-error", parsed.data.message, {
+    path: parsed.data.path,
+    digest: parsed.data.digest,
+    stack: parsed.data.stack?.slice(0, 4000),
+  });
+  return NextResponse.json({ ok: true });
+}
+```
+
+Without this sink, `error.tsx`'s POST silently fails (acceptable -- the UI still shows). Adding the sink makes the logging real.
+
+---
+
+## Land plan
+
+1. `error.tsx` and `global-error.tsx` -- safe to land before sink.
+2. `/api/log-frontend-error` -- land after, or skip to use Sentry instead (Patch A7).
