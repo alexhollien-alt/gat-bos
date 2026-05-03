@@ -8,6 +8,11 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-05-03] ALTOS_API_KEY not provisioned (Slice 8 Phase 2 Altos pull cron)
+- **Broken:** `/api/cron/altos-pull` runs but `fetchAltosSnapshot` returns `{ status: "pending_credentials" }` because `ALTOS_API_KEY` is not yet set in Vercel env. Cron still upserts a `weekly_snapshot` row per tracked market with the placeholder `data` shape so downstream phases (writer, assembly) have a row to read; reviewers will see "pending_credentials" in the rendered draft and reject before send.
+- **Where:** `src/lib/altos/client.ts` -- `altosCredentialsAvailable()` gate at top of `fetchAltosSnapshot`. Real Altos HTTP call is the TODO inside that function.
+- **Fix needed:** (1) Provision Altos Research API key + endpoint URL. (2) Set `ALTOS_API_KEY` (and any sibling vars) in Vercel preview + production via `vercel env add`. (3) Implement the real fetch in `fetchAltosSnapshot` using `market.altos.zip` + `market.altos.propertyType` from `TRACKED_MARKETS`. (4) Remove or downgrade this BLOCKERS entry. Slice 8 Phases 3-5 can proceed against the placeholder shape until then.
+
 ### [2026-05-02] Portal-read RPC layer not yet built (Slice 7C dashboard data sections)
 - **Broken:** `/portal/[slug]/dashboard` ships with empty-state cards for touchpoints, messages, and upcoming events. The underlying tables (`project_touchpoints`, `messages_log`, `events`) are gated by 7B account-scoping RLS to the account owner (Alex). The agent's authenticated portal session cannot read them directly.
 - **Where:** `src/app/portal/[slug]/dashboard/page.tsx` (Slice 7C Task 4a). Sections render hard-coded empty states.

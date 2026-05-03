@@ -42,7 +42,9 @@ export type ActivityVerb =
   | 'event.contact_only'
   | 'project.hook_fired'
   | 'contact.hook_fired'
-  | 'event.hook_fired';
+  | 'event.hook_fired'
+  | 'weekly_snapshot.pulled'
+  | 'weekly_snapshot.pull_failed';
 
 export interface ActivityEvent {
   id: string;
