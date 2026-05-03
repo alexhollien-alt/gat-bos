@@ -23,7 +23,9 @@ export interface RecipientListResolution {
   recipients: Recipient[];
 }
 
-const KNOWN_LISTS = new Set(["agents-active"]);
+const KNOWN_LISTS = new Set(["agents-active", "dry-run-alex"]);
+
+const DRY_RUN_ALEX_EMAIL = "alex@alexhollienco.com";
 
 export function isKnownRecipientList(slug: string): boolean {
   return KNOWN_LISTS.has(slug);
@@ -34,6 +36,21 @@ export async function resolveRecipientList(
 ): Promise<RecipientListResolution> {
   if (!isKnownRecipientList(slug)) {
     throw new Error(`Unknown recipient list slug: '${slug}'`);
+  }
+
+  if (slug === "dry-run-alex") {
+    return {
+      slug,
+      label: "Dry-run (Alex only)",
+      recipients: [
+        {
+          email: DRY_RUN_ALEX_EMAIL,
+          contactId: "dry-run",
+          fullName: "Alex Hollien (dry-run)",
+          userId: null,
+        },
+      ],
+    };
   }
 
   if (slug === "agents-active") {
