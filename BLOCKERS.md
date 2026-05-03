@@ -8,6 +8,12 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-05-03] weekly_snapshot upsert fails: ON CONFLICT vs partial unique index (Slice 8 Phase 1/2)
+- **Broken:** `/api/cron/altos-pull` returns HTTP 200 with body `{"ok":false,"upserted":0,"failed":1,"results":[{"slug":"scottsdale-85258-sf","status":"failed","error":"there is no unique or exclusion constraint matching the ON CONFLICT specification"}]}`. The `weekly_snapshot` migration created a **partial** unique index (`weekly_snapshot_week_market_uniq ... WHERE deleted_at IS NULL`) preserving soft-delete-then-repull semantics. Postgres `ON CONFLICT (week_of, market_slug)` cannot infer a partial index without a matching `WHERE` clause, and Supabase JS `upsert({ onConflict: "week_of,market_slug" })` does not pass one. Discovered during Slice 8 Phase 5 dry-run on 2026-05-03 against prod commit `d374936`.
+- **Where:** `src/app/api/cron/altos-pull/route.ts:92-100` (the `.upsert(... { onConflict: "week_of,market_slug" })` call); `supabase/migrations/20260503020437_slice8_weekly_snapshot.sql:25-28` (the partial unique index).
+- **Fix needed (pick one):** (a) Add a non-partial unique constraint via new migration: `ALTER TABLE weekly_snapshot ADD CONSTRAINT weekly_snapshot_week_market_key UNIQUE (week_of, market_slug)` -- sacrifices the soft-delete-and-repull idempotency the partial index was protecting. (b) Replace the `.upsert()` call with explicit SELECT-then-INSERT-or-UPDATE flow honoring `deleted_at IS NULL`. (c) Drop the partial predicate from the index. Recommendation: **(b)** preserves both upsert idempotency and the soft-delete semantic. Plumbing session can be filed under Slice 8 Phase 5.5.
+- **Workaround for dry-run:** None usable from this session. Direct service-role INSERT was denied by harness (Rule 23 / Halt 7 in the Phase 5 plan). Phase 5 dry-run paused until plumbing fix lands.
+
 ### [2026-05-03] ALTOS_API_KEY not provisioned (Slice 8 Phase 2 Altos pull cron)
 - **Broken:** `/api/cron/altos-pull` runs but `fetchAltosSnapshot` returns `{ status: "pending_credentials" }` because `ALTOS_API_KEY` is not yet set in Vercel env. Cron still upserts a `weekly_snapshot` row per tracked market with the placeholder `data` shape so downstream phases (writer, assembly) have a row to read; reviewers will see "pending_credentials" in the rendered draft and reject before send.
 - **Where:** `src/lib/altos/client.ts` -- `altosCredentialsAvailable()` gate at top of `fetchAltosSnapshot`. Real Altos HTTP call is the TODO inside that function.
