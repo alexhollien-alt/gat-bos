@@ -144,12 +144,29 @@ export async function POST(req: NextRequest) {
           : null;
 
     if (eventType && providerMessageId) {
-      const { data: log } = await supabase
+      let { data: log } = await supabase
         .from("messages_log")
         .select("id")
         .eq("provider_message_id", providerMessageId)
         .is("deleted_at", null)
         .maybeSingle();
+
+      // Slice 8 Phase 5.6 fallback: send_mode='both' writes the Gmail ID to
+      // provider_message_id and stashes the Resend ID inside
+      // event_sequence[].sent.payload.fallback_message_id. When the primary
+      // lookup misses, scan the jsonb column for the Resend ID before giving
+      // up. Containment query maps to `event_sequence @> ...`.
+      if (!log?.id) {
+        const { data: jsonbLog } = await supabase
+          .from("messages_log")
+          .select("id")
+          .contains("event_sequence", [
+            { event: "sent", payload: { fallback_message_id: providerMessageId } },
+          ])
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (jsonbLog?.id) log = jsonbLog;
+      }
 
       if (log?.id) {
         const { error: insertErr } = await supabase
