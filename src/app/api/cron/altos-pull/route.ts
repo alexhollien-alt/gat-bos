@@ -87,23 +87,58 @@ async function pullOne(
     };
   }
 
-  const { data, error } = await adminClient
+  // Explicit SELECT-then-INSERT-or-UPDATE flow honoring deleted_at IS NULL.
+  // Postgres ON CONFLICT cannot infer the partial unique index
+  // (weekly_snapshot_week_market_uniq ... WHERE deleted_at IS NULL) without a
+  // matching WHERE clause, and supabase-js .upsert() does not pass one. The
+  // partial index is preserved so a soft-deleted row can be re-pulled cleanly.
+  // See ~/crm/.planning/phases/022-slice-8-phase-5-5-altos-pull-upsert-fix/.
+  const pulledAt = new Date().toISOString();
+  const { data: existing, error: selectError } = await adminClient
     .from("weekly_snapshot")
-    .upsert(
-      {
-        week_of: weekOf,
-        market_slug: market.slug,
-        market_label: market.label,
-        data: snapshot,
-        pulled_at: new Date().toISOString(),
-      },
-      { onConflict: "week_of,market_slug" },
-    )
     .select("id")
-    .single();
+    .eq("week_of", weekOf)
+    .eq("market_slug", market.slug)
+    .is("deleted_at", null)
+    .maybeSingle();
 
-  if (error) {
-    await logError(ROUTE, `weekly_snapshot upsert failed: ${error.message}`, {
+  let data: { id: string } | null = null;
+  let error: { message: string } | null = selectError;
+
+  if (!error) {
+    if (existing) {
+      const { data: updated, error: updateError } = await adminClient
+        .from("weekly_snapshot")
+        .update({
+          market_label: market.label,
+          data: snapshot,
+          pulled_at: pulledAt,
+        })
+        .eq("id", existing.id)
+        .select("id")
+        .single();
+      data = updated;
+      error = updateError;
+    } else {
+      const { data: inserted, error: insertError } = await adminClient
+        .from("weekly_snapshot")
+        .insert({
+          week_of: weekOf,
+          market_slug: market.slug,
+          market_label: market.label,
+          data: snapshot,
+          pulled_at: pulledAt,
+        })
+        .select("id")
+        .single();
+      data = inserted;
+      error = insertError;
+    }
+  }
+
+  if (error || !data) {
+    const message = error?.message ?? "weekly_snapshot write returned no row";
+    await logError(ROUTE, `weekly_snapshot upsert failed: ${message}`, {
       market_slug: market.slug,
       week_of: weekOf,
     });
@@ -116,14 +151,14 @@ async function pullOne(
         context: {
           week_of: weekOf,
           market_slug: market.slug,
-          error: error.message,
+          error: message,
         },
       });
     }
     return {
       slug: market.slug,
       status: "failed",
-      error: error.message,
+      error: message,
       data_status: snapshot.status,
     };
   }
