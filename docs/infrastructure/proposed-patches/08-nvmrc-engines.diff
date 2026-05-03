@@ -1,0 +1,56 @@
+# Patch 08 -- .nvmrc + package.json engines
+
+**Target paths:**
+- `~/crm/.nvmrc` (new file)
+- `~/crm/package.json` (1-line addition)
+
+---
+
+## File 1: `~/crm/.nvmrc`
+
+```
+20
+```
+
+(or whatever Node major Vercel currently uses for this project; confirm via Vercel dashboard or `vercel inspect <deployment-url>` before landing)
+
+---
+
+## File 2: `~/crm/package.json` -- add `engines`
+
+Add at the top level:
+
+```json
+{
+  "name": "crm",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": { ... },
+  ...
+}
+```
+
+---
+
+## Verify before landing
+
+```bash
+node --version    # confirm matches .nvmrc
+pnpm --version    # confirm meets engines.pnpm
+cd ~/crm && pnpm install   # CI install should not warn about engine mismatch
+```
+
+If `pnpm install` warns, your local Node version is below the floor; bump locally before committing.
+
+---
+
+## Why
+
+- `.nvmrc` enables `nvm use` autoload in dev shells; new contributors hit the right Node major automatically.
+- `engines` in `package.json` causes `pnpm install` to warn (or fail with `--engine-strict`) on mismatched versions, catching local-vs-CI drift.
+
+Standing Rule 23 (Supabase CLI) and the rest of the toolchain are unaffected.

@@ -1,0 +1,93 @@
+# Patch 09 -- GitHub Actions CI workflow
+
+**Target path:** `~/crm/.github/workflows/ci.yml` (new file)
+**Action:** New file. No existing CI to merge with.
+
+---
+
+```yaml
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Avoid concurrent runs on the same branch / PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test (with coverage)
+        run: pnpm test --coverage
+        env:
+          # Dummy env values that match vitest.config.ts defineConfig.test.env
+          # (so tests don't need real Supabase / Resend creds in CI).
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy_anon_key
+          SUPABASE_SERVICE_ROLE_KEY: dummy_service_role_key
+          RESEND_API_KEY: dummy_resend_key
+          OWNER_USER_ID: 00000000-0000-0000-0000-000000000000
+
+      # Optional: post coverage as a PR comment.
+      # - name: Coverage report
+      #   uses: davelosert/vitest-coverage-report-action@v2
+```
+
+---
+
+## Notes
+
+- `--frozen-lockfile` ensures the lockfile is in sync with `package.json`; CI fails if a PR updates `package.json` but not `pnpm-lock.yaml`.
+- The dummy env values mirror what `vitest.config.ts` already sets in `test.env`. Confirm the list against the live config before landing.
+- This workflow does NOT deploy. Vercel's GitHub integration handles deploys separately.
+
+---
+
+## Pre-land checklist
+
+- [ ] `.nvmrc` lands first (Patch 08), so `node-version-file: '.nvmrc'` resolves.
+- [ ] Repo has `actions: write` permission for the default token (default in fresh repos; check `Settings -> Actions -> General`).
+- [ ] First PR after landing must pass green; subsequent PRs are gated on it.
+
+---
+
+## Optional: branch protection
+
+After the workflow has run green at least once on `main`, enable branch protection for `main`:
+
+- Require PRs (no direct pushes).
+- Require `verify` job to pass.
+- Require linear history.
+
+Land via `gh repo edit` or the GitHub web UI; not part of this patch.

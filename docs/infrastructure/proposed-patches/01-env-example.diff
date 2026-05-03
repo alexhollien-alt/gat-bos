@@ -1,0 +1,68 @@
+# Patch 01 -- .env.example
+
+**Target path:** `~/crm/.env.example`
+**Action:** Create new file. No existing file to edit.
+
+---
+
+```dotenv
+# GAT-BOS environment variables.
+#
+# This file documents EVERY env var the codebase reads (per `grep -r process.env src/`).
+# Copy to .env.local and fill in real values. Production values live in Vercel.
+# Keep in sync with src/lib/env.ts (when it lands).
+#
+# Source: ~/crm/docs/infrastructure/security-audit.md S1 (2026-05-01 audit)
+
+# --- Supabase (required) ---
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# --- Site (required) ---
+NEXT_PUBLIC_SITE_URL=
+
+# --- Auth secrets (required) ---
+INTERNAL_API_TOKEN=
+CRON_SECRET=
+OAUTH_ENCRYPTION_KEY=
+OAUTH_STATE_SIGNING_KEY=
+
+# --- Email: Resend (required for email send paths) ---
+RESEND_API_KEY=
+RESEND_WEBHOOK_SECRET=
+RESEND_SAFE_RECIPIENT=
+MARLENE_CC_EMAIL=
+
+# --- AI: Anthropic + OpenAI ---
+ANTHROPIC_API_KEY=
+# OPENAI_API_KEY is read by /api/transcribe/route.ts for voice-capture Whisper.
+# REQUIRED if voice capture is enabled in prod.
+OPENAI_API_KEY=
+
+# --- Google Workspace (Gmail OAuth + Calendar) ---
+GMAIL_CLIENT_ID=
+GMAIL_CLIENT_SECRET=
+GMAIL_REDIRECT_URI=
+GOOGLE_USER_EMAIL=
+
+# --- AI budget ---
+# Daily USD cap for AI spend across all features. Default 5.00 if unset.
+# See src/lib/ai/_budget.ts.
+AI_DAILY_BUDGET_USD=5.00
+
+# --- Feature flags (optional; default falsy) ---
+# Enables AI capture parsing in /api/captures (else falls back to rule-based parser).
+CAPTURES_AI_PARSE=false
+# Enables escalation notification path in src/lib/notifications/escalation.ts.
+ESCALATION_NOTIFY=false
+
+# --- Rollback flags (operational kill switches; default falsy = integration ON) ---
+# Set any of these to "true" in Vercel env to disable the integration without a redeploy.
+# Documented in docs/infrastructure/reliability-report.md > Operational runbook.
+ROLLBACK_GMAIL_SYNC=false
+ROLLBACK_DRAFT_GEN=false
+ROLLBACK_SEND=false
+ROLLBACK_CAL_WRITE=false
+ROLLBACK_CAL_SYNC=false
+```
