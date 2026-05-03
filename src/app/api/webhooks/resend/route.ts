@@ -156,13 +156,20 @@ export async function POST(req: NextRequest) {
       // event_sequence[].sent.payload.fallback_message_id. When the primary
       // lookup misses, scan the jsonb column for the Resend ID before giving
       // up. Containment query maps to `event_sequence @> ...`.
+      // Phase 5.7: pass the JSON literal as a stringified value so
+      // supabase-js sends `cs.[{...}]` instead of the Postgres array literal
+      // `cs.{...}` -- the latter trips PostgREST 22P02 ("Expected string or
+      // `}`, but found `[`") because each element fails to parse as JSON.
       if (!log?.id) {
         const { data: jsonbLog } = await supabase
           .from("messages_log")
           .select("id")
-          .contains("event_sequence", [
-            { event: "sent", payload: { fallback_message_id: providerMessageId } },
-          ])
+          .contains(
+            "event_sequence",
+            JSON.stringify([
+              { event: "sent", payload: { fallback_message_id: providerMessageId } },
+            ]),
+          )
           .is("deleted_at", null)
           .maybeSingle();
         if (jsonbLog?.id) log = jsonbLog;
