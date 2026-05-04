@@ -115,6 +115,14 @@ export async function POST(req: NextRequest) {
     const secret = process.env.RESEND_WEBHOOK_SECRET;
     if (!secret) {
       console.error("RESEND_WEBHOOK_SECRET not configured");
+      // Surface this to error_logs so a missing-secret regression after
+      // env-var rotation is diagnosable from data, not just runtime logs.
+      // Without this, the symptom looks identical to "no webhook arrived"
+      // (zero message_events rows, zero error_logs rows) -- discovered
+      // during Slice 8 Phase 5 dry-run #2 root-cause work on 2026-05-04.
+      await logError(ROUTE, "RESEND_WEBHOOK_SECRET not configured", {
+        reason: "missing_secret",
+      }, 401);
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
@@ -122,6 +130,17 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.text();
 
     if (!verifySvixSignature(rawBody, req.headers, secret)) {
+      // Same diagnostic motivation as the missing-secret branch above:
+      // signature mismatches (typically caused by Resend dashboard signing
+      // secret drift vs the Vercel env var) need to surface in error_logs
+      // so config drift is visible without devtools access to Resend.
+      // The svix-id header is captured (not the signature itself, which
+      // is sensitive) so duplicate retries from Resend can be correlated.
+      await logError(ROUTE, "invalid svix signature", {
+        reason: "invalid_signature",
+        svix_id: req.headers.get("svix-id"),
+        svix_timestamp: req.headers.get("svix-timestamp"),
+      }, 401);
       return NextResponse.json({ error: "invalid signature" }, { status: 401 });
     }
 
