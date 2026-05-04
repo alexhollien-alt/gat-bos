@@ -38,6 +38,13 @@ async function resolveSession(
     ctx = await tenantFromRequest(request);
   } catch (err) {
     if (err instanceof TenantResolutionError) {
+      // Mirrors PR #31 webhook 401-path breadcrumbs: surface silent auth
+      // rejects in error_logs so Gate 14 H2 case (a) is observable instead
+      // of "infer from absence."
+      await logError(ROUTE, "tenant resolution failed", {
+        reason: "tenant_resolution_error",
+        method: request.method,
+      }, 401);
       return {
         session: null,
         error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -46,6 +53,11 @@ async function resolveSession(
     throw err;
   }
   if (ctx.kind !== "user") {
+    await logError(ROUTE, "tenant kind not user", {
+      reason: "tenant_not_user",
+      tenant_kind: ctx.kind,
+      method: request.method,
+    }, 401);
     return {
       session: null,
       error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -136,9 +148,19 @@ export async function PATCH(request: NextRequest) {
     .is("deleted_at", null)
     .maybeSingle();
   if (readErr) {
+    await logError(ROUTE, `draft read failed: ${readErr.message}`, {
+      reason: "draft_read_error",
+      draft_id: body.id,
+      action: body.action,
+    }, 500);
     return NextResponse.json({ error: `draft read failed: ${readErr.message}` }, { status: 500 });
   }
   if (!existing) {
+    await logError(ROUTE, "draft not found or soft-deleted", {
+      reason: "draft_not_found",
+      draft_id: body.id,
+      action: body.action,
+    }, 404);
     return NextResponse.json({ error: "Draft not found" }, { status: 404 });
   }
   if (existing.status !== "pending_review") {
