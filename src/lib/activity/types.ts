@@ -38,6 +38,11 @@ export type ActivityVerb =
   | 'interaction.event'
   | 'interaction.backfilled'
   | 'ticket.notes_updated'
+  | 'ticket.created'
+  | 'ticket.field_updated'
+  | 'ticket.deleted'
+  | 'ticket.synced'
+  | 'ticket.cypher_id_assigned'
   | 'hook.failed'
   | 'event.contact_only'
   | 'project.hook_fired'
@@ -50,7 +55,11 @@ export type ActivityVerb =
   | 'campaign.draft_rejected'
   | 'campaign.draft_edited'
   | 'campaign.sent'
-  | 'campaign.send_skipped_unapproved';
+  | 'campaign.send_skipped_unapproved'
+  | 'event.invite.queued'
+  | 'event.invite.test_sent'
+  | 'event.invite.sent'
+  | 'event.invite.send_failed';
 
 export interface ActivityEvent {
   id: string;
