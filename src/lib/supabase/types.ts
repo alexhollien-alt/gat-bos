@@ -2727,6 +2727,162 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_projects: {
+        Row: {
+          brochure_type: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at: string
+          flyer_paper_type: string | null
+          id: string
+          number_of_sheets: number | null
+          paper_type: string | null
+          product: string
+          project_number: number
+          quantity: number | null
+          ticket_id: string
+          total_project_cost: number | null
+        }
+        Insert: {
+          brochure_type?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          created_at?: string
+          flyer_paper_type?: string | null
+          id?: string
+          number_of_sheets?: number | null
+          paper_type?: string | null
+          product: string
+          project_number: number
+          quantity?: number | null
+          ticket_id: string
+          total_project_cost?: number | null
+        }
+        Update: {
+          brochure_type?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          created_at?: string
+          flyer_paper_type?: string | null
+          id?: string
+          number_of_sheets?: number | null
+          paper_type?: string | null
+          product?: string
+          project_number?: number
+          quantity?: number | null
+          ticket_id?: string
+          total_project_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_projects_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          account_id: string
+          assigned_to: string | null
+          branch_association: string
+          client_company: string | null
+          client_email: string | null
+          client_first_name: string | null
+          client_last_name: string | null
+          client_mobile_phone: string | null
+          client_phone: string | null
+          contact_id: string | null
+          created_at: string
+          cypher_id: string | null
+          cypher_url: string | null
+          deleted_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          raw_brain_dump: string | null
+          ship_to_location: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          synced_at: string | null
+          ticket_title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          assigned_to?: string | null
+          branch_association: string
+          client_company?: string | null
+          client_email?: string | null
+          client_first_name?: string | null
+          client_last_name?: string | null
+          client_mobile_phone?: string | null
+          client_phone?: string | null
+          contact_id?: string | null
+          created_at?: string
+          cypher_id?: string | null
+          cypher_url?: string | null
+          deleted_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          raw_brain_dump?: string | null
+          ship_to_location: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          synced_at?: string | null
+          ticket_title: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          assigned_to?: string | null
+          branch_association?: string
+          client_company?: string | null
+          client_email?: string | null
+          client_first_name?: string | null
+          client_last_name?: string | null
+          client_mobile_phone?: string | null
+          client_phone?: string | null
+          contact_id?: string | null
+          created_at?: string
+          cypher_id?: string | null
+          cypher_url?: string | null
+          deleted_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          raw_brain_dump?: string | null
+          ship_to_location?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          synced_at?: string | null
+          ticket_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_snapshot: {
         Row: {
           created_at: string
@@ -3139,6 +3295,16 @@ export type Database = {
         | "other"
       template_kind: "transactional" | "campaign" | "newsletter"
       template_send_mode: "resend" | "gmail" | "both"
+      ticket_category: "General Inquiry" | "Product Request"
+      ticket_priority: "Low" | "Normal" | "High" | "Urgent"
+      ticket_status:
+        | "draft"
+        | "submitted"
+        | "awaiting_reply"
+        | "in_progress"
+        | "done"
+        | "blocked"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3371,6 +3537,17 @@ export const Constants = {
       ],
       template_kind: ["transactional", "campaign", "newsletter"],
       template_send_mode: ["resend", "gmail", "both"],
+      ticket_category: ["General Inquiry", "Product Request"],
+      ticket_priority: ["Low", "Normal", "High", "Urgent"],
+      ticket_status: [
+        "draft",
+        "submitted",
+        "awaiting_reply",
+        "in_progress",
+        "done",
+        "blocked",
+        "cancelled",
+      ],
     },
   },
 } as const
