@@ -159,8 +159,8 @@ export default function ContactDetailPage() {
 
   const fetchMaterialRequests = useCallback(async () => {
     const { data } = await supabase
-      .from("tickets")
-      .select("*, ticket_items(*)")
+      .from("material_requests")
+      .select("*, material_request_items(*)")
       .eq("contact_id", contactId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -168,7 +168,7 @@ export default function ContactDetailPage() {
       setMaterialRequests(
         data.map((r: Record<string, unknown>) => ({
           ...r,
-          items: r.ticket_items,
+          items: r.material_request_items,
         })) as MaterialRequest[]
       );
     }

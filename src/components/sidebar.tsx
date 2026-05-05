@@ -10,6 +10,7 @@ import {
   CheckSquare,
   Megaphone,
   Printer,
+  Ticket,
   TrendingUp,
   LogOut,
   Search,
@@ -32,7 +33,8 @@ const navItems = [
   { href: "/opportunities", label: "Pipeline", icon: TrendingUp },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/tickets", label: "Tickets", icon: Printer },
+  { href: "/material-requests", label: "Material Requests", icon: Printer },
+  { href: "/tickets", label: "Tickets", icon: Ticket },
 ];
 
 export function Sidebar() {

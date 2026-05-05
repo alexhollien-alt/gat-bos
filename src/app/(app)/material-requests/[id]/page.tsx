@@ -49,8 +49,8 @@ export default function TicketDetailPage() {
   const fetchTicket = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("tickets")
-      .select("*, contacts(id, first_name, last_name, company, email, phone), ticket_items(*)")
+      .from("material_requests")
+      .select("*, contacts(id, first_name, last_name, company, email, phone), material_request_items(*)")
       .eq("id", ticketId)
       .single();
 
@@ -96,8 +96,8 @@ export default function TicketDetailPage() {
     return (
       <div className="text-center py-20">
         <p className="text-sm text-muted-foreground">Ticket not found.</p>
-        <Link href="/tickets" className="text-sm text-blue-600 hover:underline mt-2 inline-block">
-          Back to tickets
+        <Link href="/material-requests" className="text-sm text-blue-600 hover:underline mt-2 inline-block">
+          Back to material requests
         </Link>
       </div>
     );
@@ -114,11 +114,11 @@ export default function TicketDetailPage() {
     <div>
       {/* Back nav */}
       <button
-        onClick={() => router.push("/tickets")}
+        onClick={() => router.push("/material-requests")}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to tickets
+        Back to material requests
       </button>
 
       <SectionShell maxWidth="full" padY="none" className="px-0 sm:px-0 mx-0">

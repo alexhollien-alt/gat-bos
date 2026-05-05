@@ -261,7 +261,7 @@ export async function processIntake(
 
   // ── Insert ticket ──
   const { data: req, error: reqError } = await client
-    .from("tickets")
+    .from("material_requests")
     .insert({
       contact_id: contactId,
       title,
@@ -295,7 +295,7 @@ export async function processIntake(
     description: null,
   }));
 
-  const { error: itemsError } = await client.from("ticket_items").insert(items);
+  const { error: itemsError } = await client.from("material_request_items").insert(items);
   if (itemsError) {
     // Log and continue -- matches prior route behavior. The request row
     // exists; missing items show up in inbox triage.

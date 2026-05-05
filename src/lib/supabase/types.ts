@@ -1331,7 +1331,7 @@ export type Database = {
           error_message: string | null
           id: string
           resolved: boolean
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           context?: Json
@@ -1341,7 +1341,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           resolved?: boolean
-          user_id?: string
+          user_id?: string | null
         }
         Update: {
           context?: Json
@@ -1351,9 +1351,90 @@ export type Database = {
           error_message?: string | null
           id?: string
           resolved?: boolean
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
+      }
+      event_invites: {
+        Row: {
+          account_id: string
+          bounce_reason: string | null
+          contact_id: string
+          created_at: string
+          deleted_at: string | null
+          event_id: string
+          id: string
+          message_log_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          bounce_reason?: string | null
+          contact_id: string
+          created_at?: string
+          deleted_at?: string | null
+          event_id: string
+          id?: string
+          message_log_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          bounce_reason?: string | null
+          contact_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          event_id?: string
+          id?: string
+          message_log_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invites_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_message_log_id_fkey"
+            columns: ["message_log_id"]
+            isOneToOne: false
+            referencedRelation: "messages_log"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_templates: {
         Row: {
@@ -1434,6 +1515,8 @@ export type Database = {
         Row: {
           account_id: string
           attendees: Json
+          cohost_names: string[] | null
+          cohost_orgs: string[] | null
           contact_id: string | null
           created_at: string
           deleted_at: string | null
@@ -1441,11 +1524,14 @@ export type Database = {
           end_at: string
           event_template_id: string | null
           gcal_event_id: string | null
+          hero_image_url: string | null
           id: string
           location: string | null
           location_override: string | null
           occurrence_status: Database["public"]["Enums"]["event_occurrence_status"]
           project_id: string | null
+          slots_remaining: number | null
+          slots_total: number | null
           source: Database["public"]["Enums"]["event_source"]
           start_at: string
           synced_at: string | null
@@ -1456,6 +1542,8 @@ export type Database = {
         Insert: {
           account_id: string
           attendees?: Json
+          cohost_names?: string[] | null
+          cohost_orgs?: string[] | null
           contact_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1463,11 +1551,14 @@ export type Database = {
           end_at: string
           event_template_id?: string | null
           gcal_event_id?: string | null
+          hero_image_url?: string | null
           id?: string
           location?: string | null
           location_override?: string | null
           occurrence_status?: Database["public"]["Enums"]["event_occurrence_status"]
           project_id?: string | null
+          slots_remaining?: number | null
+          slots_total?: number | null
           source: Database["public"]["Enums"]["event_source"]
           start_at: string
           synced_at?: string | null
@@ -1478,6 +1569,8 @@ export type Database = {
         Update: {
           account_id?: string
           attendees?: Json
+          cohost_names?: string[] | null
+          cohost_orgs?: string[] | null
           contact_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1485,11 +1578,14 @@ export type Database = {
           end_at?: string
           event_template_id?: string | null
           gcal_event_id?: string | null
+          hero_image_url?: string | null
           id?: string
           location?: string | null
           location_override?: string | null
           occurrence_status?: Database["public"]["Enums"]["event_occurrence_status"]
           project_id?: string | null
+          slots_remaining?: number | null
+          slots_total?: number | null
           source?: Database["public"]["Enums"]["event_source"]
           start_at?: string
           synced_at?: string | null
@@ -1705,6 +1801,122 @@ export type Database = {
           },
           {
             foreignKeyName: "listings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_request_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          design_url: string | null
+          id: string
+          product_type: Database["public"]["Enums"]["product_type"]
+          quantity: number
+          request_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          design_url?: string | null
+          id?: string
+          product_type?: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          request_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          design_url?: string | null
+          id?: string
+          product_type?: Database["public"]["Enums"]["product_type"]
+          quantity?: number
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_request_items_material_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "material_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_requests: {
+        Row: {
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          deleted_at: string | null
+          id: string
+          listing_data: Json | null
+          notes: string | null
+          priority: Database["public"]["Enums"]["material_request_priority"]
+          request_type: Database["public"]["Enums"]["material_request_type"]
+          source: string
+          status: Database["public"]["Enums"]["material_request_status"]
+          submitted_at: string | null
+          submitter_email: string | null
+          submitter_name: string | null
+          submitter_phone: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          listing_data?: Json | null
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["material_request_priority"]
+          request_type?: Database["public"]["Enums"]["material_request_type"]
+          source?: string
+          status?: Database["public"]["Enums"]["material_request_status"]
+          submitted_at?: string | null
+          submitter_email?: string | null
+          submitter_name?: string | null
+          submitter_phone?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: string
+          listing_data?: Json | null
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["material_request_priority"]
+          request_type?: Database["public"]["Enums"]["material_request_type"]
+          source?: string
+          status?: Database["public"]["Enums"]["material_request_status"]
+          submitted_at?: string | null
+          submitter_email?: string | null
+          submitter_name?: string | null
+          submitter_phone?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_requests_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_requests_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts_spec_view"
@@ -2514,122 +2726,6 @@ export type Database = {
           version?: number
         }
         Relationships: []
-      }
-      ticket_items: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          design_url: string | null
-          id: string
-          product_type: Database["public"]["Enums"]["product_type"]
-          quantity: number
-          request_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          design_url?: string | null
-          id?: string
-          product_type?: Database["public"]["Enums"]["product_type"]
-          quantity?: number
-          request_id: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          design_url?: string | null
-          id?: string
-          product_type?: Database["public"]["Enums"]["product_type"]
-          quantity?: number
-          request_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_items_ticket_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tickets: {
-        Row: {
-          completed_at: string | null
-          contact_id: string | null
-          created_at: string | null
-          deleted_at: string | null
-          id: string
-          listing_data: Json | null
-          notes: string | null
-          priority: Database["public"]["Enums"]["material_request_priority"]
-          request_type: Database["public"]["Enums"]["material_request_type"]
-          source: string
-          status: Database["public"]["Enums"]["material_request_status"]
-          submitted_at: string | null
-          submitter_email: string | null
-          submitter_name: string | null
-          submitter_phone: string | null
-          title: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          contact_id?: string | null
-          created_at?: string | null
-          deleted_at?: string | null
-          id?: string
-          listing_data?: Json | null
-          notes?: string | null
-          priority?: Database["public"]["Enums"]["material_request_priority"]
-          request_type?: Database["public"]["Enums"]["material_request_type"]
-          source?: string
-          status?: Database["public"]["Enums"]["material_request_status"]
-          submitted_at?: string | null
-          submitter_email?: string | null
-          submitter_name?: string | null
-          submitter_phone?: string | null
-          title: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          contact_id?: string | null
-          created_at?: string | null
-          deleted_at?: string | null
-          id?: string
-          listing_data?: Json | null
-          notes?: string | null
-          priority?: Database["public"]["Enums"]["material_request_priority"]
-          request_type?: Database["public"]["Enums"]["material_request_type"]
-          source?: string
-          status?: Database["public"]["Enums"]["material_request_status"]
-          submitted_at?: string | null
-          submitter_email?: string | null
-          submitter_name?: string | null
-          submitter_phone?: string | null
-          title?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "material_requests_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "material_requests_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts_spec_view"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       weekly_snapshot: {
         Row: {

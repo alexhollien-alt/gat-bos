@@ -319,7 +319,7 @@ export default function TicketsPage() {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("tickets")
+      .from("material_requests")
       .select(
         "*, contacts(id, first_name, last_name, company, tier, phone, email, brand_colors, palette), items:ticket_items(*)"
       )
@@ -334,7 +334,7 @@ export default function TicketsPage() {
 
   const fetchIntakeCount = useCallback(async () => {
     const { count } = await supabase
-      .from("tickets")
+      .from("material_requests")
       .select("*", { count: "exact", head: true })
       .eq("source", "intake")
       .eq("status", "submitted")
@@ -367,7 +367,7 @@ export default function TicketsPage() {
     );
 
     await supabase
-      .from("tickets")
+      .from("material_requests")
       .update({
         status: newStatus,
         ...(newStatus === "complete"
