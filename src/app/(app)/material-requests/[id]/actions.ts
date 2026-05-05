@@ -1,6 +1,6 @@
 'use server';
 
-// src/app/(app)/tickets/[id]/actions.ts
+// src/app/(app)/material-requests/[id]/actions.ts
 // Server Action for ticket status mutation + activity ledger write.
 
 import { adminClient } from '@/lib/supabase/admin';
@@ -12,7 +12,7 @@ export async function updateTicketNotes(
   notes: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const { data: ticketRow } = await adminClient
-    .from('tickets')
+    .from('material_requests')
     .select('user_id, contact_id')
     .eq('id', ticketId)
     .maybeSingle();
@@ -22,7 +22,7 @@ export async function updateTicketNotes(
   }
 
   const { error } = await adminClient
-    .from('tickets')
+    .from('material_requests')
     .update({ notes, updated_at: new Date().toISOString() })
     .eq('id', ticketId);
 
@@ -34,7 +34,7 @@ export async function updateTicketNotes(
     userId: ticketRow.user_id,
     actorId: ticketRow.user_id,
     verb: 'ticket.notes_updated',
-    object: { table: 'tickets', id: ticketId },
+    object: { table: 'material_requests', id: ticketId },
     context: {
       ...(ticketRow.contact_id ? { contact_id: ticketRow.contact_id } : {}),
     },
@@ -59,7 +59,7 @@ export async function updateTicketStatus(
   // the per-contact timeline. getContactTimeline filters by object_id OR
   // context->>'contact_id'.
   const { data: ticketRow } = await adminClient
-    .from('tickets')
+    .from('material_requests')
     .select('user_id, contact_id')
     .eq('id', ticketId)
     .maybeSingle();
@@ -69,7 +69,7 @@ export async function updateTicketStatus(
   }
 
   const { error } = await adminClient
-    .from('tickets')
+    .from('material_requests')
     .update(updates)
     .eq('id', ticketId);
 
@@ -81,7 +81,7 @@ export async function updateTicketStatus(
     userId: ticketRow.user_id,
     actorId: ticketRow.user_id,
     verb: 'ticket.status_changed',
-    object: { table: 'tickets', id: ticketId },
+    object: { table: 'material_requests', id: ticketId },
     context: {
       from_status: fromStatus,
       to_status: toStatus,

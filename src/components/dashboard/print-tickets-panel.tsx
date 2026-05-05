@@ -77,7 +77,7 @@ export function PrintTicketsPanel() {
   useEffect(() => {
     async function fetchTickets() {
       const { data, error } = await supabase
-        .from("tickets")
+        .from("material_requests")
         .select("id, title, status, created_at, contacts(first_name, last_name, tier)")
         .is("deleted_at", null)
         .neq("status", "complete")
@@ -165,10 +165,10 @@ export function PrintTicketsPanel() {
         {/* View all link */}
         <div className="mt-3 pt-3 border-t border-border">
           <Link
-            href="/tickets"
+            href="/material-requests"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            View all tickets &rarr;
+            View all material requests &rarr;
           </Link>
         </div>
       </CardContent>

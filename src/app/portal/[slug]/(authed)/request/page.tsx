@@ -90,7 +90,7 @@ export default async function PortalRequestPage({
       `${sessionAgent.first_name} ${sessionAgent.last_name}`.trim();
 
     const { data: ticket, error: ticketError } = await adminClient
-      .from("tickets")
+      .from("material_requests")
       .insert({
         title: parsed.data.title,
         notes: parsed.data.notes,
@@ -117,7 +117,7 @@ export default async function PortalRequestPage({
       };
     }
 
-    const { error: itemError } = await adminClient.from("ticket_items").insert({
+    const { error: itemError } = await adminClient.from("material_request_items").insert({
       request_id: ticket.id,
       product_type: parsed.data.product_type,
       quantity: 1,
@@ -126,7 +126,7 @@ export default async function PortalRequestPage({
 
     if (itemError) {
       console.error(
-        "portal request: ticket_items insert failed (ticket already saved)",
+        "portal request: material_request_items insert failed (ticket already saved)",
         itemError,
       );
     }
