@@ -1,0 +1,55 @@
+name: Cypher Pull Worker
+
+on:
+  schedule:
+    # Hourly sync. Change to '*/15 * * * *' for 15-min cadence.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode: sync (default, hourly JSON API) or backfill (one-time HTML scrape)'
+        required: false
+        default: 'sync'
+        type: choice
+        options:
+          - sync
+          - backfill
+
+jobs:
+  pull:
+    name: Sync Cypher tickets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: workers/cypher-pull/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: workers/cypher-pull
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: workers/cypher-pull
+
+      - name: Build TypeScript
+        run: npm run build
+        working-directory: workers/cypher-pull
+
+      - name: Run worker
+        run: node dist/index.js
+        working-directory: workers/cypher-pull
+        env:
+          CYPHER_USERNAME: ${{ secrets.CYPHER_USERNAME }}
+          CYPHER_PASSWORD: ${{ secrets.CYPHER_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WORKER_MODE: ${{ github.event.inputs.mode || 'sync' }}
