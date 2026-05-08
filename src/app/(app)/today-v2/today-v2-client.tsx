@@ -1,17 +1,49 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+type DndTransform = {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+};
+function transformToCss(t: DndTransform | null): string | undefined {
+  if (!t) return undefined;
+  return `translate3d(${t.x}px, ${t.y}px, 0) scaleX(${t.scaleX}) scaleY(${t.scaleY})`;
+}
 import styles from "./styles.module.css";
 import {
+  useAddRunwayItem,
   useCallsLane,
   useListings,
   useMoments,
+  useReorderRunwayItems,
   useResetRunway,
   useRunway,
+  useSoftDeleteRunwayItem,
   useStatusBarStats,
   useToggleListingChecklist,
   useToggleRunwayItem,
+  useUpdateRunwayItem,
+  type RunwayDraft,
 } from "./queries";
 import type {
   Call,
@@ -48,6 +80,31 @@ function PenIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function GripIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="9" cy="6" r="1.4" />
+      <circle cx="9" cy="12" r="1.4" />
+      <circle cx="9" cy="18" r="1.4" />
+      <circle cx="15" cy="6" r="1.4" />
+      <circle cx="15" cy="12" r="1.4" />
+      <circle cx="15" cy="18" r="1.4" />
     </svg>
   );
 }
@@ -218,27 +275,214 @@ function Priority({ level, tone }: { level: number; tone: RunwayItem["tone"] }) 
   );
 }
 
+type RunwayKind = RunwayItem["kind"];
+const RUNWAY_KINDS: RunwayKind[] = ["system", "tier-a", "draft", "touchpoint"];
+
+function RunwayEditor({
+  item,
+  onSave,
+  onCancel,
+}: {
+  item: RunwayItem;
+  onSave: (patch: { title: string; context: RunwayDraft }) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(item.what);
+  const [who, setWho] = useState(item.who ?? "");
+  const [kind, setKind] = useState<RunwayKind>(item.kind);
+  const [priority, setPriority] = useState<0 | 1 | 2 | 3>(item.priority);
+  const [tone, setTone] = useState<"gold" | "crimson">(item.tone);
+  const [action, setAction] = useState(item.action ?? "Open");
+  const [href, setHref] = useState(item.href ?? "");
+
+  const submit = () => {
+    if (!title.trim()) return;
+    onSave({
+      title: title.trim(),
+      context: {
+        title: title.trim(),
+        who: who.trim() || undefined,
+        kind,
+        priority,
+        tone,
+        action: action.trim() || undefined,
+        href: href.trim() || undefined,
+      },
+    });
+  };
+
+  return (
+    <div className={styles.runwayEditor} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.runwayEditorRow}>
+        <input
+          className={styles.runwayEditInput}
+          value={title}
+          autoFocus
+          placeholder="Title"
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+            if (e.key === "Escape") onCancel();
+          }}
+        />
+        <input
+          className={styles.runwayEditInput}
+          value={who}
+          placeholder="Who"
+          onChange={(e) => setWho(e.target.value)}
+        />
+      </div>
+      <div className={styles.runwayEditorRow}>
+        <span className={styles.runwayEditLbl}>Priority</span>
+        <div className={styles.priorityPills}>
+          {[0, 1, 2, 3].map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.priorityPill} ${priority === p ? styles.priorityPillOn : ""}`}
+              onClick={() => setPriority(p as 0 | 1 | 2 | 3)}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        <span className={styles.runwayEditLbl}>Tone</span>
+        <div className={styles.priorityPills}>
+          <button
+            type="button"
+            className={`${styles.priorityPill} ${tone === "gold" ? styles.priorityPillOn : ""}`}
+            onClick={() => setTone("gold")}
+          >
+            Gold
+          </button>
+          <button
+            type="button"
+            className={`${styles.priorityPill} ${tone === "crimson" ? styles.priorityPillOn : ""}`}
+            onClick={() => setTone("crimson")}
+          >
+            Crimson
+          </button>
+        </div>
+        <span className={styles.runwayEditLbl}>Kind</span>
+        <select
+          className={styles.runwayEditSelect}
+          value={kind}
+          onChange={(e) => setKind(e.target.value as RunwayKind)}
+        >
+          {RUNWAY_KINDS.map((k) => (
+            <option key={k} value={k}>{k}</option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.runwayEditorRow}>
+        <input
+          className={styles.runwayEditInput}
+          value={action}
+          placeholder="Action label (e.g. Open)"
+          onChange={(e) => setAction(e.target.value)}
+        />
+        <input
+          className={styles.runwayEditInput}
+          value={href}
+          placeholder="Link href (optional)"
+          onChange={(e) => setHref(e.target.value)}
+        />
+      </div>
+      <div className={styles.runwayEditorActions}>
+        <button type="button" className={styles.btnMini} onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGold}`}
+          onClick={submit}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RunwayRow({
   idx,
   item,
   done,
   onToggle,
+  onEdit,
+  onDelete,
+  isEditing,
+  onSaveEdit,
+  onCancelEdit,
 }: {
   idx: number;
   item: RunwayItem;
   done: boolean;
   onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  isEditing: boolean;
+  onSaveEdit: (patch: { title: string; context: RunwayDraft }) => void;
+  onCancelEdit: () => void;
 }) {
+  const sortable = useSortable({ id: item.id ?? `tmp-${idx}` });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = sortable;
+
+  const style = {
+    transform: transformToCss(transform as DndTransform | null),
+    transition,
+    opacity: isDragging ? 0.6 : undefined,
+  } as const;
+
   const rowClass = [
     styles.runwayRow,
     done ? styles.runwayRowDone : "",
     item.tone === "crimson" ? styles.runwayRowHot : "",
+    isEditing ? styles.runwayRowEditing : "",
   ]
     .filter(Boolean)
     .join(" ");
   const btnClass = `${styles.btn} ${item.tone === "crimson" ? styles.btnCrimson : styles.btnGold}`;
+
+  if (isEditing) {
+    return (
+      <div ref={setNodeRef} style={style} className={rowClass}>
+        <RunwayEditor
+          item={item}
+          onSave={onSaveEdit}
+          onCancel={onCancelEdit}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className={rowClass} onClick={onToggle} role="button" tabIndex={0}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={rowClass}
+      onClick={onToggle}
+      role="button"
+      tabIndex={0}
+    >
+      <button
+        type="button"
+        className={styles.runwayDragHandle}
+        title="Drag to reorder"
+        aria-label="Drag to reorder"
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripIcon />
+      </button>
       <span className={styles.runwayNum}>{String(idx + 1).padStart(2, "0")}</span>
       <span className={styles.check} />
       <div className={styles.who}>
@@ -267,6 +511,183 @@ function RunwayRow({
           {item.action}&nbsp;&rarr;
         </button>
       )}
+      <div className={styles.runwayRowActions}>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          title="Edit"
+          aria-label="Edit item"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+        >
+          <PenIcon />
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
+          title="Delete"
+          aria-label="Delete item"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <TrashIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AddRunwayRow({ onAdd }: { onAdd: (draft: RunwayDraft) => void }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [who, setWho] = useState("");
+  const [kind, setKind] = useState<RunwayKind>("tier-a");
+  const [priority, setPriority] = useState<0 | 1 | 2 | 3>(1);
+  const [tone, setTone] = useState<"gold" | "crimson">("gold");
+  const [action, setAction] = useState("Open");
+  const [href, setHref] = useState("");
+
+  const reset = () => {
+    setTitle("");
+    setWho("");
+    setKind("tier-a");
+    setPriority(1);
+    setTone("gold");
+    setAction("Open");
+    setHref("");
+  };
+
+  const submit = () => {
+    if (!title.trim()) return;
+    onAdd({
+      title: title.trim(),
+      who: who.trim() || undefined,
+      kind,
+      priority,
+      tone,
+      action: action.trim() || undefined,
+      href: href.trim() || undefined,
+    });
+    reset();
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className={styles.addRunwayRow}
+        onClick={() => setOpen(true)}
+      >
+        + Add item
+      </button>
+    );
+  }
+
+  return (
+    <div className={styles.runwayEditor}>
+      <div className={styles.runwayEditorRow}>
+        <input
+          className={styles.runwayEditInput}
+          value={title}
+          autoFocus
+          placeholder="Title"
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+            if (e.key === "Escape") {
+              reset();
+              setOpen(false);
+            }
+          }}
+        />
+        <input
+          className={styles.runwayEditInput}
+          value={who}
+          placeholder="Who"
+          onChange={(e) => setWho(e.target.value)}
+        />
+      </div>
+      <div className={styles.runwayEditorRow}>
+        <span className={styles.runwayEditLbl}>Priority</span>
+        <div className={styles.priorityPills}>
+          {[0, 1, 2, 3].map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.priorityPill} ${priority === p ? styles.priorityPillOn : ""}`}
+              onClick={() => setPriority(p as 0 | 1 | 2 | 3)}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        <span className={styles.runwayEditLbl}>Tone</span>
+        <div className={styles.priorityPills}>
+          <button
+            type="button"
+            className={`${styles.priorityPill} ${tone === "gold" ? styles.priorityPillOn : ""}`}
+            onClick={() => setTone("gold")}
+          >
+            Gold
+          </button>
+          <button
+            type="button"
+            className={`${styles.priorityPill} ${tone === "crimson" ? styles.priorityPillOn : ""}`}
+            onClick={() => setTone("crimson")}
+          >
+            Crimson
+          </button>
+        </div>
+        <span className={styles.runwayEditLbl}>Kind</span>
+        <select
+          className={styles.runwayEditSelect}
+          value={kind}
+          onChange={(e) => setKind(e.target.value as RunwayKind)}
+        >
+          {RUNWAY_KINDS.map((k) => (
+            <option key={k} value={k}>{k}</option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.runwayEditorRow}>
+        <input
+          className={styles.runwayEditInput}
+          value={action}
+          placeholder="Action label (e.g. Open)"
+          onChange={(e) => setAction(e.target.value)}
+        />
+        <input
+          className={styles.runwayEditInput}
+          value={href}
+          placeholder="Link href (optional)"
+          onChange={(e) => setHref(e.target.value)}
+        />
+      </div>
+      <div className={styles.runwayEditorActions}>
+        <button
+          type="button"
+          className={styles.btnMini}
+          onClick={() => {
+            reset();
+            setOpen(false);
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnGold}`}
+          onClick={submit}
+          disabled={!title.trim()}
+        >
+          Add
+        </button>
+      </div>
     </div>
   );
 }
@@ -275,14 +696,42 @@ function Runway({
   items,
   onToggle,
   onReset,
+  onAdd,
+  onEdit,
+  onDelete,
+  onReorder,
   loading,
 }: {
   items: RunwayItem[];
   onToggle: (item: RunwayItem) => void;
   onReset: () => void;
+  onAdd: (draft: RunwayDraft) => void;
+  onEdit: (id: string, patch: { title: string; context: RunwayDraft }) => void;
+  onDelete: (id: string) => void;
+  onReorder: (orderedIds: string[]) => void;
   loading: boolean;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const ids = items.map((it) => it.id ?? "").filter(Boolean);
   const clearedCount = items.filter((i) => !!i.completed_at).length;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    onReorder(next);
+  };
+
   return (
     <div>
       <div className={styles.colHead} style={{ marginBottom: 12 }}>
@@ -302,16 +751,36 @@ function Runway({
         {items.length === 0 && !loading ? (
           <div className={styles.colMeta}>Inbox empty. Nothing on the runway.</div>
         ) : (
-          items.map((item, i) => (
-            <RunwayRow
-              key={item.id ?? `${item.kind}-${i}-${item.who}`}
-              idx={i}
-              item={item}
-              done={!!item.completed_at}
-              onToggle={() => onToggle(item)}
-            />
-          ))
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={ids}
+              strategy={verticalListSortingStrategy}
+            >
+              {items.map((item, i) => (
+                <RunwayRow
+                  key={item.id ?? `${item.kind}-${i}-${item.who}`}
+                  idx={i}
+                  item={item}
+                  done={!!item.completed_at}
+                  onToggle={() => onToggle(item)}
+                  onEdit={() => item.id && setEditingId(item.id)}
+                  onDelete={() => item.id && onDelete(item.id)}
+                  isEditing={!!item.id && editingId === item.id}
+                  onSaveEdit={(patch) => {
+                    if (item.id) onEdit(item.id, patch);
+                    setEditingId(null);
+                  }}
+                  onCancelEdit={() => setEditingId(null)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
+        <AddRunwayRow onAdd={onAdd} />
         <div className={styles.runwayFoot}>
           <span>Top-down. Light to heavy. Work in order.</span>
           <button type="button" className={styles.btnMini} onClick={onReset}>
@@ -464,6 +933,10 @@ export function TodayV2Client() {
   const moments = useMoments();
   const toggleRunway = useToggleRunwayItem();
   const resetRunway = useResetRunway();
+  const addRunway = useAddRunwayItem();
+  const updateRunway = useUpdateRunwayItem();
+  const deleteRunway = useSoftDeleteRunwayItem();
+  const reorderRunway = useReorderRunwayItems();
   const toggleChecklist = useToggleListingChecklist();
 
   const onToggleRunway = (item: RunwayItem) => {
@@ -489,6 +962,25 @@ export function TodayV2Client() {
             items={runway.data ?? []}
             onToggle={onToggleRunway}
             onReset={() => resetRunway.mutate()}
+            onAdd={(draft) => addRunway.mutate(draft)}
+            onEdit={(id, patch) =>
+              updateRunway.mutate({
+                id,
+                patch: {
+                  title: patch.title,
+                  context: {
+                    who: patch.context.who,
+                    kind: patch.context.kind,
+                    priority: patch.context.priority,
+                    tone: patch.context.tone,
+                    action: patch.context.action,
+                    href: patch.context.href,
+                  },
+                },
+              })
+            }
+            onDelete={(id) => deleteRunway.mutate({ id })}
+            onReorder={(orderedIds) => reorderRunway.mutate({ orderedIds })}
             loading={runway.isLoading}
           />
           <ListingActivity
