@@ -1,4 +1,5 @@
-const FALLBACK_ACCENT = "#b31a35";
+// Was #b31a35 (GAT Red). Now Signal per ~/.claude/context/colors.md.
+const FALLBACK_ACCENT = "#F7D794";
 
 const PALETTE_ACCENT: Record<string, string> = {
   "classic-estate": "#c6b79b",

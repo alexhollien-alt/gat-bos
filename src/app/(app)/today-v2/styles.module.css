@@ -441,6 +441,15 @@
   color: var(--ink-0);
   border-color: var(--gold);
 }
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.iconBtn:disabled:hover {
+  background: transparent;
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
 .iconBtn svg {
   width: 13px;
   height: 13px;

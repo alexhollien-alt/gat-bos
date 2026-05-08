@@ -121,11 +121,12 @@ export function buildSignature(
 const FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap";
 
-const GAT_RED = "#b31a35";
-const GAT_BLUE = "#003087";
-const BLACK = "#0a0a0a";
+// Legacy names retained; values mapped to system palette per ~/.claude/context/colors.md.
+const GAT_RED = "#F7D794";    // → Signal
+const GAT_BLUE = "#192A56";   // → Structure
+const BLACK = "#192A56";      // → Structure
 const WHITE = "#ffffff";
-const OFFWHITE = "#f7f7f5";
+const OFFWHITE = "#FCFBFB";   // → Ground
 const RULE = "#e8e8e8";
 const MUTED = "#666666";
 

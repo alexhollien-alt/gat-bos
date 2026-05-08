@@ -12,71 +12,85 @@
 
 @layer base {
   :root {
-    --background: 240 10% 4%;
-    --foreground: 240 5% 96%;
-    --card: 240 5% 8%;
-    --card-foreground: 240 5% 96%;
-    --popover: 240 6% 11%;
-    --popover-foreground: 240 5% 96%;
-    --primary: 351 79% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 240 5% 96%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 4% 65%;
-    --accent: 240 5% 15%;
-    --accent-foreground: 240 5% 96%;
-    --destructive: 0 84% 60%;
+    /* Canonical system palette (source: ~/.claude/context/colors.md) */
+    --color-ground: #FCFBFB;
+    --color-structure: #192A56;
+    --color-signal: #F7D794;
+    --color-atmosphere: #EDA6A3;
+
+    /* shadcn semantic tokens, mapped to the system palette.
+       HSL space-separated form because consumers wrap in hsl(var(--token)). */
+    --background: 0 14% 99%;            /* Ground */
+    --foreground: 223 55% 22%;          /* Structure */
+    --card: 0 14% 99%;                  /* Ground */
+    --card-foreground: 223 55% 22%;
+    --popover: 0 14% 99%;
+    --popover-foreground: 223 55% 22%;
+    --primary: 223 55% 22%;             /* Structure (primary action) */
+    --primary-foreground: 0 14% 99%;    /* Ground on Structure */
+    --secondary: 0 14% 96%;             /* Ground darkened tint, neutral surface */
+    --secondary-foreground: 223 55% 22%;
+    --muted: 0 14% 96%;
+    --muted-foreground: 223 25% 45%;    /* Desaturated Structure for muted text */
+    --accent: 41 86% 77%;               /* Signal */
+    --accent-foreground: 223 55% 22%;   /* Structure on Signal */
+    --destructive: 0 84% 60%;           /* SEMANTIC, outside system palette */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 351 79% 55%;
+    --border: 0 14% 90%;                /* Ground darkened, soft visible border */
+    --input: 0 14% 90%;
+    --ring: 41 86% 77%;                 /* Signal (focus ring = attention color) */
     --radius: 0.75rem;
-    --chart-1: 351 79% 55%;
-    --chart-2: 217 91% 60%;
-    --chart-3: 142 71% 45%;
-    --chart-4: 48 96% 53%;
-    --chart-5: 280 65% 60%;
-    --sidebar: 240 10% 4%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 351 79% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 15%;
-    --sidebar-accent-foreground: 240 5% 96%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 351 79% 55%;
 
-    /* Brand tokens (print palette, hex-canonical per brand.md) */
-    --brand-red: #b31a35;
-    --brand-blue: #003087;
-    --brand-black: #0a0a0a;
-    --off-white: #f7f7f5;
-    --rule-gray: #e8e8e8;
-    --muted-text: #666666;
-    --ghost-text: #999999;
+    /* Charts. Palette has 4 hues (2 neutrals); chart-4/5 use Structure/Ground variants. */
+    --chart-1: 41 86% 77%;              /* Signal */
+    --chart-2: 223 55% 22%;             /* Structure */
+    --chart-3: 2 67% 78%;               /* Atmosphere */
+    --chart-4: 223 30% 50%;             /* Mid-Structure */
+    --chart-5: 0 14% 80%;               /* Mid-Ground */
 
-    /* Screen variants (per brand-reference.md) */
-    --accent-red: #e63550;
-    --accent-blue: #2563eb;
-    --surface-base: #09090b;
-    --surface-raised: #131316;
-    --surface-warm: #18181b;
-    --surface-muted: #f4f4f5;
-    --border-default: #27272a;
-    --border-subtle: #e4e4e7;
-    --border-deep: #3f3f46;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    /* Sidebar (matches main shell) */
+    --sidebar: 0 14% 99%;
+    --sidebar-foreground: 223 55% 22%;
+    --sidebar-primary: 223 55% 22%;
+    --sidebar-primary-foreground: 0 14% 99%;
+    --sidebar-accent: 41 86% 77%;
+    --sidebar-accent-foreground: 223 55% 22%;
+    --sidebar-border: 0 14% 90%;
+    --sidebar-ring: 41 86% 77%;
 
-    /* Semantic status (non-chart use -- chart colors use Tailwind utils) */
+    /* Legacy brand tokens. Aliased to the system palette during transition.
+       DEPRECATED: prefer --color-* in new code. Sweep call sites in a later phase. */
+    --brand-red: var(--color-signal);       /* was #b31a35 (GAT Red) */
+    --brand-blue: var(--color-structure);   /* was #003087 (GAT Blue) */
+    --brand-black: var(--color-structure);  /* was #0a0a0a */
+    --off-white: var(--color-ground);       /* was #f7f7f5 */
+    --rule-gray: rgba(25, 42, 86, 0.12);    /* Structure at 12% opacity */
+    --muted-text: rgba(25, 42, 86, 0.65);
+    --ghost-text: rgba(25, 42, 86, 0.45);
+
+    /* Legacy screen-variant tokens. Same alias treatment. */
+    --accent-red: var(--color-signal);      /* was #e63550 */
+    --accent-blue: var(--color-structure);  /* was #2563eb */
+    --surface-base: var(--color-ground);    /* was #09090b (dark) */
+    --surface-raised: var(--color-ground);  /* was #131316 (dark) */
+    --surface-warm: var(--color-ground);    /* was #18181b (dark) */
+    --surface-muted: rgba(25, 42, 86, 0.04);/* was #f4f4f5 */
+    --border-default: rgba(25, 42, 86, 0.12);
+    --border-subtle: rgba(25, 42, 86, 0.08);
+    --border-deep: rgba(25, 42, 86, 0.20);
+    --text-secondary: rgba(25, 42, 86, 0.70);
+    --text-muted: rgba(25, 42, 86, 0.55);
+
+    /* Semantic status (outside system palette; colors.md does not define
+       success/warning/danger/info hues). Kept as-is, flagged for review. */
     --status-success: #22c55e;
     --status-warning: #eab308;
     --status-danger: #ef4444;
     --status-info: #3b82f6;
 
-    /* Accent extensions (hover states, category colors) */
-    --accent-red-hover: #f04060;
-    --accent-orange: #f97316;
+    /* Accent extensions */
+    --accent-red-hover: rgba(247, 215, 148, 0.85);  /* Signal hover */
+    --accent-orange: var(--color-atmosphere);        /* was #f97316 */
   }
 
   * {

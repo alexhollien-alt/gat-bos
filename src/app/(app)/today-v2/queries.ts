@@ -10,7 +10,9 @@
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { logCallTouch, queueCall } from "./actions";
 import type {
+  Call,
   Calls,
   CallTier,
   Listing,
@@ -159,6 +161,7 @@ export function useCallsLane() {
         .sort((a, b) => b.effective_drift - a.effective_drift);
 
       const toCall = (s: ScoredContact, t: CallTier) => ({
+        contact_id: s.contact_id,
         name: s.full_name || "Unnamed",
         last: lastLabel(s),
         suggest: suggestForCall(s, t),
@@ -173,6 +176,77 @@ export function useCallsLane() {
         },
         raw: scored,
       };
+    },
+  });
+}
+
+type CallsLaneCache = { calls: Calls; raw: ScoredContact[] };
+
+function removeContactFromCallsCache(
+  prev: CallsLaneCache | undefined,
+  contact_id: string,
+): CallsLaneCache | undefined {
+  if (!prev) return prev;
+  const drop = (arr: Call[]) => arr.filter((c) => c.contact_id !== contact_id);
+  return {
+    calls: {
+      overdue: drop(prev.calls.overdue),
+      due: drop(prev.calls.due),
+      up: drop(prev.calls.up),
+    },
+    raw: prev.raw.filter((s) => s.contact_id !== contact_id),
+  };
+}
+
+export function useLogCallTouch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ contact_id }: { contact_id: string }) => {
+      const res = await logCallTouch({ contact_id });
+      if (!res.ok) throw new Error(res.error);
+    },
+    onMutate: async ({ contact_id }) => {
+      await queryClient.cancelQueries({ queryKey: ["calls-lane"] });
+      const prev = queryClient.getQueryData<CallsLaneCache>(["calls-lane"]);
+      queryClient.setQueryData<CallsLaneCache>(
+        ["calls-lane"],
+        removeContactFromCallsCache(prev, contact_id),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["calls-lane"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["calls-lane"] });
+      queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["moments"] });
+    },
+  });
+}
+
+export function useQueueCall() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ contact_id }: { contact_id: string }) => {
+      const res = await queueCall({ contact_id });
+      if (!res.ok) throw new Error(res.error);
+    },
+    onMutate: async ({ contact_id }) => {
+      await queryClient.cancelQueries({ queryKey: ["calls-lane"] });
+      const prev = queryClient.getQueryData<CallsLaneCache>(["calls-lane"]);
+      queryClient.setQueryData<CallsLaneCache>(
+        ["calls-lane"],
+        removeContactFromCallsCache(prev, contact_id),
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["calls-lane"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["calls-lane"] });
+      queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
     },
   });
 }
