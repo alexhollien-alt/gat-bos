@@ -1703,6 +1703,62 @@ export type Database = {
           },
         ]
       }
+      listing_activity_checklist: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          deleted_at: string | null
+          email_done: boolean
+          email_done_at: string | null
+          flyer_done: boolean
+          flyer_done_at: string | null
+          listing_id: string
+          note_done: boolean
+          note_done_at: string | null
+          social_done: boolean
+          social_done_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email_done?: boolean
+          email_done_at?: string | null
+          flyer_done?: boolean
+          flyer_done_at?: string | null
+          listing_id: string
+          note_done?: boolean
+          note_done_at?: string | null
+          social_done?: boolean
+          social_done_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email_done?: boolean
+          email_done_at?: string | null
+          flyer_done?: boolean
+          flyer_done_at?: string | null
+          listing_id?: string
+          note_done?: boolean
+          note_done_at?: string | null
+          social_done?: boolean
+          social_done_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_activity_checklist_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           baths: number | null
@@ -2222,6 +2278,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      priority_runway_items: {
+        Row: {
+          completed_at: string | null
+          context: Json
+          created_at: string
+          deleted_at: string | null
+          id: string
+          position: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          context?: Json
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          position: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          context?: Json
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       project_touchpoints: {
         Row: {

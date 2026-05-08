@@ -8,12 +8,13 @@
 // touchpoints / activity_events ride the 30s staleTime; not latency-critical.
 
 import { useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Calls,
   CallTier,
   Listing,
+  ListingChecklistFlag,
   Moment,
   RunwayItem,
   StatusBarStats,
@@ -177,140 +178,118 @@ export function useCallsLane() {
 }
 
 // ----- Runway --------------------------------------------------------------
+//
+// Backed by priority_runway_items (user-owned, ordered by `position`).
+// Click-to-complete writes completed_at via useToggleRunwayItem; the existing
+// real-time email_drafts hook stays in useStatusBarStats because StatusBar
+// still tracks open drafts.
 
-type DraftRow = {
+type RunwayRow = {
   id: string;
-  draft_subject: string | null;
-  status: "generated" | "approved" | "revised";
-  escalation_flag: string | null;
-  expires_at: string;
-  email: { from_name: string | null; from_email: string | null } | null;
+  position: number;
+  title: string;
+  context: Record<string, unknown> | null;
+  completed_at: string | null;
 };
 
-type TouchpointRow = {
-  id: string;
-  project_id: string;
-  touchpoint_type: "email" | "event" | "voice_memo" | "contact_note";
-  occurred_at: string | null;
-  project: { id: string; title: string; status: string; deleted_at: string | null } | null;
+type RunwayContext = {
+  who?: string;
+  kind?: RunwayItem["kind"];
+  priority?: 0 | 1 | 2 | 3;
+  action?: string;
+  tone?: "gold" | "crimson";
+  href?: string;
 };
+
+function rowToRunwayItem(r: RunwayRow): RunwayItem {
+  const ctx = (r.context ?? {}) as RunwayContext;
+  const kind: RunwayItem["kind"] = ctx.kind ?? "tier-a";
+  const tone: RunwayItem["tone"] = ctx.tone ?? "gold";
+  const priority: 0 | 1 | 2 | 3 = (ctx.priority ?? 1) as 0 | 1 | 2 | 3;
+  return {
+    id: r.id,
+    who: ctx.who ?? "",
+    kind,
+    what: r.title,
+    priority,
+    action: ctx.action ?? "Open",
+    tone,
+    href: ctx.href,
+    completed_at: r.completed_at,
+  };
+}
 
 export function useRunway() {
   const supabase = useMemo(() => createClient(), []);
-  const queryClient = useQueryClient();
-  const nowIso = useMemo(() => new Date().toISOString(), []);
-
-  const query = useQuery<RunwayItem[]>({
+  return useQuery<RunwayItem[]>({
     queryKey: ["runway"],
     staleTime: STALE_MS,
     queryFn: async () => {
-      const [draftsRes, tpRes] = await Promise.all([
-        supabase
-          .from("email_drafts")
-          .select(
-            `id, draft_subject, status, escalation_flag, expires_at,
-             email:emails!inner (from_name, from_email)`,
-          )
-          .in("status", ["generated", "approved", "revised"])
-          .gt("expires_at", nowIso)
-          .order("generated_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("project_touchpoints")
-          .select(
-            `id, project_id, touchpoint_type, occurred_at,
-             project:projects!inner (id, title, status, deleted_at)`,
-          )
-          .is("occurred_at", null)
-          .limit(50),
-      ]);
-      if (draftsRes.error) throw new Error(draftsRes.error.message);
-      if (tpRes.error) throw new Error(tpRes.error.message);
-
-      const items: RunwayItem[] = [];
-
-      for (const d of (draftsRes.data ?? []) as unknown as DraftRow[]) {
-        const escalated = !!d.escalation_flag;
-        const sender =
-          d.email?.from_name ?? d.email?.from_email ?? "unknown sender";
-        items.push({
-          who: sender,
-          kind: "draft",
-          what: d.draft_subject ?? "Draft awaiting approval",
-          priority: escalated ? 3 : 2,
-          action: "Approve",
-          tone: escalated ? "crimson" : "gold",
-          href: `/drafts?draft=${d.id}`,
-        });
-      }
-
-      for (const t of (tpRes.data ?? []) as unknown as TouchpointRow[]) {
-        const proj = t.project;
-        if (!proj || proj.status !== "active" || proj.deleted_at !== null) continue;
-        items.push({
-          who: proj.title,
-          kind: "touchpoint",
-          what: `Open touchpoint: ${t.touchpoint_type.replace("_", " ")}`,
-          priority: 1,
-          action: "Open",
-          tone: "gold",
-          href: `/projects/${proj.id}`,
-        });
-      }
-
-      const order: Record<RunwayItem["kind"], number> = {
-        system: 0,
-        touchpoint: 1,
-        draft: 2,
-        "tier-a": 3,
-      };
-      items.sort((a, b) => {
-        const tonePri = (i: RunwayItem) => (i.tone === "crimson" ? 1 : 0);
-        const k = order[a.kind] - order[b.kind];
-        if (k !== 0) return k;
-        return tonePri(a) - tonePri(b);
-      });
-
-      return items.slice(0, 10);
+      const { data, error } = await supabase
+        .from("priority_runway_items")
+        .select("id, position, title, context, completed_at")
+        .is("deleted_at", null)
+        .order("position", { ascending: true })
+        .limit(10);
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as unknown as RunwayRow[]).map(rowToRunwayItem);
     },
   });
+}
 
-  useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let mounted = true;
-    (async () => {
+export function useToggleRunwayItem() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await supabase
+        .from("priority_runway_items")
+        .update({ completed_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
+}
+
+export function useResetRunway() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
       const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!mounted) return;
-      if (session?.access_token) {
-        supabase.realtime.setAuth(session.access_token);
-      }
-      const topic = `today_v2_runway_${Math.random().toString(36).slice(2)}`;
-      channel = supabase
-        .channel(topic)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "email_drafts" },
-          () => {
-            queryClient.invalidateQueries({ queryKey: ["runway"] });
-            queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
-          },
-        )
-        .subscribe();
-    })();
-    return () => {
-      mounted = false;
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [supabase, queryClient]);
-
-  return query;
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("priority_runway_items")
+        .update({ completed_at: null })
+        .eq("user_id", user.id)
+        .not("completed_at", "is", null);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
 }
 
 // ----- Listings ------------------------------------------------------------
+//
+// Backed by projects + listing_activity_checklist (left join). Replaces the
+// project_touchpoints heuristic that previously mapped touchpoint_type ->
+// checkbox slot. No-checklist-row means all four flags false; we do not
+// auto-create on read.
 
 const LISTING_ITEMS = ["Flyer", "Social post", "Email mention", "Personal note"];
+const LISTING_FLAGS: ListingChecklistFlag[] = [
+  "flyer_done",
+  "social_done",
+  "email_done",
+  "note_done",
+];
 
 type ListingProjectRow = {
   id: string;
@@ -320,9 +299,12 @@ type ListingProjectRow = {
   owner: { full_name: string | null; tier: string | null } | null;
 };
 
-type RollupRow = {
-  project_id: string;
-  touchpoint_type: "email" | "event" | "voice_memo" | "contact_note";
+type ChecklistRow = {
+  listing_id: string;
+  flyer_done: boolean;
+  social_done: boolean;
+  email_done: boolean;
+  note_done: boolean;
 };
 
 export function useListings() {
@@ -346,47 +328,41 @@ export function useListings() {
       const rows = (projects ?? []) as unknown as ListingProjectRow[];
       if (rows.length === 0) return [];
 
-      const ids = rows.map((r) => r.id);
-      const { data: rollupRaw, error: tpErr } = await supabase
-        .from("project_touchpoints")
-        .select("project_id, touchpoint_type")
-        .in("project_id", ids)
-        .not("occurred_at", "is", null);
-      if (tpErr) throw new Error(tpErr.message);
-      const rollup = (rollupRaw ?? []) as unknown as RollupRow[];
+      // Tier filter: A or B owners only.
+      const filtered = rows.filter(
+        (r) => r.owner?.tier === "A" || r.owner?.tier === "B",
+      );
+      if (filtered.length === 0) return [];
 
-      const seen = new Map<string, Set<RollupRow["touchpoint_type"]>>();
-      for (const r of rollup) {
-        const set = seen.get(r.project_id) ?? new Set();
-        set.add(r.touchpoint_type);
-        seen.set(r.project_id, set);
-      }
+      const ids = filtered.map((r) => r.id);
+      const { data: checklistRaw, error: clErr } = await supabase
+        .from("listing_activity_checklist")
+        .select("listing_id, flyer_done, social_done, email_done, note_done")
+        .in("listing_id", ids)
+        .is("deleted_at", null);
+      if (clErr) throw new Error(clErr.message);
+      const checklist = (checklistRaw ?? []) as unknown as ChecklistRow[];
+
+      const byListing = new Map<string, ChecklistRow>();
+      for (const c of checklist) byListing.set(c.listing_id, c);
 
       const now = Date.now();
-      return rows.map((r) => {
-        const tp = seen.get(r.id) ?? new Set<RollupRow["touchpoint_type"]>();
-        const tier: Listing["tier"] =
-          r.owner?.tier === "B" ? "B" : "A";
+      return filtered.map((r) => {
+        const cl = byListing.get(r.id);
+        const tier: Listing["tier"] = r.owner?.tier === "B" ? "B" : "A";
         const days = Math.max(
           0,
           Math.floor((now - new Date(r.created_at).getTime()) / 86_400_000),
         );
-        // Heuristic mapping (plan risk: log to BLOCKERS.md if wrong):
-        //   Flyer            -> contact_note proxy (no ticket entity yet)
-        //   Social post      -> event
-        //   Email mention    -> email
-        //   Personal note    -> voice_memo
-        const done: boolean[] = [
-          tp.has("contact_note"),
-          tp.has("event"),
-          tp.has("email"),
-          tp.has("voice_memo"),
-        ];
+        const done: boolean[] = cl
+          ? [cl.flyer_done, cl.social_done, cl.email_done, cl.note_done]
+          : [false, false, false, false];
         const addrFromMeta =
           typeof r.metadata?.address === "string"
             ? (r.metadata.address as string)
             : null;
         return {
+          listing_id: r.id,
           agent: r.owner?.full_name ?? "Unassigned",
           tier,
           addr: addrFromMeta ?? r.title,
@@ -395,6 +371,56 @@ export function useListings() {
           done,
         };
       });
+    },
+  });
+}
+
+export function useToggleListingChecklist() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      listing_id,
+      idx,
+      next,
+    }: {
+      listing_id: string;
+      idx: number;
+      next: boolean;
+    }) => {
+      const flag = LISTING_FLAGS[idx];
+      if (!flag) throw new Error(`Invalid checklist index ${idx}`);
+      const { error } = await supabase
+        .from("listing_activity_checklist")
+        .upsert(
+          { listing_id, [flag]: next },
+          { onConflict: "listing_id" },
+        );
+      if (error) throw new Error(error.message);
+    },
+    onMutate: async ({ listing_id, idx, next }) => {
+      await queryClient.cancelQueries({ queryKey: ["listings"] });
+      const prev = queryClient.getQueryData<Listing[]>(["listings"]);
+      if (prev) {
+        queryClient.setQueryData<Listing[]>(
+          ["listings"],
+          prev.map((l) =>
+            l.listing_id === listing_id
+              ? {
+                  ...l,
+                  done: l.done.map((d, i) => (i === idx ? next : d)),
+                }
+              : l,
+          ),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["listings"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
     },
   });
 }
@@ -536,6 +562,36 @@ function yesterdayDateString(): string {
 export function useStatusBarStats() {
   const supabase = useMemo(() => createClient(), []);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let mounted = true;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      const topic = `today_v2_statusbar_${Math.random().toString(36).slice(2)}`;
+      channel = supabase
+        .channel(topic)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "email_drafts" },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
+          },
+        )
+        .subscribe();
+    })();
+    return () => {
+      mounted = false;
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [supabase, queryClient]);
+
   return useQuery<StatusBarStats>({
     queryKey: ["statusbar-stats"],
     staleTime: STALE_MS,
