@@ -42,9 +42,9 @@ export interface RenderedCampaign {
   unresolved_subject: string[];
 }
 
-const PLACEHOLDER_STATS_IMAGE = `<div style="padding: 32px; border: 2px dashed #e63550; color: #e63550; font-family: 'Inter', Arial, sans-serif; font-size: 13px; text-align: center;">[REVIEWER: paste GAT Market Stats image / chart HTML here before approving]</div>`;
+const PLACEHOLDER_STATS_IMAGE = `<div style="padding: 32px; border: 2px dashed #F7D794; color: #F7D794; font-family: 'Inter', Arial, sans-serif; font-size: 13px; text-align: center;">[REVIEWER: paste GAT Market Stats image / chart HTML here before approving]</div>`;
 
-const PLACEHOLDER_WEEKENDER_IMAGE = `<div style="padding: 32px; border: 2px dashed #2563eb; color: #2563eb; font-family: 'Inter', Arial, sans-serif; font-size: 13px; text-align: center;">[REVIEWER: paste Weekender image / preview HTML here before approving]</div>`;
+const PLACEHOLDER_WEEKENDER_IMAGE = `<div style="padding: 32px; border: 2px dashed #192A56; color: #192A56; font-family: 'Inter', Arial, sans-serif; font-size: 13px; text-align: center;">[REVIEWER: paste Weekender image / preview HTML here before approving]</div>`;
 
 const PLACEHOLDER_LISTINGS_SECTION = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"><tr><td style="padding: 24px; border: 2px dashed #71717a; color: #71717a; font-family: 'Inter', Arial, sans-serif; font-size: 13px; text-align: center;">[REVIEWER: paste this week's featured listings HTML here, or remove the section before approving]</td></tr></table>`;
 
@@ -106,7 +106,7 @@ function buildOpenerHtml(markets: MarketRender[]): string {
   if (markets.length === 0) return "[REVIEWER: no market narratives available -- write opener manually]";
   const lead = markets[0];
   if (lead.pending_credentials) {
-    return `<strong style="color: #e63550;">PENDING ALTOS DATA.</strong> The data pull for ${escapeHtml(lead.snapshot.market_label)} returned a credentials placeholder. Reject this draft and send after the Altos integration lands.`;
+    return `<strong style="color: #F7D794;">PENDING ALTOS DATA.</strong> The data pull for ${escapeHtml(lead.snapshot.market_label)} returned a credentials placeholder. Reject this draft and send after the Altos integration lands.`;
   }
   const blockHtml = escapeHtml(lead.narrative.market_block).replace(/\n\n+/g, "</p><p style=\"margin: 0 0 16px 0;\">");
   return `<p style="margin: 0 0 16px 0;">${blockHtml}</p>`;

@@ -5,6 +5,7 @@
 export type CallTier = "overdue" | "due" | "up";
 
 export type Call = {
+  contact_id: string;
   name: string;
   last: string;
   suggest: string;

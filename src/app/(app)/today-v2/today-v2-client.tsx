@@ -34,7 +34,9 @@ import {
   useAddRunwayItem,
   useCallsLane,
   useListings,
+  useLogCallTouch,
   useMoments,
+  useQueueCall,
   useReorderRunwayItems,
   useResetRunway,
   useRunway,
@@ -172,7 +174,17 @@ const AVATAR_TIER_CLASS: Record<CallTier, string> = {
   up: "",
 };
 
-function CallRow({ p }: { p: Call }) {
+function CallRow({
+  p,
+  onLogTouch,
+  onQueueCall,
+  pending,
+}: {
+  p: Call;
+  onLogTouch: (contact_id: string) => void;
+  onQueueCall: (contact_id: string) => void;
+  pending: boolean;
+}) {
   const initial = p.name.charAt(0);
   return (
     <div className={`${styles.callRow} ${TIER_CLASS[p.tier]}`}>
@@ -187,10 +199,26 @@ function CallRow({ p }: { p: Call }) {
         <div className={styles.callSuggest}>{p.suggest}</div>
       </div>
       <div className={styles.callActions}>
-        <button type="button" className={styles.iconBtn} title="Log touch" aria-label="Log touch">
+        <button
+          type="button"
+          className={styles.iconBtn}
+          title="Log touch"
+          aria-label="Log touch"
+          aria-busy={pending}
+          disabled={pending}
+          onClick={() => onLogTouch(p.contact_id)}
+        >
           <PenIcon />
         </button>
-        <button type="button" className={styles.iconBtn} title="Queue call" aria-label="Queue call">
+        <button
+          type="button"
+          className={styles.iconBtn}
+          title="Queue call"
+          aria-label="Queue call"
+          aria-busy={pending}
+          disabled={pending}
+          onClick={() => onQueueCall(p.contact_id)}
+        >
           <PhoneIcon />
         </button>
       </div>
@@ -200,11 +228,19 @@ function CallRow({ p }: { p: Call }) {
 
 function CallsLane() {
   const { data, isLoading, error } = useCallsLane();
+  const logTouch = useLogCallTouch();
+  const queueCallMut = useQueueCall();
   const calls = data?.calls;
   const totalQueued =
     (calls?.overdue.length ?? 0) +
     (calls?.due.length ?? 0) +
     (calls?.up.length ?? 0);
+
+  const onLogTouch = (contact_id: string) =>
+    logTouch.mutate({ contact_id });
+  const onQueueCall = (contact_id: string) =>
+    queueCallMut.mutate({ contact_id });
+  const pending = logTouch.isPending || queueCallMut.isPending;
 
   return (
     <>
@@ -225,7 +261,15 @@ function CallsLane() {
           <span className={styles.tierCount}>{calls?.overdue.length ?? 0}</span>
         </div>
         {calls?.overdue.length ? (
-          calls.overdue.map((p, i) => <CallRow key={`overdue-${i}`} p={p} />)
+          calls.overdue.map((p) => (
+            <CallRow
+              key={`overdue-${p.contact_id}`}
+              p={p}
+              onLogTouch={onLogTouch}
+              onQueueCall={onQueueCall}
+              pending={pending}
+            />
+          ))
         ) : !isLoading ? (
           <div className={styles.colMeta}>No overdue contacts.</div>
         ) : null}
@@ -237,7 +281,15 @@ function CallsLane() {
           <span className={styles.tierCount}>{calls?.due.length ?? 0}</span>
         </div>
         {calls?.due.length ? (
-          calls.due.map((p, i) => <CallRow key={`due-${i}`} p={p} />)
+          calls.due.map((p) => (
+            <CallRow
+              key={`due-${p.contact_id}`}
+              p={p}
+              onLogTouch={onLogTouch}
+              onQueueCall={onQueueCall}
+              pending={pending}
+            />
+          ))
         ) : !isLoading ? (
           <div className={styles.colMeta}>Nothing due today.</div>
         ) : null}
@@ -249,7 +301,15 @@ function CallsLane() {
           <span className={styles.tierCount}>{calls?.up.length ?? 0}</span>
         </div>
         {calls?.up.length ? (
-          calls.up.map((p, i) => <CallRow key={`up-${i}`} p={p} />)
+          calls.up.map((p) => (
+            <CallRow
+              key={`up-${p.contact_id}`}
+              p={p}
+              onLogTouch={onLogTouch}
+              onQueueCall={onQueueCall}
+              pending={pending}
+            />
+          ))
         ) : !isLoading ? (
           <div className={styles.colMeta}>Nothing coming up.</div>
         ) : null}
