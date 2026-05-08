@@ -160,6 +160,7 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
       feature,
       key: cacheKey,
       value: response,
+      userId,
       model: response.model ?? model,
       ttl_seconds: cacheTtlSeconds,
     });

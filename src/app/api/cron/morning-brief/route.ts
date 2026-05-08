@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       model: brief.model,
       usage: brief.usage,
       contacts_scored: ranked.length,
+      user_id: matched.id,
     });
 
     return NextResponse.json({
@@ -102,7 +103,12 @@ export async function GET(request: NextRequest) {
       durationMs: Date.now() - startedAt,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message =
+      err instanceof Error
+        ? err.message
+        : err && typeof err === "object" && "message" in err
+        ? String((err as { message: unknown }).message)
+        : JSON.stringify(err);
     await logError(ROUTE, `morning-brief failed: ${message}`, {
       brief_date: briefDate,
       duration_ms: Date.now() - startedAt,
@@ -127,6 +133,7 @@ async function upsertBrief(
     model: string;
     usage: unknown;
     contacts_scored: number;
+    user_id: string;
   },
 ) {
   const { data: existing, error: selErr } = await adminClient
@@ -161,6 +168,7 @@ async function upsertBrief(
     model: payload.model,
     usage: payload.usage,
     contacts_scored: payload.contacts_scored,
+    user_id: payload.user_id,
     errors: null,
   });
   if (error) throw error;

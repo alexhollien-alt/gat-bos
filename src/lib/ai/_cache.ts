@@ -82,10 +82,11 @@ export async function cacheSet(params: {
   feature: string;
   key: string;
   value: unknown;
+  userId: string;
   model?: string | null;
   ttl_seconds?: number | null;
 }): Promise<void> {
-  const { feature, key, value, model = null, ttl_seconds } = params;
+  const { feature, key, value, userId, model = null, ttl_seconds } = params;
   const expires_at =
     typeof ttl_seconds === "number" && ttl_seconds > 0
       ? new Date(Date.now() + ttl_seconds * 1000).toISOString()
@@ -101,6 +102,7 @@ export async function cacheSet(params: {
         model,
         expires_at,
         accessed_at: new Date().toISOString(),
+        user_id: userId,
       },
       { onConflict: "feature,cache_key" },
     );
