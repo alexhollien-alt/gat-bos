@@ -276,6 +276,188 @@ export function useResetRunway() {
   });
 }
 
+// ----- Runway authoring (Phase 010) ----------------------------------------
+
+export type RunwayDraft = {
+  title: string;
+  who?: string;
+  kind?: RunwayItem["kind"];
+  priority?: 0 | 1 | 2 | 3;
+  tone?: "gold" | "crimson";
+  action?: string;
+  href?: string;
+};
+
+function draftToContext(draft: RunwayDraft): RunwayContext {
+  const ctx: RunwayContext = {};
+  if (draft.who !== undefined) ctx.who = draft.who;
+  if (draft.kind !== undefined) ctx.kind = draft.kind;
+  if (draft.priority !== undefined) ctx.priority = draft.priority;
+  if (draft.tone !== undefined) ctx.tone = draft.tone;
+  if (draft.action !== undefined) ctx.action = draft.action;
+  if (draft.href !== undefined) ctx.href = draft.href;
+  return ctx;
+}
+
+export function useAddRunwayItem() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (draft: RunwayDraft) => {
+      const title = draft.title.trim();
+      if (!title) throw new Error("Title required");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: maxRow, error: maxErr } = await supabase
+        .from("priority_runway_items")
+        .select("position")
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (maxErr) throw new Error(maxErr.message);
+      const nextPos = ((maxRow?.position as number | undefined) ?? -1) + 1;
+
+      const { error } = await supabase.from("priority_runway_items").insert({
+        user_id: user.id,
+        position: nextPos,
+        title,
+        context: draftToContext(draft),
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
+}
+
+export function useUpdateRunwayItem() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: { title?: string; context?: RunwayContext };
+    }) => {
+      const update: Record<string, unknown> = {};
+      if (patch.title !== undefined) update.title = patch.title.trim();
+      if (patch.context !== undefined) update.context = patch.context;
+      if (Object.keys(update).length === 0) return;
+      const { error } = await supabase
+        .from("priority_runway_items")
+        .update(update)
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onMutate: async ({ id, patch }) => {
+      await queryClient.cancelQueries({ queryKey: ["runway"] });
+      const prev = queryClient.getQueryData<RunwayItem[]>(["runway"]);
+      if (prev) {
+        queryClient.setQueryData<RunwayItem[]>(
+          ["runway"],
+          prev.map((item) => {
+            if (item.id !== id) return item;
+            const ctx = patch.context ?? {};
+            return {
+              ...item,
+              what: patch.title !== undefined ? patch.title : item.what,
+              who: ctx.who !== undefined ? ctx.who : item.who,
+              kind: ctx.kind !== undefined ? ctx.kind : item.kind,
+              priority:
+                ctx.priority !== undefined ? ctx.priority : item.priority,
+              tone: ctx.tone !== undefined ? ctx.tone : item.tone,
+              action: ctx.action !== undefined ? ctx.action : item.action,
+              href: ctx.href !== undefined ? ctx.href : item.href,
+            };
+          }),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["runway"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
+}
+
+export function useSoftDeleteRunwayItem() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from("priority_runway_items")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ["runway"] });
+      const prev = queryClient.getQueryData<RunwayItem[]>(["runway"]);
+      if (prev) {
+        queryClient.setQueryData<RunwayItem[]>(
+          ["runway"],
+          prev.filter((item) => item.id !== id),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["runway"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
+}
+
+export function useReorderRunwayItems() {
+  const supabase = useMemo(() => createClient(), []);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderedIds }: { orderedIds: string[] }) => {
+      // Sequential updates wrapped in a single invalidate. Small N (<=10).
+      // No RPC -- keeps the plan additive and avoids a migration.
+      for (let i = 0; i < orderedIds.length; i++) {
+        const { error } = await supabase
+          .from("priority_runway_items")
+          .update({ position: i })
+          .eq("id", orderedIds[i]);
+        if (error) throw new Error(error.message);
+      }
+    },
+    onMutate: async ({ orderedIds }) => {
+      await queryClient.cancelQueries({ queryKey: ["runway"] });
+      const prev = queryClient.getQueryData<RunwayItem[]>(["runway"]);
+      if (prev) {
+        const byId = new Map(prev.map((it) => [it.id ?? "", it]));
+        const reordered = orderedIds
+          .map((id) => byId.get(id))
+          .filter((it): it is RunwayItem => !!it);
+        queryClient.setQueryData<RunwayItem[]>(["runway"], reordered);
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["runway"], ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["runway"] });
+    },
+  });
+}
+
 // ----- Listings ------------------------------------------------------------
 //
 // Backed by projects + listing_activity_checklist (left join). Replaces the
