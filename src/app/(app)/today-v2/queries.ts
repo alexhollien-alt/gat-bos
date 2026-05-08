@@ -9,8 +9,14 @@
 
 import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { logCallTouch, queueCall } from "./actions";
+import {
+  logCallTouch,
+  queueCall,
+  undoLogCallTouch,
+  undoQueueCall,
+} from "./actions";
 import type {
   Call,
   Calls,
@@ -198,12 +204,32 @@ function removeContactFromCallsCache(
   };
 }
 
+const TOAST_DURATION_MS = 5000;
+const SHORT_DATE_FMT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "America/Phoenix",
+});
+
+function formatShortDate(isoDate: string): string {
+  // Append T12:00:00 so the Date lands mid-day Phoenix and survives DST-free formatting.
+  const d = new Date(`${isoDate}T12:00:00-07:00`);
+  return SHORT_DATE_FMT.format(d);
+}
+
 export function useLogCallTouch() {
   const queryClient = useQueryClient();
+  const undo = useUndoLogCallTouch();
   return useMutation({
-    mutationFn: async ({ contact_id }: { contact_id: string }) => {
+    mutationFn: async ({
+      contact_id,
+    }: {
+      contact_id: string;
+      name?: string;
+    }) => {
       const res = await logCallTouch({ contact_id });
       if (!res.ok) throw new Error(res.error);
+      return { event_id: res.event_id };
     },
     onMutate: async ({ contact_id }) => {
       await queryClient.cancelQueries({ queryKey: ["calls-lane"] });
@@ -214,8 +240,23 @@ export function useLogCallTouch() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onSuccess: (data, vars) => {
+      if (!data.event_id) return;
+      const event_id = data.event_id;
+      toast.success("Call logged", {
+        description: vars.name,
+        duration: TOAST_DURATION_MS,
+        position: "top-right",
+        action: {
+          label: "Undo",
+          onClick: () => undo.mutate({ event_id }),
+        },
+      });
+    },
+    onError: (err: unknown, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["calls-lane"], ctx.prev);
+      const msg = err instanceof Error ? err.message : "Couldn't log touch";
+      toast.error(msg, { position: "top-right" });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["calls-lane"] });
@@ -227,10 +268,19 @@ export function useLogCallTouch() {
 
 export function useQueueCall() {
   const queryClient = useQueryClient();
+  const undo = useUndoQueueCall();
   return useMutation({
-    mutationFn: async ({ contact_id }: { contact_id: string }) => {
-      const res = await queueCall({ contact_id });
+    mutationFn: async ({
+      contact_id,
+      dueDate,
+    }: {
+      contact_id: string;
+      dueDate?: string;
+      name?: string;
+    }) => {
+      const res = await queueCall({ contact_id, due_date: dueDate });
       if (!res.ok) throw new Error(res.error);
+      return { id: res.id, dueDate };
     },
     onMutate: async ({ contact_id }) => {
       await queryClient.cancelQueries({ queryKey: ["calls-lane"] });
@@ -241,8 +291,63 @@ export function useQueueCall() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onSuccess: (data, vars) => {
+      if (!data.id) return;
+      const task_id = data.id;
+      const label = data.dueDate
+        ? `Call queued for ${formatShortDate(data.dueDate)}`
+        : "Call queued for tomorrow";
+      toast.success(label, {
+        description: vars.name,
+        duration: TOAST_DURATION_MS,
+        position: "top-right",
+        action: {
+          label: "Undo",
+          onClick: () => undo.mutate({ task_id }),
+        },
+      });
+    },
+    onError: (err: unknown, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["calls-lane"], ctx.prev);
+      const msg = err instanceof Error ? err.message : "Couldn't queue call";
+      toast.error(msg, { position: "top-right" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["calls-lane"] });
+      queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
+    },
+  });
+}
+
+export function useUndoLogCallTouch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ event_id }: { event_id: string }) => {
+      const res = await undoLogCallTouch({ event_id });
+      if (!res.ok) throw new Error(res.error);
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Couldn't undo";
+      toast.error(msg, { position: "top-right" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["calls-lane"] });
+      queryClient.invalidateQueries({ queryKey: ["statusbar-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["moments"] });
+    },
+  });
+}
+
+export function useUndoQueueCall() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ task_id }: { task_id: string }) => {
+      const res = await undoQueueCall({ task_id });
+      if (!res.ok) throw new Error(res.error);
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Couldn't undo";
+      toast.error(msg, { position: "top-right" });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["calls-lane"] });

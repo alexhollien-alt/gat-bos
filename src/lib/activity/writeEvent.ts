@@ -20,9 +20,11 @@ interface WriteEventInput {
   context?: Record<string, unknown>;
 }
 
-export async function writeEvent(input: WriteEventInput): Promise<void> {
+export async function writeEvent(
+  input: WriteEventInput,
+): Promise<{ id: string | null }> {
   const { userId, actorId, verb, object, context = {} } = input;
-  const { error } = await adminClient
+  const { data, error } = await adminClient
     .from('activity_events')
     .insert({
       user_id: userId,
@@ -31,7 +33,9 @@ export async function writeEvent(input: WriteEventInput): Promise<void> {
       object_table: object.table,
       object_id: object.id,
       context,
-    });
+    })
+    .select('id')
+    .single();
 
   if (error) {
     await logError('activity/writeEvent', error.message, {
@@ -39,5 +43,7 @@ export async function writeEvent(input: WriteEventInput): Promise<void> {
       object_table: object.table,
       object_id: object.id,
     });
+    return { id: null };
   }
+  return { id: (data?.id as string | null) ?? null };
 }
