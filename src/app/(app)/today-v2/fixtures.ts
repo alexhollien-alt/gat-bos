@@ -18,6 +18,7 @@ export type Calls = {
 };
 
 export type RunwayItem = {
+  id?: string;
   who: string;
   kind: "system" | "tier-a" | "draft" | "touchpoint";
   what: string;
@@ -25,9 +26,17 @@ export type RunwayItem = {
   action: string;
   tone: "gold" | "crimson";
   href?: string;
+  completed_at?: string | null;
 };
 
+export type ListingChecklistFlag =
+  | "flyer_done"
+  | "social_done"
+  | "email_done"
+  | "note_done";
+
 export type Listing = {
+  listing_id?: string;
   agent: string;
   tier: "A" | "B";
   addr: string;

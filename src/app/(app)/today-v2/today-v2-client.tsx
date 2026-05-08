@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import styles from "./styles.module.css";
 import {
   useCallsLane,
   useListings,
   useMoments,
+  useResetRunway,
   useRunway,
   useStatusBarStats,
+  useToggleListingChecklist,
+  useToggleRunwayItem,
 } from "./queries";
 import type {
   Call,
@@ -270,17 +273,16 @@ function RunwayRow({
 
 function Runway({
   items,
-  doneSet,
   onToggle,
   onReset,
   loading,
 }: {
   items: RunwayItem[];
-  doneSet: Set<number>;
-  onToggle: (i: number) => void;
+  onToggle: (item: RunwayItem) => void;
   onReset: () => void;
   loading: boolean;
 }) {
+  const clearedCount = items.filter((i) => !!i.completed_at).length;
   return (
     <div>
       <div className={styles.colHead} style={{ marginBottom: 12 }}>
@@ -290,7 +292,7 @@ function Runway({
             "loading..."
           ) : (
             <>
-              <b>{doneSet.size}</b>
+              <b>{clearedCount}</b>
               &thinsp;/&thinsp;{items.length} cleared
             </>
           )}
@@ -302,11 +304,11 @@ function Runway({
         ) : (
           items.map((item, i) => (
             <RunwayRow
-              key={`${item.kind}-${i}-${item.who}`}
+              key={item.id ?? `${item.kind}-${i}-${item.who}`}
               idx={i}
               item={item}
-              done={doneSet.has(i)}
-              onToggle={() => onToggle(i)}
+              done={!!item.completed_at}
+              onToggle={() => onToggle(item)}
             />
           ))
         )}
@@ -367,11 +369,11 @@ function ListingCard({
 
 function ListingActivity({
   listings,
-  setListings,
+  onToggle,
   loading,
 }: {
   listings: Listing[];
-  setListings: React.Dispatch<React.SetStateAction<Listing[]>>;
+  onToggle: (card: Listing, idx: number) => void;
   loading: boolean;
 }) {
   const visibleCount = listings.filter((l) => !l.done.every(Boolean)).length;
@@ -391,18 +393,9 @@ function ListingActivity({
         ) : (
           listings.map((card, ci) => (
             <ListingCard
-              key={ci}
+              key={card.listing_id ?? ci}
               card={card}
-              onToggle={(idx) =>
-                setListings((prev) =>
-                  prev.map((c, j) => {
-                    if (j !== ci) return c;
-                    const next = c.done.slice();
-                    next[idx] = !next[idx];
-                    return { ...c, done: next };
-                  })
-                )
-              }
+              onToggle={(idx) => onToggle(card, idx)}
             />
           ))
         )}
@@ -465,33 +458,23 @@ function Moments({ moments, loading }: { moments: Moment[]; loading: boolean }) 
 }
 
 export function TodayV2Client() {
-  const [doneSet, setDoneSet] = useState<Set<number>>(new Set());
-  const [overrideListings, setOverrideListings] = useState<Listing[] | null>(null);
-
-  // Live data
   const stats = useStatusBarStats();
   const runway = useRunway();
   const listingsQ = useListings();
   const moments = useMoments();
+  const toggleRunway = useToggleRunwayItem();
+  const resetRunway = useResetRunway();
+  const toggleChecklist = useToggleListingChecklist();
 
-  // Local-only listing checklist mutations until Phase 3 lands.
-  // useState owns the working copy once user toggles anything; otherwise mirror live data.
-  const liveListings = listingsQ.data ?? [];
-  const listings = overrideListings ?? liveListings;
-  const setListings: React.Dispatch<React.SetStateAction<Listing[]>> = (next) => {
-    setOverrideListings((prev) => {
-      const base = prev ?? liveListings;
-      return typeof next === "function" ? (next as (p: Listing[]) => Listing[])(base) : next;
-    });
+  const onToggleRunway = (item: RunwayItem) => {
+    if (!item.id) return;
+    toggleRunway.mutate({ id: item.id, done: !item.completed_at });
   };
 
-  const onToggleRunway = (i: number) => {
-    setDoneSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
+  const onToggleChecklist = (card: Listing, idx: number) => {
+    if (!card.listing_id) return;
+    const next = !card.done[idx];
+    toggleChecklist.mutate({ listing_id: card.listing_id, idx, next });
   };
 
   return (
@@ -504,14 +487,13 @@ export function TodayV2Client() {
         <main className={styles.col}>
           <Runway
             items={runway.data ?? []}
-            doneSet={doneSet}
             onToggle={onToggleRunway}
-            onReset={() => setDoneSet(new Set())}
+            onReset={() => resetRunway.mutate()}
             loading={runway.isLoading}
           />
           <ListingActivity
-            listings={listings}
-            setListings={setListings}
+            listings={listingsQ.data ?? []}
+            onToggle={onToggleChecklist}
             loading={listingsQ.isLoading}
           />
         </main>
