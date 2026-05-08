@@ -30,6 +30,7 @@ function transformToCss(t: DndTransform | null): string | undefined {
   return `translate3d(${t.x}px, ${t.y}px, 0) scaleX(${t.scaleX}) scaleY(${t.scaleY})`;
 }
 import styles from "./styles.module.css";
+import { RescheduleCallModal } from "./RescheduleCallModal";
 import {
   useAddRunwayItem,
   useCallsLane,
@@ -181,8 +182,8 @@ function CallRow({
   pending,
 }: {
   p: Call;
-  onLogTouch: (contact_id: string) => void;
-  onQueueCall: (contact_id: string) => void;
+  onLogTouch: (call: Call) => void;
+  onQueueCall: (call: Call) => void;
   pending: boolean;
 }) {
   const initial = p.name.charAt(0);
@@ -206,7 +207,7 @@ function CallRow({
           aria-label="Log touch"
           aria-busy={pending}
           disabled={pending}
-          onClick={() => onLogTouch(p.contact_id)}
+          onClick={() => onLogTouch(p)}
         >
           <PenIcon />
         </button>
@@ -217,7 +218,7 @@ function CallRow({
           aria-label="Queue call"
           aria-busy={pending}
           disabled={pending}
-          onClick={() => onQueueCall(p.contact_id)}
+          onClick={() => onQueueCall(p)}
         >
           <PhoneIcon />
         </button>
@@ -230,16 +231,29 @@ function CallsLane() {
   const { data, isLoading, error } = useCallsLane();
   const logTouch = useLogCallTouch();
   const queueCallMut = useQueueCall();
+  const [rescheduleTarget, setRescheduleTarget] = useState<{
+    contact_id: string;
+    name: string;
+  } | null>(null);
   const calls = data?.calls;
   const totalQueued =
     (calls?.overdue.length ?? 0) +
     (calls?.due.length ?? 0) +
     (calls?.up.length ?? 0);
 
-  const onLogTouch = (contact_id: string) =>
-    logTouch.mutate({ contact_id });
-  const onQueueCall = (contact_id: string) =>
-    queueCallMut.mutate({ contact_id });
+  const onLogTouch = (call: Call) =>
+    logTouch.mutate({ contact_id: call.contact_id, name: call.name });
+  const onQueueCall = (call: Call) =>
+    setRescheduleTarget({ contact_id: call.contact_id, name: call.name });
+  const onModalSubmit = (dueDate: string) => {
+    if (!rescheduleTarget) return;
+    queueCallMut.mutate({
+      contact_id: rescheduleTarget.contact_id,
+      name: rescheduleTarget.name,
+      dueDate,
+    });
+    setRescheduleTarget(null);
+  };
   const pending = logTouch.isPending || queueCallMut.isPending;
 
   return (
@@ -314,6 +328,13 @@ function CallsLane() {
           <div className={styles.colMeta}>Nothing coming up.</div>
         ) : null}
       </div>
+
+      <RescheduleCallModal
+        open={!!rescheduleTarget}
+        contactName={rescheduleTarget?.name ?? ""}
+        onClose={() => setRescheduleTarget(null)}
+        onSubmit={onModalSubmit}
+      />
     </>
   );
 }

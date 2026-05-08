@@ -1113,3 +1113,34 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* ---------- Reschedule-call modal (Phase 012) ---------- */
+.rescheduleField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 8px;
+}
+.rescheduleLabel {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.rescheduleInput {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--ink-0);
+  background: var(--surface-1, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 8px 10px;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.rescheduleInput:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}

@@ -36,6 +36,7 @@ export function TasksClient() {
     let query = supabase
       .from("tasks")
       .select("*, contacts(id, first_name, last_name)")
+      .is("deleted_at", null)
       .order("due_date", { ascending: true, nullsFirst: false });
 
     if (filter === "active") {
