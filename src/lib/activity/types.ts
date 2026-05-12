@@ -59,7 +59,14 @@ export type ActivityVerb =
   | 'event.invite.queued'
   | 'event.invite.test_sent'
   | 'event.invite.sent'
-  | 'event.invite.send_failed';
+  | 'event.invite.send_failed'
+  | 'deliverable.shipped'
+  | 'deliverable.briefed'
+  | 'transaction.opened'
+  | 'transaction.under_contract'
+  | 'transaction.in_escrow'
+  | 'transaction.closed'
+  | 'transaction.fell_through';
 
 export interface ActivityEvent {
   id: string;
