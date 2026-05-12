@@ -11,9 +11,14 @@ const TOP_RANK_LIMIT = 15;
 const FEATURE = "morning-brief";
 const PHOENIX_DAY_TTL_SECONDS = 24 * 60 * 60;
 
-export const PROMPT_VERSION = "v1";
+export const PROMPT_VERSION = "v2";
 
 export type BriefTier = "A" | "B" | "C";
+
+export type BriefActiveTransactionStage =
+  | "opened"
+  | "under_contract"
+  | "in_escrow";
 
 export interface BriefRankedContact {
   full_name: string;
@@ -21,6 +26,9 @@ export interface BriefRankedContact {
   tier: BriefTier;
   days_since_last_touchpoint: number | null;
   last_touchpoint_type: string | null;
+  days_since_last_deliverable: number | null;
+  active_transaction_stage: BriefActiveTransactionStage | null;
+  expected_close_date: string | null;
   tier_target: number;
   drift: number;
   active_escrows: number;
@@ -89,8 +97,11 @@ A single sentence. The highest-impact action Alex can take today. Pick from the 
 
 CONSTRAINTS
 - Drift is days past cadence. Positive = cooling, negative = ahead of cadence.
-- effective_drift subtracts 3 days per active escrow (active escrows pull warmth forward).
-- A contact with days_since_last_touchpoint = null has never been touched in the activity ledger; treat that as "no recorded touchpoint" rather than a number.
+- effective_drift subtracts 3 days when active_transaction_stage is in_escrow or under_contract (active deals pull warmth forward) and an additional 5 days when in_escrow with a close date inside 7 days.
+- effective_age uses min(days_since_last_touchpoint, days_since_last_deliverable). A recent deliverable counts as warmth; mention it by name when it sharpens the recommendation ("Julie received a Just Listed flyer 3 days ago").
+- active_transaction_stage values: opened (prospect, no warmth credit), under_contract (-3), in_escrow (-3, plus -5 if expected_close_date is within 7 days). null = no active transaction.
+- expected_close_date is YYYY-MM-DD. If a contact is in_escrow and closing within a week, lean into it: that is the highest-priority touch.
+- A contact with days_since_last_touchpoint = null AND days_since_last_deliverable = null has never been engaged; treat that as "no recorded touchpoint" rather than a number.
 - If temperature_ranking is empty, write "No Tier A/B/C contacts surfaced today." under "Who to reach today" and skip the other sections.
 - Keep the whole brief under 300 words.`;
 
@@ -104,6 +115,9 @@ function buildUserMessage(input: BriefInput): string {
       tier: r.tier,
       days_since_last_touchpoint: r.days_since_last_touchpoint,
       last_touchpoint_type: r.last_touchpoint_type,
+      days_since_last_deliverable: r.days_since_last_deliverable,
+      active_transaction_stage: r.active_transaction_stage,
+      expected_close_date: r.expected_close_date,
       tier_target: r.tier_target,
       drift: r.drift,
       active_escrows: r.active_escrows,
@@ -127,6 +141,9 @@ function deriveCacheKey(input: BriefInput): string {
     tier: r.tier,
     effective_drift: r.effective_drift,
     days_since_last_touchpoint: r.days_since_last_touchpoint,
+    days_since_last_deliverable: r.days_since_last_deliverable,
+    active_transaction_stage: r.active_transaction_stage,
+    expected_close_date: r.expected_close_date,
     active_escrows: r.active_escrows,
   }));
   return cacheKey(FEATURE, {

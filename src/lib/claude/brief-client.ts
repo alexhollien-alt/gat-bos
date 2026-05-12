@@ -9,6 +9,7 @@ export {
   PROMPT_VERSION,
   runMorningBrief as assembleBrief,
   type BriefTier,
+  type BriefActiveTransactionStage,
   type BriefRankedContact,
   type BriefCongratsItem,
   type BriefInput,
