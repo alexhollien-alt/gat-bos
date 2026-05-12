@@ -63,9 +63,8 @@ export type ActivityVerb =
   | 'deliverable.shipped'
   | 'deliverable.briefed'
   | 'transaction.opened'
+  | 'transaction.under_contract'
   | 'transaction.in_escrow'
-  | 'transaction.clear_to_close'
-  | 'transaction.scheduled_close'
   | 'transaction.closed'
   | 'transaction.fell_through';
 
