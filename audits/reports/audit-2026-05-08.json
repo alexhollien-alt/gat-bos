@@ -26,7 +26,7 @@
         "smell": "1/1 tickets missing cypher_id|cypher_url|synced_at (pull worker PARKED until 2026-05-19)",
         "knownIssueId": "cypher-pull-worker-parked"
       },
-      "durationMs": 660
+      "durationMs": 1084
     },
     {
       "id": "cypher.tickets-activity-trace",
@@ -40,7 +40,7 @@
         },
         "smell": "every recent ticket has activity_events trace"
       },
-      "durationMs": 580
+      "durationMs": 489
     },
     {
       "id": "cypher.parked-status",
@@ -73,7 +73,7 @@
         "smell": "50/50 sent rows >1h old have zero message_events (webhook gap)",
         "knownIssueId": "resend-webhook-broken"
       },
-      "durationMs": 528
+      "durationMs": 524
     },
     {
       "id": "messages.eventinvites-telemetry",
@@ -90,7 +90,7 @@
         "smell": "24/24 sent event_invites have no message_events (webhook gap)",
         "knownIssueId": "resend-webhook-broken"
       },
-      "durationMs": 515
+      "durationMs": 434
     },
     {
       "id": "messages.recipient-shape-check",
@@ -104,7 +104,7 @@
         },
         "smell": "10 recent rows all well-formed"
       },
-      "durationMs": 153
+      "durationMs": 126
     },
     {
       "id": "activity.last24h-rows",
@@ -114,11 +114,11 @@
         "pass": true,
         "severity": "green",
         "payload": {
-          "count": 3
+          "count": 5
         },
-        "smell": "3 activity_events in last 24h"
+        "smell": "5 activity_events in last 24h"
       },
-      "durationMs": 149
+      "durationMs": 119
     },
     {
       "id": "activity.cadence-tier-A",
@@ -186,7 +186,7 @@
         },
         "smell": "48 tier-A contacts past 5d cadence"
       },
-      "durationMs": 152
+      "durationMs": 199
     },
     {
       "id": "activity.cadence-tier-B",
@@ -254,7 +254,7 @@
         },
         "smell": "27 tier-B contacts past 10d cadence"
       },
-      "durationMs": 308
+      "durationMs": 558
     },
     {
       "id": "activity.cadence-tier-C",
@@ -322,7 +322,7 @@
         },
         "smell": "28 tier-C contacts past 14d cadence"
       },
-      "durationMs": 120
+      "durationMs": 235
     },
     {
       "id": "activity.morning-brief-cron",
@@ -337,7 +337,7 @@
         },
         "smell": "morning brief 0h old"
       },
-      "durationMs": 398
+      "durationMs": 146
     },
     {
       "id": "soft-delete.duplicate-actives",
@@ -351,7 +351,7 @@
         },
         "smell": "no duplicate actives across contacts, messages_log, event_invites"
       },
-      "durationMs": 615
+      "durationMs": 210
     },
     {
       "id": "soft-delete.orphan-deleted_at",
@@ -402,7 +402,7 @@
         },
         "smell": "5 soft-deleted contacts have updated_at > deleted_at (post-delete mutation)"
       },
-      "durationMs": 111
+      "durationMs": 112
     },
     {
       "id": "brand.dashes-in-recent-output",
@@ -568,7 +568,7 @@
         },
         "smell": "dash hits: 30 file refs, 0 db rows"
       },
-      "durationMs": 128
+      "durationMs": 199
     },
     {
       "id": "brand.deprecated-hex",
@@ -733,7 +733,7 @@
         },
         "smell": "30 deprecated-hex hits across 8 files"
       },
-      "durationMs": 6
+      "durationMs": 8
     },
     {
       "id": "brand.lender-scope-violation",
@@ -758,7 +758,7 @@
         },
         "smell": "2 lender-scope violations"
       },
-      "durationMs": 23
+      "durationMs": 30
     },
     {
       "id": "schema.agent-relationship-health-mv",
@@ -770,7 +770,7 @@
         "payload": {},
         "smell": "MV resolves"
       },
-      "durationMs": 147
+      "durationMs": 157
     },
     {
       "id": "schema.deals-table",
@@ -782,10 +782,472 @@
         "payload": {},
         "smell": "deals table resolves"
       },
-      "durationMs": 84
+      "durationMs": 90
+    },
+    {
+      "id": "surface.morning-latest",
+      "layer": "surface",
+      "title": "/api/morning/latest responds with auth-gated shape",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "url": "https://gat-bos.vercel.app/api/morning/latest",
+          "status": 401
+        },
+        "smell": "route alive, returns 401 unauthenticated as expected"
+      },
+      "durationMs": 1130
+    },
+    {
+      "id": "surface.cron-morning-brief",
+      "layer": "surface",
+      "title": "/api/cron/morning-brief authorizes Bearer CRON_SECRET",
+      "result": {
+        "pass": false,
+        "severity": "yellow",
+        "payload": {
+          "url": "https://gat-bos.vercel.app/api/cron/morning-brief",
+          "status": 500
+        },
+        "smell": "cron handler returned 500 (alive but non-200; check logs)"
+      },
+      "durationMs": 2317
+    },
+    {
+      "id": "surface.resend-webhook-probe",
+      "layer": "surface",
+      "title": "/api/webhooks/resend accepts a Svix-signed probe (no DB side-effects)",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "url": "https://gat-bos.vercel.app/api/webhooks/resend",
+          "status": 200,
+          "response": {
+            "ok": true,
+            "skipped_contact_side_effect": true
+          },
+          "probeProviderId": "audit-probe-1778280779149-no-such-id"
+        },
+        "smell": "webhook auth ok, signed probe accepted (no messages_log match -> no insert)"
+      },
+      "durationMs": 890
+    },
+    {
+      "id": "surface.vercel-deployment",
+      "layer": "surface",
+      "title": "Latest production deployment on GitHub is in success state",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "deploymentId": 4627475650,
+          "sha": "e1c990341401e9b57668b69248487a98fde85113",
+          "state": "success",
+          "environment": "Production"
+        },
+        "smell": "latest production deployment e1c9903 success"
+      },
+      "durationMs": 1065
+    },
+    {
+      "id": "surface.dashboard-render",
+      "layer": "surface",
+      "title": "Dashboard root reachable (200 or auth redirect)",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "url": "https://gat-bos.vercel.app/dashboard",
+          "status": 307,
+          "location": "/login"
+        },
+        "smell": "auth redirect to /login"
+      },
+      "durationMs": 98
+    },
+    {
+      "id": "skills.zero-invocation",
+      "layer": "skills",
+      "title": "Skills with zero invocations in last 30d",
+      "result": {
+        "pass": false,
+        "severity": "yellow",
+        "payload": {
+          "total": 146,
+          "zeroCount": 141,
+          "ratio": 0.966,
+          "filesScanned": 60,
+          "sample": [
+            "accessibility-compliance",
+            "ad-copy",
+            "agent development",
+            "agent-bd",
+            "agent-strategy-session",
+            "api-design-principles",
+            "architecture-decision-records",
+            "architecture-patterns",
+            "async-python-patterns",
+            "auth-implementation-patterns",
+            "autoresearch",
+            "bash-defensive-patterns",
+            "brand-audit",
+            "canva-handoff",
+            "canva-pipeline",
+            "canvas-design-official",
+            "claude-opus-4-5-migration",
+            "clip-anything",
+            "code-review-excellence",
+            "command development",
+            "config-doctor",
+            "consolidate-memory",
+            "content-os",
+            "context7-cli",
+            "context7-mcp",
+            "copy-check",
+            "cypher-ticket-builder",
+            "data-storytelling",
+            "database-migration",
+            "deliverable-retro"
+          ]
+        },
+        "smell": "141/146 skills (97%) had zero invocations in last 30d"
+      },
+      "durationMs": 129
+    },
+    {
+      "id": "skills.high-invocation",
+      "layer": "skills",
+      "title": "Top 10 most-invoked skills",
+      "result": {
+        "pass": true,
+        "severity": "info",
+        "payload": {
+          "top": [
+            {
+              "id": "roster",
+              "count": 94
+            },
+            {
+              "id": "resume",
+              "count": 6
+            },
+            {
+              "id": "agent-creative-brief",
+              "count": 4
+            },
+            {
+              "id": "trim",
+              "count": 3
+            },
+            {
+              "id": "lock",
+              "count": 2
+            }
+          ],
+          "filesScanned": 60
+        },
+        "smell": "top skill: roster (94 invocations)"
+      },
+      "durationMs": 31
+    },
+    {
+      "id": "skills.missing-from-routing",
+      "layer": "skills",
+      "title": "High-invocation skills not present in skill-routing.md",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "highThreshold": 5,
+          "highCount": 2,
+          "missing": []
+        },
+        "smell": "all 2 workhorse skills appear in skill-routing.md"
+      },
+      "durationMs": 33
+    },
+    {
+      "id": "skills.description-empty",
+      "layer": "skills",
+      "title": "SKILL.md files with empty or missing description frontmatter",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "checked": 146
+        },
+        "smell": "146 skills, all have descriptions"
+      },
+      "durationMs": 23
+    },
+    {
+      "id": "rules.corpus-shape",
+      "layer": "rules",
+      "title": "Rule corpus reachable (rules dir, CLAUDE.md, agent rulesets)",
+      "result": {
+        "pass": true,
+        "severity": "info",
+        "payload": {
+          "ruleFileCount": 12,
+          "ruleFiles": [
+            "~/.claude/rules/CONTEXT-BUDGET-2026-04-15.md",
+            "~/.claude/rules/STATUS.md",
+            "~/.claude/rules/automation.md",
+            "~/.claude/rules/brand-reference.md",
+            "~/.claude/rules/brand.md",
+            "~/.claude/rules/cli-iteration-autonomy.md",
+            "~/.claude/rules/dashboard-architecture.md",
+            "~/.claude/rules/skill-routing.md",
+            "~/.claude/rules/standing-rules.md",
+            "~/.claude/rules/task-routing.md",
+            "~/.claude/rules/tool-routing-reference.md",
+            "~/.claude/rules/tool-routing.md"
+          ],
+          "agentRulesetCount": 3,
+          "claudeMdPresent": true,
+          "totalBytes": 139630
+        },
+        "smell": "12 rule files, 3 agent rulesets, 136.4KB total"
+      },
+      "durationMs": 1
+    },
+    {
+      "id": "rules.duplicate-numbers",
+      "layer": "rules",
+      "title": "standing-rules.md has no duplicate or out-of-sequence Rule N headings",
+      "result": {
+        "pass": false,
+        "severity": "yellow",
+        "payload": {
+          "numbers": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            23
+          ],
+          "duplicates": [],
+          "gaps": [
+            22
+          ]
+        },
+        "smell": "gaps in Rule numbering: 22"
+      },
+      "durationMs": 0
+    },
+    {
+      "id": "rules.supersede-markers",
+      "layer": "rules",
+      "title": "feedback_*.md supersede markers reflected in canonical rules",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "feedbackCount": 23,
+          "supersedeCount": 0,
+          "sample": []
+        },
+        "smell": "23 feedback files scanned, no supersede markers"
+      },
+      "durationMs": 5
+    },
+    {
+      "id": "hygiene.stale-plans",
+      "layer": "hygiene",
+      "title": "Plan files >30d old not under archive/",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "staleCount": 0,
+          "sample": []
+        },
+        "smell": "no stale plan files"
+      },
+      "durationMs": 8
+    },
+    {
+      "id": "hygiene.status-md-size",
+      "layer": "hygiene",
+      "title": "STATUS.md under 20KB self-healing guardrail",
+      "result": {
+        "pass": true,
+        "severity": "green",
+        "payload": {
+          "path": "~/.claude/rules/STATUS.md",
+          "bytes": 11377,
+          "kb": 11.1
+        },
+        "smell": "STATUS.md is 11.1KB"
+      },
+      "durationMs": 0
+    },
+    {
+      "id": "hygiene.blockers-stale",
+      "layer": "hygiene",
+      "title": "BLOCKERS.md entries >14d old without [updated] marker",
+      "result": {
+        "pass": false,
+        "severity": "yellow",
+        "payload": {
+          "staleCount": 9,
+          "sample": [
+            {
+              "line": 43,
+              "date": "2026-04-21",
+              "text": "### [2026-04-21] Fiona Bigbee + Denise van den Bossche phone/website missing from CONTACT.md"
+            },
+            {
+              "line": 48,
+              "date": "2026-04-21",
+              "text": "### [2026-04-21] Voice / mic capture not wired"
+            },
+            {
+              "line": 53,
+              "date": "2026-04-22",
+              "text": "### [2026-04-22] Inline contact picker for captures missing a contact"
+            },
+            {
+              "line": 59,
+              "date": "2026-04-23",
+              "text": "### [2026-04-23] tier-alerts.tsx deleted -- needs Slice 2B rebuild"
+            },
+            {
+              "line": 64,
+              "date": "2026-04-23",
+              "text": "### [2026-04-23] overdue-commitments.tsx deleted -- needs Slice 2B rebuild"
+            },
+            {
+              "line": 69,
+              "date": "2026-04-23",
+              "text": "### [2026-04-23] today-focus.tsx deleted -- needs Slice 2B rebuild"
+            },
+            {
+              "line": 74,
+              "date": "2026-04-23",
+              "text": "### [2026-04-23] recent-captures.tsx deleted -- needs Slice 2B rebuild"
+            },
+            {
+              "line": 79,
+              "date": "2026-04-23",
+              "text": "### [2026-04-23] week-stats.tsx deleted -- needs Slice 2B rebuild"
+            },
+            {
+              "line": 84,
+              "date": "2026-04-21",
+              "text": "### [2026-04-21] Capture editing after submit not wired"
+            }
+          ]
+        },
+        "smell": "9 open blockers >14d old without [updated] marker"
+      },
+      "durationMs": 1
     }
   ],
-  "sense": null,
+  "sense": {
+    "broken": [
+      {
+        "item": "Em dashes in recent rendered HTML",
+        "cite": "brand.dashes-in-recent-output",
+        "why": "30 em-dash hits across Desktop HTML outputs violate Rule 2 hard ban on em dashes."
+      },
+      {
+        "item": "Deprecated brand hex codes in shipped HTML",
+        "cite": "brand.deprecated-hex",
+        "why": "30 hits of #e63550, #b31a35, and #0a0a0a across 8 Desktop files indicate a stale palette is still in use."
+      },
+      {
+        "item": "Lender scope violation on event invite",
+        "cite": "brand.lender-scope-violation",
+        "why": "Christine McConnell appears on event-cycle-step-5 day-of email which is not a Julie Jarmiolowski / Optima Camelview piece, breaching Rule 9."
+      },
+      {
+        "item": "Cron morning-brief returning 500",
+        "cite": "surface.cron-morning-brief",
+        "why": "The /api/cron/morning-brief endpoint is alive but errors at 500 even though today's brief exists, indicating a regressing handler path."
+      }
+    ],
+    "drifting": [
+      {
+        "item": "48 Tier-A contacts past 5-day cadence",
+        "cite": "activity.cadence-tier-A",
+        "why": "Top-tier relationships including Julie Jarmiolowski and Amber Hollien have not been touched in over a month, eroding the strongest book."
+      },
+      {
+        "item": "27 Tier-B and 28 Tier-C contacts past cadence",
+        "cite": "activity.cadence-tier-B",
+        "why": "Mid and lower tiers are also drifting beyond their 10d and 14d windows, suggesting cadence enforcement is not running."
+      },
+      {
+        "item": "Soft-deleted contacts mutated post-delete",
+        "cite": "soft-delete.orphan-deleted_at",
+        "why": "5 deleted contacts had updated_at advance after deleted_at, signaling a job is writing to soft-deleted rows in violation of Rule 3 semantics."
+      },
+      {
+        "item": "9 BLOCKERS entries stale >14d without [updated]",
+        "cite": "hygiene.blockers-stale",
+        "why": "Slice 2B dashboard rebuild blockers and CONTACT.md gaps from 2026-04-21 have aged without status refresh, which hides whether they are still real."
+      },
+      {
+        "item": "Standing-rules numbering gap at 22",
+        "cite": "rules.duplicate-numbers",
+        "why": "Rule 22 is missing between 21 and 23, suggesting a deleted rule was not backfilled or re-numbered."
+      }
+    ],
+    "surprising": [
+      {
+        "item": "Tier-A cadence violations alongside webhook blackout",
+        "cite": "activity.cadence-tier-A",
+        "why": "Resend telemetry has been dark since 2026-05-04, so apparent cadence violations may include emails that did send but never logged events, double-counting the gap."
+      },
+      {
+        "item": "97% of skills had zero invocations in 30d",
+        "cite": "skills.zero-invocation",
+        "why": "141 of 146 skills are dormant with only roster, resume, agent-creative-brief, trim, and lock seeing real use, indicating the skill library is mostly dead weight."
+      },
+      {
+        "item": "Deprecated #e63550 concentrated in onboarding cold sequence",
+        "cite": "brand.deprecated-hex",
+        "why": "The cold onboarding emails systematically use the old red, meaning every new agent contact since the rebrand received off-brand pieces."
+      }
+    ],
+    "top3": [
+      {
+        "item": "Remove Christine McConnell from non-Julie event invite",
+        "cite": "brand.lender-scope-violation",
+        "why": "Lender scope breach is client-facing, irreversible once sent, and a hard Rule 9 violation, fix before any further send."
+      },
+      {
+        "item": "Purge deprecated hex and em dashes from active Desktop HTML",
+        "cite": "brand.deprecated-hex",
+        "why": "Off-brand color and banned punctuation are shipping in onboarding emails and door hangers, fixing the templates stops the bleed across every future send."
+      },
+      {
+        "item": "Diagnose /api/cron/morning-brief 500 and Tier-A cadence drift",
+        "cite": "surface.cron-morning-brief",
+        "why": "Brief generation is succeeding today but the cron returns 500, and 48 Tier-A contacts are past cadence, both point at the same automation surface and have the highest blast radius on the book."
+      }
+    ]
+  },
   "knownIssues": [
     {
       "id": "resend-webhook-broken",
