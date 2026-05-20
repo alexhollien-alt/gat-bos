@@ -44,3 +44,7 @@ scripts/.phase-*.json
 
 # GSD session scratch
 .plan/
+
+# Audit triage runtime state
+audits/triage/state/
+audits/triage/runs/
