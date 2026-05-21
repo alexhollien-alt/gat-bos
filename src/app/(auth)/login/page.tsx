@@ -66,7 +66,7 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                className="bg-[var(--surface-raised)] border-white/[0.06] text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
+                className="bg-secondary border-border text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
                 {...register("email")}
               />
               {errors.email && (
@@ -80,7 +80,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                className="bg-[var(--surface-raised)] border-white/[0.06] text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
+                className="bg-secondary border-border text-foreground placeholder:text-[var(--border-deep)] focus:border-[color:var(--accent-red)]/40 focus:ring-2 focus:ring-[color:var(--accent-red)]/10"
                 {...register("password")}
               />
               {errors.password && (
@@ -94,8 +94,8 @@ export default function LoginPage() {
             )}
             <Button
               type="submit"
-              className="w-full bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white transition-all hover:-translate-y-px"
-              style={{ boxShadow: "0 4px 14px rgba(230,53,80,0.25)" }}
+              className="w-full bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-foreground transition-all hover:-translate-y-px"
+              style={{ boxShadow: "0 4px 14px rgba(25,42,86,0.12)" }}
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign in"}

@@ -66,7 +66,8 @@ export type ActivityVerb =
   | 'transaction.under_contract'
   | 'transaction.in_escrow'
   | 'transaction.closed'
-  | 'transaction.fell_through';
+  | 'transaction.fell_through'
+  | 'brief_sent';
 
 export interface ActivityEvent {
   id: string;

@@ -32,11 +32,11 @@ const stepTypeIcons: Record<StepType, typeof Mail> = {
 };
 
 const stepTypeColors: Record<StepType, string> = {
-  email: "bg-blue-50 text-blue-600",
-  call: "bg-green-50 text-green-600",
-  text: "bg-purple-50 text-purple-600",
-  mail: "bg-amber-50 text-amber-600",
-  social: "bg-pink-50 text-pink-600",
+  email: "bg-secondary text-foreground",
+  call: "bg-secondary text-foreground",
+  text: "bg-secondary text-foreground",
+  mail: "bg-secondary text-foreground",
+  social: "bg-secondary text-foreground",
   task: "bg-secondary text-muted-foreground",
 };
 
