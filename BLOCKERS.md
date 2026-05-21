@@ -8,6 +8,12 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-05-20] Task System Phase 0 -- local MCP server build required before manual claude.ai setup can complete
+- **Broken:** The Claude Project on claude.ai cannot directly call `/api/captures` because the endpoint requires a bearer `INTERNAL_API_TOKEN` that must not leave the laptop / Vercel project. The wiring layer that actually performs the HTTP call does not exist yet. Phase 0 capture is laptop-only by design; mobile capture (a hosted MCP reachable from Claude on iOS or any off-laptop path) is a Phase 1 deliverable and is explicitly out of Phase 0 scope.
+- **Where:** No code yet. Future home: a sibling repo or standalone Node project running locally on Alex's laptop. References: tool schema at `src/lib/claude-tools/capture-tool.ts`; system prompt at `docs/task-system/claude-project-prompt.md`; setup steps at `docs/task-system/setup.md` (now marked blocked at the top).
+- **Fix needed:** Build a local MCP server that (a) registers the `capture_to_task_system` tool with the schema exported from `capture-tool.ts`, (b) loads `INTERNAL_API_TOKEN` and `OWNER_USER_ID` from its own environment, (c) on tool invocation POSTs to `http://localhost:<port>/api/captures` with `target: "task_system"`, `source: "claude"`, and `Authorization: Bearer $INTERNAL_API_TOKEN`, (d) returns the JSON response to Claude verbatim so the assistant can surface warnings. Spec to be decided in the next session before any code is written. Treat as scope-then-build, not next-thing-to-build. Decision still open: separate micro-gate (Gate 2.5) or rolls into Gate 3 prep.
+- **Cross-references:** Hosted MCP for mobile capture is a Phase 1 task, not handled by this entry. Gate 3 entry conditions (a)+(b)+(c) all depend on this resolving.
+
 ### [2026-05-20] Task System Phase 0 -- verb whitelist mirrored in 3 places
 - **Broken:** The verb-to-projection-type mapping for `node_events` is duplicated across three sources of truth: (1) the SQL trigger `project_activity_to_node_events()` in `supabase/migrations/20260520194801_task_system_phase0.sql` (+ replaced in `20260521003837_..._projection_walk_parent.sql`); (2) the SQL `rebuild_node_events_from_activity()` function in the same migrations; (3) the TypeScript whitelist at `src/lib/task-system/projected-verbs.ts`. If a new verb gets added to one and not the others, the projection silently drops rows the application thinks should land.
 - **Where:** the three files above. Currently 22 verbs in each.

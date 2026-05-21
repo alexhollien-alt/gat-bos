@@ -4,6 +4,10 @@ This document is the manual checklist Alex follows on claude.ai to wire up conve
 
 Estimated time: 20 minutes including a 5-minute test conversation.
 
+> **Phase 0 scope: laptop only.** Conversational capture in Phase 0 runs through a local MCP server on this laptop talking to a local `pnpm dev` running `/api/captures`. Mobile capture (a hosted MCP server reachable from Claude on iOS, or any other off-laptop path) is a **Phase 1 deliverable** and is not in scope here. Do not rely on this for capture-from-anywhere yet.
+
+> **Blocked on the MCP server build.** The manual checklist below cannot complete until the local MCP server exists. The MCP server holds `INTERNAL_API_TOKEN` and forwards `capture_to_task_system` tool calls from the Claude Project on claude.ai to `http://localhost:<port>/api/captures`. The MCP server is its own piece of work, decided in a separate scoping session before Gate 3 starts. See `BLOCKERS.md` for the open entry.
+
 ---
 
 ## What you need before you start
@@ -104,3 +108,18 @@ Do these in order. Estimated 20 minutes.
 Claude Code's Gate 2 work ends at the three deliverables in this commit. The Claude Project setup on claude.ai is your manual step. When you've finished the test conversation in step 5 and verified the rows landed in step 6, Gate 2 is closed and Gate 3 (seed 25 agents) can begin.
 
 If anything in this doc is wrong about claude.ai's current Project / tool configuration UX, that's drift between when the brief was written and now; let Claude Code know and we'll patch.
+
+---
+
+## Gate 3 entry conditions (Phase 0 paused state)
+
+Phase 0 is paused after Gate 2 sign-off (commit `03983a0`) pending the MCP server scope decision. Gate 3 cannot start until ALL of the following land. Listed here so the next session has the full picture:
+
+- **a.** Local MCP server built. Scope decided in next session. The server registers `capture_to_task_system` (schema from `src/lib/claude-tools/capture-tool.ts`), holds `INTERNAL_API_TOKEN` in its own environment, and forwards each invocation to `http://localhost:<port>/api/captures` with `target: "task_system"` and `source: "claude"` injected. Treat as scope-it-first, then build.
+- **b.** Manual claude.ai Project setup completed by Alex using the built MCP server. The 7-step checklist above runs end-to-end.
+- **c.** 3-capture test conversation in step 5 passes. Rows visible in `public.nodes` and `public.node_events`.
+- **d.** Destructive-bash hook bypass granted for `supabase db reset --local`. Requested explicitly in Gate 3 kickoff message; granted for that one command only; hook stays on for everything else.
+- **e.** Local DB drift cleared via the reset (duplicate "Agent Partnerships" area, 3 Julie cadence rows, ad-hoc test 7 area). See `BLOCKERS.md` entry "Task System Phase 0 -- local dev DB drift" for the catalog.
+- **f.** Agent source confirmed: `~/Documents/Alex Hub(Obs)/wiki/agents/`. Per Standing Decision #4 / item #5 in the brief carry-forward.
+
+Phase 1 entry conditions are not scoped here; they begin only after Phase 0 ships end-to-end (morning brief landing in Alex's inbox).
