@@ -51,11 +51,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** `src/lib/altos/client.ts` -- `altosCredentialsAvailable()` gate at top of `fetchAltosSnapshot`. Real Altos HTTP call is the TODO inside that function.
 - **Fix needed:** (1) Provision Altos Research API key + endpoint URL. (2) Set `ALTOS_API_KEY` (and any sibling vars) in Vercel preview + production via `vercel env add`. (3) Implement the real fetch in `fetchAltosSnapshot` using `market.altos.zip` + `market.altos.propertyType` from `TRACKED_MARKETS`. (4) Remove or downgrade this BLOCKERS entry. Slice 8 Phases 3-5 can proceed against the placeholder shape until then.
 
-### [2026-05-02] Portal-read RPC layer not yet built (Slice 7C dashboard data sections)
-- **Broken:** `/portal/[slug]/dashboard` ships with empty-state cards for touchpoints, messages, and upcoming events. The underlying tables (`project_touchpoints`, `messages_log`, `events`) are gated by 7B account-scoping RLS to the account owner (Alex). The agent's authenticated portal session cannot read them directly.
-- **Where:** `src/app/portal/[slug]/dashboard/page.tsx` (Slice 7C Task 4a). Sections render hard-coded empty states.
-- **Fix needed:** Add three SECURITY DEFINER RPCs scoped to the calling auth.uid() -> contacts.id -> account_id binding: `get_portal_touchpoints(p_slug)`, `get_portal_messages(p_slug)`, `get_portal_upcoming_events(p_slug)`. Each returns rows filtered to the agent's contact_id. Wire into the dashboard page sections. Likely Slice 7D or a follow-up Slice 7C.5.
-
 ### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
 - **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
 - **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
@@ -218,6 +213,12 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - Once Blocker #1 resolves, these strings move to `contacts.tagline`.
 - Closing commit: `a0ac043` (prod deploy `dpl_DthBaahUUniqmTYrQYEhS2aFNWnM`, aliased to `gat-bos.vercel.app`).
 
+### [2026-05-02] Portal-read RPC layer not yet built (Slice 7C dashboard data sections) -- RESOLVED 2026-05-21 (Slice 7C.5)
+- Resolution: Added 3 `SECURITY DEFINER` RPCs in `supabase/migrations/20260521220710_portal_read_rpcs.sql` -- `get_portal_touchpoints(p_slug)`, `get_portal_messages(p_slug)`, `get_portal_upcoming_events(p_slug)`. Each verifies `lower(auth.jwt() ->> 'email') = lower(contacts.email)` for the slug-resolved agent contact before returning rows; secure-default is empty result set when JWT email doesn't match. `messages_log` binds via `recipient_email`; `project_touchpoints` joins through `projects.owner_contact_id` OR the polymorphic `entity_table='contacts'`/`entity_id` link; `events` joins through `events.contact_id` OR `attendees.contact_id`. All filtered to live rows (`deleted_at IS NULL`), capped at 20.
+- Wrappers: `src/lib/portal/reads.ts` (server-only, return `[]` on error/null). Page wiring: `src/app/portal/[slug]/(authed)/dashboard/page.tsx` reads via `Promise.all`, renders new `DashboardListCard` when populated and falls back to the original `DashboardCard` empty-state when the result set is empty.
+- Smoke verification 2026-05-21: migration registered on remote as `20260521220710` (`supabase migration list --linked`); applied locally via psql against `localhost:54322`. Local probes confirm: (1) all 3 RPCs callable, return 0 rows with no JWT (secure default), (2) auth.jwt() email binding resolves correctly against `julie-jarmiolowski` / `julie@kay-grant.com` with the simulated claim, (3) dev server route `/portal/julie-jarmiolowski/dashboard` returns 307 redirect to `/portal/julie-jarmiolowski/login` (no 500, middleware gate intact). Populated-path verification deferred to production data -- local DB has no seeded touchpoints / messages / future events for any portal-eligible agent.
+- Closing commit: `[PLACEHOLDER: filled at ship commit]`.
+
 ---
 
-Remaining placeholders in this file: none. No `CONFIRM:` / `MISSING TOKEN:` / `TBD:` markers beyond what's scoped in each Open entry.
+Remaining placeholders in this file: one (closing commit SHA for the 2026-05-02 RESOLVED entry, filled at ship time).
