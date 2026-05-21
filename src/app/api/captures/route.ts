@@ -295,6 +295,22 @@ async function handleTaskSystemTarget(args: {
     }
   }
 
+  // Areas are fixed at 5 per handoff Section 3.5. The unified nodes table
+  // can't enforce the cap with a CHECK constraint, so the route + the Claude
+  // Project system prompt are the enforcement layers. New areas require a
+  // migration, not a capture.
+  if (inferredType === "area") {
+    return NextResponse.json(
+      {
+        error: "areas_not_writable",
+        message:
+          "Areas are fixed at 5 (Sales Production, Agent Partnerships, GAT-BOS Build, BNI / SAAR / WCR, Personal). New areas require a migration, not a capture.",
+        resolved_from: hints?.type ? "explicit_hint" : "inference",
+      },
+      { status: 422 },
+    );
+  }
+
   // Parent resolution (best effort, fill-and-flag on miss).
   // Use adminClient under bearer auth; supabase server client under session
   // auth (RLS still satisfied because user_id = auth.uid()). resolveParent
