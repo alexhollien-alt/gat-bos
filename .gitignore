@@ -44,3 +44,11 @@ scripts/.phase-*.json
 
 # GSD session scratch
 .plan/
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
