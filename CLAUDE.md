@@ -8,8 +8,32 @@ Brand tokens, screen aesthetic, and design logic live in the global rules.
 ## Pointers
 
 - Brand tokens (colors, fonts, voice): `~/.claude/rules/brand.md`
+- Color system (Pearl/Navy/Champagne/Rose + per-agent overrides): `~/.claude/context/colors.md`
+- Typography (system kit + per-agent kits): `~/.claude/context/typography.md`
 - Screen aesthetic (depth, motion, components): `~/.claude/context/digital-aesthetic.md`
 - Design logic (image audit, data models): `~/.claude/context/design-foundation.md`
+- Client universe (agent roster, scoping): `~/.claude/context/client-universe.md` + `~/Documents/Alex Hub(Obs)/wiki/_master-index.md`
+- Dashboard architecture (stack lock, widget taxonomy): `~/.claude/rules/dashboard-architecture.md`
+- Revenue automation engine (campaigns, drips, lifecycle): `~/crm/docs/revenue-automation-engine.md`
+
+---
+
+## Design Output Ownership
+
+Any CRM-rendered visual deliverable (flyer, email, landing page, listing presentation, social graphic, mailer) routes through `design-generator` FIRST. The router locks ownership before any production skill fires.
+
+- **AGENT-OWNED:** piece names a specific agent (Julie, Fiona, Amber, etc.). Loads that agent's palette + kit via theme-factory. No GAT branding on the deliverable.
+- **GAT-OWNED:** piece markets GAT title services, capabilities, partner education. Uses system palette from `colors.md` + system kit from `typography.md`. GAT compliance row (logo + EHO + MLS) appears on print output per `brand.md` co-brand rules.
+- Ownership lock emitted as HTML comment in output: `<!-- ownership: AGENT-OWNED:<agent-slug> -->` or `<!-- ownership: GAT-OWNED -->`.
+- Do not call `re-print-design`, `re-email-design`, `re-landing-page`, `re-listing-presentation`, or `canva-handoff` directly from `~/crm/` work when `design-generator` can route. The router enforces brand-vs-quality chain order and the output-enforcement gate.
+
+---
+
+## Cross-Reference Pointers
+
+- Dev server port probe (3000 vs 3001): Standing Rule 17 in `~/.claude/rules/standing-rules.md`.
+- Supabase CLI exclusive (no MCP, no paste-files): Standing Rule 23 in `~/.claude/rules/standing-rules.md`.
+- Work-type → tool/CLI/MCP map: `~/.claude/rules/tool-routing.md`.
 
 ---
 

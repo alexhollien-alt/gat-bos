@@ -14,7 +14,8 @@
     "gat-audit:truth": "tsx audits/runners/truth.ts",
     "gat-audit:surface": "tsx audits/runners/surface.ts",
     "gat-audit:skills": "tsx audits/runners/skills.ts",
-    "gat-audit:rules": "tsx audits/runners/rules.ts"
+    "gat-audit:rules": "tsx audits/runners/rules.ts",
+    "gat-audit:triage": "tsx audits/triage/run-triage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.85.0",
