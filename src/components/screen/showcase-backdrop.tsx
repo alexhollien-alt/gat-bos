@@ -20,13 +20,15 @@ export function ShowcaseBackdrop({
   image,
   imageOpacity = 0.12,
   imagePosition = "center 30%",
-  accents = true,
-  noise = true,
+  accents,
+  noise,
   baseGradient = "linear-gradient(160deg, var(--surface-base) 0%, var(--surface-raised) 40%, var(--surface-base) 100%)",
   overlayOpacity = 0.6,
   className,
   children,
 }: ShowcaseBackdropProps) {
+  const showAccents = accents ?? Boolean(image);
+  const showNoise = noise ?? Boolean(image);
   return (
     <div className={cn("relative overflow-hidden", className)} style={{ background: baseGradient }}>
       {image ? (
@@ -46,21 +48,21 @@ export function ShowcaseBackdrop({
           style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity})` }}
         />
       ) : null}
-      {accents ? (
+      {showAccents ? (
         <div
           className="absolute inset-0 pointer-events-none"
           style={
             {
               backgroundImage: `
-                radial-gradient(ellipse at 90% 10%, rgba(230,53,80,0.16) 0%, transparent 50%),
-                radial-gradient(ellipse at 5% 95%, rgba(37,99,235,0.10) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.012) 0%, transparent 70%)
+                radial-gradient(ellipse at 90% 10%, rgba(237,166,163,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 5% 95%, rgba(247,215,148,0.10) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(252,251,251,0.04) 0%, transparent 70%)
               `,
             } as CSSProperties
           }
         />
       ) : null}
-      {noise ? (
+      {showNoise ? (
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.025]"
           style={{ backgroundImage: NOISE_SVG }}
