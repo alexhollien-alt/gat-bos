@@ -35,6 +35,15 @@
 - Boot dev server first via `pnpm dev` in `~/crm/`. Probe ports 3000 and 3001 per standing Rule 17.
 - Run the route captures in parallel per the source plan's "fan out" directive.
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 023-01-PLAN.md, Wave 0 environment check + Playwright auth storageState capture (blocks all downstream waves)
+- [ ] 023-02-PLAN.md, Wave 1 write Direction B locked spec to disk (parallel with 03)
+- [ ] 023-03-PLAN.md, Wave 1 fan-out Playwright captures (5 routes x 2 viewports + /events fill-and-flag)
+- [ ] 023-04-PLAN.md, Wave 2 design-critique Mode A per captured PNG (8 critique markdowns)
+- [ ] 023-05-PLAN.md, Wave 3 synthesize PATTERNS.md (system vs component partition; GATE 1 halt)
+
 ### Phase 024: Email Surface Audit
 
 **Goal:** Capture every production email template at desktop and mobile widths, in both light and Gmail dark-mode simulation, and audit `re-email-design` for stale platform references before running creative critique.

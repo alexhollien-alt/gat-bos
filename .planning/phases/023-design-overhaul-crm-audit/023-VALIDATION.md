@@ -46,8 +46,7 @@ created: 2026-05-21
 | 023-03-03 | 03 | 1 | AUDIT-CRM-01 | n/a | PNGs exist for /contacts/[id] (seed Stephanie Reid 350ef57b-4c09-4952-bf70-87dad5a94d2e) | file | `test -s $AUDIT_DIR/crm/contact-detail-1440x900.png && test -s $AUDIT_DIR/crm/contact-detail-390x844.png` | W0 | pending |
 | 023-03-04 | 03 | 1 | AUDIT-CRM-01 | n/a | /events fill-and-flag, route absent per research | file | `test -f $AUDIT_DIR/crm/events-missing.md` | W0 | pending |
 | 023-03-05 | 03 | 1 | AUDIT-CRM-02 | n/a | alexhollienco.com prod PNGs exist at both viewports | file | `test -s $AUDIT_DIR/crm/alexhollienco-1440x900.png && test -s $AUDIT_DIR/crm/alexhollienco-390x844.png` | W0 | pending |
-| 023-04-01 | 04 | 2 | AUDIT-CRM-04 | n/a | one critique .md per captured PNG | grep | `[ $(ls $AUDIT_DIR/crm/critique-*.md \| wc -l) -ge $(ls $AUDIT_DIR/crm/*.png \| wc -l) ]` | W0 | pending |
-| 023-04-02 | 04 | 2 | AUDIT-CRM-04 | n/a | every critique addresses 6-criterion rubric | grep | `for f in $AUDIT_DIR/crm/critique-*.md; do grep -q "Token compliance" $f && grep -q "Typography hierarchy" $f && grep -q "Crimson usage" $f; done` | W0 | pending |
+| 023-04-01 | 04 | 2 | AUDIT-CRM-04 | n/a | one critique .md per captured PNG AND every critique addresses the 6-criterion rubric | grep | `[ $(ls $AUDIT_DIR/crm/critique-*.md \| wc -l) -ge $(ls $AUDIT_DIR/crm/*.png \| wc -l) ] && for f in $AUDIT_DIR/crm/critique-*.md; do grep -q "Token compliance" $f && grep -q "Typography hierarchy" $f && grep -q "Crimson usage" $f; done` | W0 | pending |
 | 023-05-01 | 05 | 3 | AUDIT-CRM-05 | n/a | PATTERNS.md exists and separates system vs component | grep | `grep -q "## System-level violations" $AUDIT_DIR/crm/PATTERNS.md && grep -q "## Component-level violations" $AUDIT_DIR/crm/PATTERNS.md` | W0 | pending |
 
 Status legend: pending, green, red, flaky.
