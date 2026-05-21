@@ -1,102 +1,158 @@
-# Relationship CRM
+# GAT-BOS CRM
 
-A relationship management tool built for title sales executives in Phoenix real estate. Track contacts, log interactions, manage follow-ups, and maintain relationship health across your network of agents and brokers.
+Single-operator CRM for Alex Hollien at Great American Title Agency. Tracks the universe of Phoenix-area real estate agents, ingests communications (Gmail, Calendar, voice and text captures, intake form), and triages follow-up across an AI-assisted surface.
+
+Not a public product. Single-tenant in practice, multi-tenant in schema design.
 
 ## Stack
 
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Supabase (Auth + PostgreSQL)
-- Lucide React
+- Next.js 14 (App Router) + TypeScript
+- Tailwind CSS v3 + shadcn/ui v4
+- Supabase (Auth + Postgres + Realtime)
+- TanStack Query v5 + dnd-kit + cmdk + Recharts
 - React Hook Form + Zod
+- Anthropic SDK + OpenAI SDK (Whisper)
+- Resend (transactional + Weekly Edge)
+- Vitest + Playwright + Lighthouse
+- pnpm (never npm or yarn)
+
+See `package.json` for full dependency list.
 
 ## Setup
 
-### 1. Create a Supabase project
+### 1. Link the Supabase project
 
-Go to [supabase.com](https://supabase.com) and create a new project.
+```bash
+supabase link --project-ref <your-project-ref>
+```
 
-### 2. Run the schema
+All schema work flows through the Supabase CLI. Direct SQL Editor use is retired.
 
-Open the SQL Editor in your Supabase dashboard and run the contents of `supabase/schema.sql`. This creates all tables, enums, RLS policies, and indexes.
-
-### 3. Configure environment
-
-Copy the example env file and fill in your Supabase credentials:
+### 2. Configure environment
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` with your project URL and anon key (found in Supabase > Settings > API).
+At minimum, fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Additional keys (Resend, Anthropic, OpenAI, Google OAuth) gate their respective integrations. See `docs/architecture/auth-flow.md` for the full env contract.
 
-### 4. Install dependencies
-
-```bash
-npm install
-```
-
-### 5. Run the dev server
+For Vercel-managed envs:
 
 ```bash
-npm run dev
+vercel env pull --environment=preview
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You will be redirected to the login page.
+### 3. Install dependencies
 
-### 6. Create an account
-
-Sign up with email and password. If your Supabase project has email confirmation enabled, either:
-- Confirm via the email link, or
-- Disable email confirmation in Supabase > Authentication > Providers > Email
-
-### 7. Seed data (optional)
-
-After signing up, get your user ID from the Supabase Auth dashboard (Authentication > Users). Then run this in the SQL Editor:
-
-```sql
-select seed_data('your-user-id-here');
+```bash
+pnpm install
 ```
 
-This inserts 10 realistic contacts (Phoenix-area real estate agents), tags, interactions, notes, tasks, and follow-ups.
+### 4. Apply migrations
 
-## Features (Phase 1)
+```bash
+supabase db push
+```
 
-- **Auth**: Email/password login and signup with protected routes
-- **Dashboard**: Follow-ups due today, overdue tasks, recent contacts, recent interactions, relationship breakdown stats, quick-add actions
-- **Contacts**: Searchable list with filters by relationship strength and tag. Detail page with timeline, notes, and tasks tabs
-- **Interactions**: Fast-add modal for logging calls, texts, emails, meetings, broker opens, lunches, and notes
-- **Notes**: Freeform notes per contact, reverse chronological, inline editable
-- **Tasks**: Due date, priority, status with inline completion toggle
-- **Follow-ups**: Due date tracking with overdue highlighting, mark complete/skip
-- **Tags**: Color-coded chips on contacts, filter contacts by tag
-- **Relationship Strength**: New / Warm / Active Partner / Advocate / Dormant with color-coded badges
+121 migrations live under `supabase/migrations/`. Schema is idempotent; reruns are safe.
 
-## Schema
+### 5. Generate Supabase types
 
-The contact model includes `source` and `lead_status` fields to support future lead generation system integration. See `supabase/schema.sql` for the full schema.
+```bash
+supabase gen types typescript --linked > src/lib/supabase/types.ts
+```
 
-## Project Structure
+Regenerate after every schema change.
+
+### 6. Run the dev server
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). If 3000 is occupied, Next.js auto-increments to 3001.
+
+### 7. Verify the build
+
+```bash
+pnpm typecheck && pnpm build
+```
+
+Both must pass before any commit. See `CLAUDE.md` for the canonical pre-commit gate.
+
+## Current surface
+
+Authenticated app under `src/app/(app)/`:
+
+- `dashboard/` -- bento grid widgets, relationship health, KPI cards
+- `today/` and `today-v2/` -- prioritized action queue (Linear Focus model), runway authoring, CallRow UX with toasts and undo
+- `contacts/` -- searchable agent universe with timeline, opportunities, deals, tasks tabs
+- `opportunities/` and `deals/` -- pipeline (dollar volume) and closing-date workstreams; not synonyms, see `~/.claude/rules/dashboard-architecture.md`
+- `tasks/` -- task system phase 0 schema + capture endpoint
+- `inbox/` -- Gmail-scanned items awaiting triage
+- `captures/` -- universal capture bar inbound (text + voice + intake)
+- `morning/` -- AI morning brief (Edge function, cached 1h)
+- `weekly-edge/` and `drafts/` -- assemble + send pipeline, approve gate, telemetry
+- `campaigns/` -- drip + nurture orchestration
+- `material-requests/` and `materials/` -- marketing collateral fulfilment
+- `projects/` -- agent-scoped project tracking with touchpoint cadence
+- `analytics/` -- activity event dashboards
+- `actions/` -- 0-100 ranked next-action list
+
+Public surfaces:
+
+- `intake/` -- public agent intake form (rate-limited)
+- `agents/[slug]/` and `agent/[token]/` -- agent portal (token-gated read-only, Slice 7C)
+- `portal/[slug]/` -- redeemable invite portal
+
+API layer: 30 route handlers under `src/app/api/` across 11 functional groups. 9 cron jobs in `vercel.json` (morning brief, weekly edge assemble + send, gmail sync, calendar sync, health score recompute, touchpoint reminders, captures cleanup, campaign runner).
+
+For the moving build state, read `BUILD.md` at repo root.
+For known broken integrations, read `BLOCKERS.md`.
+
+## Architecture
+
+Read in order:
+
+1. `docs/architecture/EXECUTIVE_SUMMARY.md` -- TL;DR + top risks/opportunities/wins
+2. `docs/architecture/system-map.md` -- structural index of routes, lib modules, components, cron, migrations
+3. `docs/architecture/data-flow.md` -- write paths, the `activity_events` sink, read projections
+4. `docs/architecture/auth-flow.md` -- session + cron + webhook + token auth modes; tenant scoping
+5. `docs/architecture/ai-agent-guide.md` -- Claude wrapper, AI budget, morning brief composition
+6. `docs/architecture/dependency-analysis.md` -- cross-module graph
+7. `docs/architecture/technical-debt-hotspots.md` -- where risk and refactor candidates live
+
+Operational deep dives live under `docs/infrastructure/`; doc index at `docs/INDEX.md`.
+
+## Project structure
 
 ```
 src/
   app/
-    (auth)/          Login and signup pages
-    (app)/           Protected app pages (dashboard, contacts, tasks, follow-ups)
-  components/
-    ui/              shadcn/ui primitives
-    dashboard/       Dashboard widget components
-    contacts/        Contact list, card, filters, form
-    interactions/    Interaction logging modal
-    notes/           Note editor and display
-    tasks/           Task list and form
-    follow-ups/      Follow-up list and form
-    tags/            Tag chips and picker
-  lib/
-    supabase/        Supabase client (browser + server)
-    types.ts         TypeScript types
-    constants.ts     Relationship, interaction, priority configs
-    validations.ts   Zod schemas
+    (app)/         Authenticated app surface (see "Current surface")
+    (auth)/        Login + signup
+    api/           30 route handlers, 11 functional groups
+    agents/        Public agent profile pages
+    agent/         Token-gated agent portal
+    intake/        Public intake form
+    portal/        Invite redemption
+  components/      18 buckets (ui/, tickets/, interactions/, tasks/, ...)
+  lib/             26 domain modules (activity/, ai/, contacts/, opportunities/, ...)
+supabase/
+  migrations/      121 timestamped SQL migrations
+audits/            Brand + truth + surface + skills + rules audit framework
+scripts/           Smoke + debug + build helpers
+docs/              Architecture, infrastructure, task-system, plans, superpowers
+.planning/         GSD execution protocol (overrides /lock inside ~/crm/)
 ```
+
+## Working in this repo
+
+- Every session classifies as **build** or **plumbing**. Read `BUILD.md` (what we're building) and `BLOCKERS.md` (broken integrations) before starting.
+- Build sessions ship UI/copy/features. Plumbing sessions fix integrations.
+- Mid-build blockers: hardcode a fallback, log to `BLOCKERS.md`, keep building.
+- GSD protocol (`/gsd-plan-phase`, `/gsd-execute-phase`) replaces `/lock` inside this repo.
+- Migrations: `supabase migration new <name>` then `supabase db push`. Never paste raw SQL into Supabase Studio.
+- Verify before done: `pnpm typecheck && pnpm build`.
+
+Full conventions in `CLAUDE.md` at repo root.
