@@ -60,6 +60,7 @@ export type ActivityVerb =
   | 'event.invite.test_sent'
   | 'event.invite.sent'
   | 'event.invite.send_failed'
+  | 'event.rsvp.received'
   | 'deliverable.shipped'
   | 'deliverable.briefed'
   | 'transaction.opened'

@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.4"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -476,6 +471,44 @@ export type Database = {
           },
         ]
       }
+      cadences: {
+        Row: {
+          contact_id: string
+          created_at: string
+          last_touched_at: string | null
+          next_due_at: string | null
+          target_days: number
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          last_touched_at?: string | null
+          next_due_at?: string | null
+          target_days: number
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          last_touched_at?: string | null
+          next_due_at?: string | null
+          target_days?: number
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadences_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_drafts: {
         Row: {
           approved_at: string | null
@@ -904,6 +937,7 @@ export type Database = {
           notes: string | null
           palette: string | null
           phone: string | null
+          portal_token: string
           preferred_channel: string | null
           referred_by: string | null
           rep_pulse: number | null
@@ -952,6 +986,7 @@ export type Database = {
           notes?: string | null
           palette?: string | null
           phone?: string | null
+          portal_token?: string
           preferred_channel?: string | null
           referred_by?: string | null
           rep_pulse?: number | null
@@ -1000,6 +1035,7 @@ export type Database = {
           notes?: string | null
           palette?: string | null
           phone?: string | null
+          portal_token?: string
           preferred_channel?: string | null
           referred_by?: string | null
           rep_pulse?: number | null
@@ -1432,6 +1468,62 @@ export type Database = {
             columns: ["message_log_id"]
             isOneToOne: false
             referencedRelation: "messages_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_rsvps: {
+        Row: {
+          brokerage: string
+          confirmation_message_id: string | null
+          created_at: string
+          deleted_at: string | null
+          email: string
+          event_id: string
+          guest_count: number
+          id: string
+          ip_address: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          brokerage: string
+          confirmation_message_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          event_id: string
+          guest_count?: number
+          id?: string
+          ip_address?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          brokerage?: string
+          confirmation_message_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          event_id?: string
+          guest_count?: number
+          id?: string
+          ip_address?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -2119,6 +2211,167 @@ export type Database = {
         }
         Relationships: []
       }
+      node_events: {
+        Row: {
+          activity_id: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          node_id: string | null
+          occurred_at: string
+          project_id: string | null
+          summary: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          contact_id?: string | null
+          created_at?: string
+          id: string
+          metadata?: Json
+          node_id?: string | null
+          occurred_at: string
+          project_id?: string | null
+          summary?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          node_id?: string | null
+          occurred_at?: string
+          project_id?: string | null
+          summary?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_events_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activity_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_events_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_events_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      node_tags: {
+        Row: {
+          node_id: string
+          tag_id: string
+        }
+        Insert: {
+          node_id: string
+          tag_id: string
+        }
+        Update: {
+          node_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_tags_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nodes: {
+        Row: {
+          body: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          last_touched_at: string | null
+          metadata: Json
+          parent_id: string | null
+          status: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          last_touched_at?: string | null
+          metadata?: Json
+          parent_id?: string | null
+          status?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          last_touched_at?: string | null
+          metadata?: Json
+          parent_id?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oauth_tokens: {
         Row: {
           access_token: string | null
@@ -2422,6 +2675,75 @@ export type Database = {
           },
         ]
       }
+      public_events: {
+        Row: {
+          address: string | null
+          created_at: string
+          deleted_at: string | null
+          event_end: string
+          event_start: string
+          hero_image_url: string | null
+          host_contact_id: string | null
+          id: string
+          intro_copy: string | null
+          slug: string
+          status: string
+          subtitle: string | null
+          timezone: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          event_end: string
+          event_start: string
+          hero_image_url?: string | null
+          host_contact_id?: string | null
+          id?: string
+          intro_copy?: string | null
+          slug: string
+          status?: string
+          subtitle?: string | null
+          timezone?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          event_end?: string
+          event_start?: string
+          hero_image_url?: string | null
+          host_contact_id?: string | null
+          id?: string
+          intro_copy?: string | null
+          slug?: string
+          status?: string
+          subtitle?: string | null
+          timezone?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_events_host_contact_id_fkey"
+            columns: ["host_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_events_host_contact_id_fkey"
+            columns: ["host_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           count: number
@@ -2650,6 +2972,27 @@ export type Database = {
           url?: string | null
           usage_notes?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -3252,6 +3595,44 @@ export type Database = {
         }[]
       }
       current_day_ai_spend_usd: { Args: never; Returns: number }
+      get_portal_messages: {
+        Args: { p_slug: string }
+        Returns: {
+          created_at: string
+          id: string
+          recipient_email: string
+          send_mode: Database["public"]["Enums"]["template_send_mode"]
+          sent_at: string
+          status: Database["public"]["Enums"]["message_status"]
+          template_id: string
+          template_name: string
+        }[]
+      }
+      get_portal_touchpoints: {
+        Args: { p_slug: string }
+        Returns: {
+          created_at: string
+          due_at: string
+          id: string
+          note: string
+          occurred_at: string
+          project_id: string
+          project_title: string
+          touchpoint_type: Database["public"]["Enums"]["project_touchpoint_type"]
+        }[]
+      }
+      get_portal_upcoming_events: {
+        Args: { p_slug: string }
+        Returns: {
+          description: string
+          end_at: string
+          id: string
+          location: string
+          rsvp_status: string
+          start_at: string
+          title: string
+        }[]
+      }
       get_public_agent_by_slug: {
         Args: { p_slug: string }
         Returns: {
@@ -3278,6 +3659,7 @@ export type Database = {
         Args: { p_key: string; p_window_start: string }
         Returns: number
       }
+      rebuild_node_events_from_activity: { Args: never; Returns: number }
       recompute_all_relationship_health_scores: {
         Args: { p_batch_limit?: number }
         Returns: number
@@ -3291,6 +3673,8 @@ export type Database = {
           slug: string
         }[]
       }
+      seed_data: { Args: { p_user_id: string }; Returns: undefined }
+      system_actor_id: { Args: never; Returns: string }
       upsert_relationship_health_score: {
         Args: { p_contact_id: string }
         Returns: undefined
@@ -3643,3 +4027,4 @@ export const Constants = {
     },
   },
 } as const
+
