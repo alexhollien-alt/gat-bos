@@ -1,17 +1,14 @@
-// Slice 8 Phase 2 -- Altos pull cron.
+// Slice 8 Phase 2 -- weekly market snapshot pull cron.
 //
-// Schedule: 0 13 * * 1 UTC (Mon 6 AM PHX, MST year-round, no DST). Wired in
-// vercel.json during Phase 5. Manual trigger: GET with Bearer CRON_SECRET.
+// Schedule: 0 13 * * 1 UTC (Mon 6 AM PHX, MST year-round, no DST). Manual
+// trigger: GET with Bearer CRON_SECRET.
 //
-// For each market in TRACKED_MARKETS, fetch the current Altos snapshot and
-// upsert into weekly_snapshot keyed by (week_of, market_slug). week_of is the
-// Monday of the current ISO week (date, no time).
-//
-// Fill-and-flag: ALTOS_API_KEY is not yet provisioned. fetchAltosSnapshot
-// returns { status: "pending_credentials" } and we still upsert the row so
-// the assembly cron downstream has a row to read. The placeholder shape is
-// the human-visible signal; reviewers see "pending_credentials" in the
-// rendered draft and reject it. See BLOCKERS.md entry [2026-05-03].
+// For each market in TRACKED_MARKETS, fetch the current snapshot via
+// fetchAltosSnapshot (which now streams Redfin's public ZIP-level TSV from
+// S3; the Altos API integration was abandoned 2026-05-22 when Alex could not
+// procure an API key -- see ~/.claude/plans/altos-does-not-have-ethereal-lovelace.md)
+// and upsert into weekly_snapshot keyed by (week_of, market_slug). week_of
+// is the Monday of the current ISO week (date, no time).
 //
 // activity_events verbs: weekly_snapshot.pulled (per market success),
 // weekly_snapshot.pull_failed (per market upsert error). Verbs added to
@@ -26,7 +23,9 @@ import { TRACKED_MARKETS, type TrackedMarket } from "@/lib/markets/tracked";
 import { fetchAltosSnapshot, type AltosSnapshotData } from "@/lib/altos/client";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Redfin TSV is ~1.5GB compressed; stream-decompress + line-filter takes
+// 30-90s on Vercel<->S3 (same AWS region). 300s gives headroom for retries.
+export const maxDuration = 300;
 
 const ROUTE = "/api/cron/altos-pull";
 
