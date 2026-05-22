@@ -12,6 +12,7 @@
 # next.js
 /.next/
 /.next.stale-*/
+/.next.dev-old-*/
 /out/
 
 # production
@@ -44,3 +45,9 @@ scripts/.phase-*.json
 
 # GSD session scratch
 .plan/
+
+# playwright / smoke artifacts at repo root
+/playwright-report/
+/test-results/
+/rsvp-*.png
+/rsvp-prod.yaml
