@@ -8,12 +8,6 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
-### [2026-05-22] Weekly Edge writer Claude call times out at 10s under real data load
-- **Broken:** `/api/cron/weekly-edge-assemble` 500s with `claude.messages.create.weekly-edge-writer timed out after 10000ms`. Pre-existing global timeout in `src/lib/retry.ts:7` (`DEFAULT_TIMEOUT_MS = 10_000`). Was masked while `fetchAltosSnapshot` returned `pending_credentials` because the writer short-circuited before hitting Claude. Now that the Altos -> Redfin TSV pivot lands real data in `weekly_snapshot`, the writer actually invokes Claude and the 10s ceiling is too tight for the system-prompt + cache-warm cold-path generation (real generations land 10-25s on Sonnet 4.x with prompt caching).
-- **Where:** `src/lib/retry.ts:7-22` -- `withRetry()` hardcodes `DEFAULT_TIMEOUT_MS = 10_000` and uses it for every call site (Gmail, Calendar, Resend, Claude). No per-call override exists. Caller in `src/lib/ai/weekly-edge-writer.ts:155-168` routes through `cachedClaude.create()` which (somewhere in the chain) hits `withRetry` with the global timeout.
-- **Fix needed:** Add an optional `timeoutMs` parameter to `withRetry` (default 10s, preserves existing behavior). Pass `timeoutMs: 30000` from the Claude-API wrapper specifically, or pass per-call from the writer site. Small surgical change. Verify by triggering `/api/cron/weekly-edge-assemble` against prod after the bump and confirming the resulting `campaign_drafts` row's `body_html` contains the real Redfin numbers ($1.3M, DOM 49, +5.78% MoM, +3.38% YoY).
-- **Cross-references:** Surfaced during P1.5 verification of the Altos pivot (see Resolved `[2026-05-03]` ALTOS_API_KEY entry). Not blocking P1.5 closure; the data pipeline is fully verified. Blocking automatic Weekly Edge draft generation Tuesdays at 11 AM Phoenix until fixed.
-
 ### [2026-05-20] Task System Phase 0 -- local MCP server build required before manual claude.ai setup can complete
 - **Broken:** The Claude Project on claude.ai cannot directly call `/api/captures` because the endpoint requires a bearer `INTERNAL_API_TOKEN` that must not leave the laptop / Vercel project. The wiring layer that actually performs the HTTP call does not exist yet. Phase 0 capture is laptop-only by design; mobile capture (a hosted MCP reachable from Claude on iOS or any off-laptop path) is a Phase 1 deliverable and is explicitly out of Phase 0 scope.
 - **Where:** No code yet. Future home: a sibling repo or standalone Node project running locally on Alex's laptop. References: tool schema at `src/lib/claude-tools/capture-tool.ts`; system prompt at `docs/task-system/claude-project-prompt.md`; setup steps at `docs/task-system/setup.md` (now marked blocked at the top).
@@ -108,6 +102,12 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 ---
 
 ## Resolved
+
+### [2026-05-22] Weekly Edge writer Claude call times out at 10s under real data load -- RESOLVED 2026-05-22
+- **Resolution:** Added optional `RetryOptions { timeoutMs?: number }` to `withRetry()` in `src/lib/retry.ts` (default 10_000 preserved for Gmail/Calendar/Resend). Claude wrapper at `src/lib/ai/_client.ts:114` now passes `{ timeoutMs: 30_000 }` so real-data Weekly Edge writer generations no longer trip the global 10s ceiling. Surgical change; no behavior change for non-Claude call sites.
+- **Verification:** `pnpm typecheck` PASS, `pnpm build` PASS pre-commit. Prod cron re-trigger gated to Alex.
+- **Closing commit:** `1a9367f` on `feat/rsvp-berneil-landing` (plumbing piggyback on RSVP branch; will land with PR for that feature).
+- **Plan:** `~/.claude/plans/weekly-audit-followups-2026-05-22.md` Action 1.
 
 ### [2026-05-03] ALTOS_API_KEY not provisioned (Slice 8 Phase 2 Altos pull cron) -- RESOLVED 2026-05-22
 - **Resolution:** Altos Research could not issue an obtainable API key. Pivoted entirely off Altos to Redfin's public ZIP-level market tracker TSV on S3 (`https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/zip_code_market_tracker.tsv000.gz`). No bot detection, no auth, no scraping, no selector rot. All six `AltosSnapshotData` fields map to stable TSV columns. New module `src/lib/altos/scrape/redfin-tsv.ts` streams the 1.5 GB gz, gunzips inline, line-filters by region + property type, picks latest `PERIOD_END`.
