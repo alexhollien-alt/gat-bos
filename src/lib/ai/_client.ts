@@ -121,6 +121,7 @@ export async function callClaude(params: CallClaudeParams): Promise<CallClaudeRe
           ...(tools ? { tools } : {}),
         }),
       retryLabel ?? `claude.${feature}`,
+      { timeoutMs: 30_000 },
     );
   } catch (err) {
     // Log the failure row so cost-per-failure is visible.
