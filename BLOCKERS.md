@@ -8,6 +8,12 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 
 ## Open
 
+### [2026-05-22] Weekly Edge writer Claude call times out at 10s under real data load
+- **Broken:** `/api/cron/weekly-edge-assemble` 500s with `claude.messages.create.weekly-edge-writer timed out after 10000ms`. Pre-existing global timeout in `src/lib/retry.ts:7` (`DEFAULT_TIMEOUT_MS = 10_000`). Was masked while `fetchAltosSnapshot` returned `pending_credentials` because the writer short-circuited before hitting Claude. Now that the Altos -> Redfin TSV pivot lands real data in `weekly_snapshot`, the writer actually invokes Claude and the 10s ceiling is too tight for the system-prompt + cache-warm cold-path generation (real generations land 10-25s on Sonnet 4.x with prompt caching).
+- **Where:** `src/lib/retry.ts:7-22` -- `withRetry()` hardcodes `DEFAULT_TIMEOUT_MS = 10_000` and uses it for every call site (Gmail, Calendar, Resend, Claude). No per-call override exists. Caller in `src/lib/ai/weekly-edge-writer.ts:155-168` routes through `cachedClaude.create()` which (somewhere in the chain) hits `withRetry` with the global timeout.
+- **Fix needed:** Add an optional `timeoutMs` parameter to `withRetry` (default 10s, preserves existing behavior). Pass `timeoutMs: 30000` from the Claude-API wrapper specifically, or pass per-call from the writer site. Small surgical change. Verify by triggering `/api/cron/weekly-edge-assemble` against prod after the bump and confirming the resulting `campaign_drafts` row's `body_html` contains the real Redfin numbers ($1.3M, DOM 49, +5.78% MoM, +3.38% YoY).
+- **Cross-references:** Surfaced during P1.5 verification of the Altos pivot (see Resolved `[2026-05-03]` ALTOS_API_KEY entry). Not blocking P1.5 closure; the data pipeline is fully verified. Blocking automatic Weekly Edge draft generation Tuesdays at 11 AM Phoenix until fixed.
+
 ### [2026-05-20] Task System Phase 0 -- local MCP server build required before manual claude.ai setup can complete
 - **Broken:** The Claude Project on claude.ai cannot directly call `/api/captures` because the endpoint requires a bearer `INTERNAL_API_TOKEN` that must not leave the laptop / Vercel project. The wiring layer that actually performs the HTTP call does not exist yet. Phase 0 capture is laptop-only by design; mobile capture (a hosted MCP reachable from Claude on iOS or any off-laptop path) is a Phase 1 deliverable and is explicitly out of Phase 0 scope.
 - **Where:** No code yet. Future home: a sibling repo or standalone Node project running locally on Alex's laptop. References: tool schema at `src/lib/claude-tools/capture-tool.ts`; system prompt at `docs/task-system/claude-project-prompt.md`; setup steps at `docs/task-system/setup.md` (now marked blocked at the top).
@@ -46,30 +52,10 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
   2. **Structural plumbing PR (mirror PR #31):** SHIPPED 2026-05-04 via PR #32 (`b159023`, `plumbing(drafts-route): log silent 401/404/500 paths to error_logs`). All four silent early-exit paths in `src/app/api/campaigns/drafts/route.ts` now call `logError(ROUTE, ...)` with a `reason` context field naming the path: `tenant_resolution_error` (case a, 401), `tenant_not_user` (case b, 401), `draft_read_error` (case c, 500), `draft_not_found` (case d, 404). Scope: 1 file, +22/-0. Diagnosis time on next silent failure drops from "infer from absence" to "read one row." Tue May 5 20:00 UTC cron remains the natural happy-path verification window -- expected outcome: zero `error_logs` rows for `endpoint=/api/campaigns/drafts` on the Approve click; any silent failure now produces a row whose `reason` immediately disambiguates H1 vs H2 case.
   3. **Phase 5.8 prerequisite landed 2026-05-04:** PR #33 (`30b4e05`, `plumbing(slice-8 phase 5.8): error_logs.user_id NOT NULL -> NULLABLE`) drops `NOT NULL` on `error_logs.user_id` so the PR #32 breadcrumbs actually persist. The four silent early-exit paths fire BEFORE auth resolution, where `user_id DEFAULT auth.uid()` resolves to NULL and previously tripped the constraint -- silently dropping the breadcrumbs that PR #32 was supposed to surface. Verification (`scripts/phase-5-8-verify.mjs` against prod) PASS 6/6: synthetic PATCH to `/api/campaigns/drafts` with no auth cookie produced `error_logs` row `403f8608-0e19-4e86-bd1c-26f69b5a8bbb` with `reason=tenant_resolution_error`, `user_id=NULL`. Diagnostic blind spot now closed end-to-end. On Tue May 5 20:00 UTC cron, any Gate 14 silent failure will produce a persistent breadcrumb.
 
-### [2026-05-03] ALTOS_API_KEY not provisioned (Slice 8 Phase 2 Altos pull cron)
-- **Broken:** `/api/cron/altos-pull` runs but `fetchAltosSnapshot` returns `{ status: "pending_credentials" }` because `ALTOS_API_KEY` is not yet set in Vercel env. Cron still upserts a `weekly_snapshot` row per tracked market with the placeholder `data` shape so downstream phases (writer, assembly) have a row to read; reviewers will see "pending_credentials" in the rendered draft and reject before send.
-- **Where:** `src/lib/altos/client.ts` -- `altosCredentialsAvailable()` gate at top of `fetchAltosSnapshot`. Real Altos HTTP call is the TODO inside that function.
-- **Fix needed:** (1) Provision Altos Research API key + endpoint URL. (2) Set `ALTOS_API_KEY` (and any sibling vars) in Vercel preview + production via `vercel env add`. (3) Implement the real fetch in `fetchAltosSnapshot` using `market.altos.zip` + `market.altos.propertyType` from `TRACKED_MARKETS`. (4) Remove or downgrade this BLOCKERS entry. Slice 8 Phases 3-5 can proceed against the placeholder shape until then.
-
-### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows
-- **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
-- **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
-- **Fix needed:** None required. Future: if anyone investigates `interaction.backfilled WHERE deleted_at IS NOT NULL`, these are the 2 known soft-deletes -- not a data integrity issue.
-
 ### [2026-04-21] Fiona Bigbee + Denise van den Bossche phone/website missing from CONTACT.md
 - **Broken:** Contact block on `/agents/fiona-bigbee` and `/agents/denise-van-den-bossche` renders email only. `AgentRecord.phone|phoneHref|website|websiteHref` set to `null`; conditional render hides the rows. `RealEstateAgent` JSON-LD `telephone` + `url` fields ship as `null` on both pages.
 - **Where:** `src/app/agents/[slug]/page.tsx` -- `AGENTS["fiona-bigbee"]` and `AGENTS["denise-van-den-bossche"]`. Upstream source: `~/Documents/Alex Hub(Obs)/05_AGENTS/Fiona Bigbee/CONTACT.md` and `~/Documents/Alex Hub(Obs)/05_AGENTS/Denise van den Bossche/CONTACT.md` (email-only at present).
 - **Fix needed:** Alex confirms phone + website (or website=none) for each. Update both CONTACT.md files to include phone + website fields, then backfill the `AGENTS` const (or `contacts.phone` / `contacts.website` once Blocker #1 resolves). Carrying through Session 4; pages read as partial contact coverage until fixed.
-
-### [2026-04-21] Voice / mic capture not wired
-- **Broken:** Universal Capture Bar v1 ships text-only. No mic button, no audio input, no Web Speech API fallback. Spec called for voice as a v1 option; deferred during planning so the delight moment (live parse preview) could land first.
-- **Where:** `src/components/capture-bar.tsx` -- input is a single `<input type="text">`. No MediaRecorder / webkitSpeechRecognition path exists.
-- **Fix needed:** Add mic button inside the bar, request mic permission, stream to `webkitSpeechRecognition` (Chrome/Edge/Safari) with a `MediaRecorder` -> server-side transcription fallback for Firefox / no-webkit-speech browsers. Transcript populates the same `captures.raw_text` field so the existing parser still runs unchanged.
-
-### [2026-04-22] Inline contact picker for captures missing a contact
-- **Broken:** When `parsed_intent` is `interaction` / `note` / `follow_up` but the rule parser didn't match a contact, the process route rejects with 400 "Needs a contact" and the UI swaps the Process button for a disabled "Needs contact" pill. Alex's only recourse is to stop, mark the capture as stuck, and re-capture with a name the parser recognizes. There's no inline affordance to assign a contact to the existing capture.
-- **Where:** `src/lib/captures/promote.ts:71-77` (400 guard). `src/app/(app)/captures/captures-client.tsx:162` (`missingRequiredContact` → "Needs contact" pill). No contact-search UI lives on the capture row.
-- **Fix needed:** Render a small "Assign contact" affordance on the row when `missingRequiredContact === true`. Clicking opens a contact search popover (same pattern as `cmdk` `Command` menus already in the app) that writes `captures.parsed_contact_id` + appends to `parsed_payload.contact_assigned_at`. Once set, re-enable the Process button and let `promoteCapture` run the normal path. Optional: PATCH route at `/api/captures/[id]` for the assign write; or reuse existing capture update logic if the edit-after-submit blocker lands first.
 
 
 ### [2026-04-23] tier-alerts.tsx deleted -- needs Slice 2B rebuild
@@ -97,14 +83,43 @@ Each open item: timestamp, what's broken, where it lives (file/line), what's nee
 - **Where:** Was rendered in `src/app/(app)/today/today-client.tsx`. Section G in the original layout.
 - **Fix needed:** Slice 2B build session: rewrite component reading from activity_events (or contacts/interactions) instead of the deprecated spine payload. Wire replacement back into today-client.tsx.
 
+---
+
+## Shelved
+
+### [2026-04-21] Voice / mic capture not wired
+- **Broken:** Universal Capture Bar v1 ships text-only. No mic button, no audio input, no Web Speech API fallback. Spec called for voice as a v1 option; deferred during planning so the delight moment (live parse preview) could land first.
+- **Where:** `src/components/capture-bar.tsx` -- input is a single `<input type="text">`. No MediaRecorder / webkitSpeechRecognition path exists.
+- **Fix needed:** Add mic button inside the bar, request mic permission, stream to `webkitSpeechRecognition` (Chrome/Edge/Safari) with a `MediaRecorder` -> server-side transcription fallback for Firefox / no-webkit-speech browsers. Transcript populates the same `captures.raw_text` field so the existing parser still runs unchanged.
+- **Shelved 2026-05-22:** Superseded by task-system phase 0 ship (PRs #51, #54). Capture feature class deprioritized; reopen if Alex revisits capture surface.
+
+### [2026-04-22] Inline contact picker for captures missing a contact
+- **Broken:** When `parsed_intent` is `interaction` / `note` / `follow_up` but the rule parser didn't match a contact, the process route rejects with 400 "Needs a contact" and the UI swaps the Process button for a disabled "Needs contact" pill. Alex's only recourse is to stop, mark the capture as stuck, and re-capture with a name the parser recognizes. There's no inline affordance to assign a contact to the existing capture.
+- **Where:** `src/lib/captures/promote.ts:71-77` (400 guard). `src/app/(app)/captures/captures-client.tsx:162` (`missingRequiredContact` → "Needs contact" pill). No contact-search UI lives on the capture row.
+- **Fix needed:** Render a small "Assign contact" affordance on the row when `missingRequiredContact === true`. Clicking opens a contact search popover (same pattern as `cmdk` `Command` menus already in the app) that writes `captures.parsed_contact_id` + appends to `parsed_payload.contact_assigned_at`. Once set, re-enable the Process button and let `promoteCapture` run the normal path. Optional: PATCH route at `/api/captures/[id]` for the assign write; or reuse existing capture update logic if the edit-after-submit blocker lands first.
+- **Shelved 2026-05-22:** Superseded by task-system phase 0 ship (PRs #51, #54). Capture feature class deprioritized; reopen if Alex revisits capture surface.
+
 ### [2026-04-21] Capture editing after submit not wired
 - **Broken:** Captures are immutable by design for v1. If Alex fat-fingers a capture or wants to fix a parsed intent, the only option is to stop, mark processed, and re-capture. No inline edit UI.
 - **Where:** `src/app/(app)/captures/captures-client.tsx` -- renders `raw_text` as static `<p>`; no edit affordance. No PATCH route on `/api/captures/[id]`.
 - **Fix needed:** Add an inline edit mode on each row (pencil affordance -> textarea + save/cancel). PATCH `/api/captures/[id]` re-runs the parser on save and updates `raw_text` + `parsed_intent` + `parsed_contact_id` + `parsed_payload`. Append the prior values to `parsed_payload.edits[]` with a timestamp so the audit trail is preserved.
+- **Shelved 2026-05-22:** Superseded by task-system phase 0 ship (PRs #51, #54). Capture feature class deprioritized; reopen if Alex revisits capture surface.
 
 ---
 
 ## Resolved
+
+### [2026-05-03] ALTOS_API_KEY not provisioned (Slice 8 Phase 2 Altos pull cron) -- RESOLVED 2026-05-22
+- **Resolution:** Altos Research could not issue an obtainable API key. Pivoted entirely off Altos to Redfin's public ZIP-level market tracker TSV on S3 (`https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/zip_code_market_tracker.tsv000.gz`). No bot detection, no auth, no scraping, no selector rot. All six `AltosSnapshotData` fields map to stable TSV columns. New module `src/lib/altos/scrape/redfin-tsv.ts` streams the 1.5 GB gz, gunzips inline, line-filters by region + property type, picks latest `PERIOD_END`.
+- **Closing PR:** #55 (squash `c48bbf0`, "feat(weekly-edge): swap altos for redfin public TSV (s3) at zip level"). Post-merge verification: prod cron returned 200 in 65s, wrote `weekly_snapshot` row `bd363933-24d8-4519-a30d-e44d3df2a0f7` with real Scottsdale 85258 SF data (median $1.3M, DOM 49, inventory 114, MoM +5.78%, YoY +3.38%, period_end 2026-03-31).
+- **Follow-up surfaced during verification:** `src/lib/retry.ts` has a global 10s timeout (`DEFAULT_TIMEOUT_MS = 10_000`) shared across Gmail/Calendar/Resend/Claude wrappers. The Weekly Edge writer's Claude call now times out under real data load (when the source returned `pending_credentials` the writer short-circuited and never hit Claude, masking the issue). Per-call timeout override needed. Logged as separate item below.
+- **Plan:** `~/.claude/plans/altos-does-not-have-ethereal-lovelace.md`.
+
+### [2026-04-25] Slice 3 W3 backfill duplicate interaction.backfilled rows -- RESOLVED 2026-05-22
+- **Broken:** Slice 3 W3 backfill discovered 2 pre-existing `interaction.backfilled` rows from Slice 1 backfill (legacy_id=null). Slice 3 backfill created duplicates with legacy_id populated because the `WHERE NOT EXISTS` clause on `context->>'legacy_id'` couldn't match against null. Resolved by soft-deleting the newer Slice 3 rows. Older Slice 1 rows preserved due to potential downstream UUID references.
+- **Where:** `activity_events` rows with `verb='interaction.backfilled'` AND `deleted_at IS NOT NULL`. Soft-deleted IDs: `1f376e8c-7d5e-4ef7-be15-06ee31a87681`, `e0c895bb-9070-45ed-a12b-145c04693a0e`.
+- **Fix needed:** None required. Future: if anyone investigates `interaction.backfilled WHERE deleted_at IS NOT NULL`, these are the 2 known soft-deletes -- not a data integrity issue.
+- **Resolved 2026-05-22:** Informational entry; no action required per original entry. Closed in P3.5 hygiene batch.
 
 ### [2026-04-23] captures-audio lifecycle: cleanup cron not wired -- RESOLVED 2026-05-03
 - Resolution: `vercel.json` crons array gained one entry `{ "path": "/api/captures/cleanup-audio", "schedule": "0 12 * * *" }`. Route already existed at `src/app/api/captures/cleanup-audio/route.ts` (30-day retention, `verifyCronSecret`-gated, runtime nodejs). `CRON_SECRET` already provisioned in Vercel preview + production for Slice 8 Phase 5; same secret guards this route.
