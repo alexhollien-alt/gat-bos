@@ -35,8 +35,17 @@ const cypherTicketsRecent: Check = {
       .order("created_at", { ascending: false })
       .limit(5);
     if (error) return red({ error: error.message }, `query failed: ${error.message}`);
-    if (!data || data.length === 0)
-      return red({ count: 0 }, "tickets table empty -- expected PR #38 seed rows");
+    if (!data || data.length === 0) {
+      const burnIn = new Date("2026-05-19T00:00:00Z");
+      const postBurnIn = new Date() >= burnIn;
+      return yellow(
+        { count: 0, postBurnIn },
+        postBurnIn
+          ? "tickets table empty post-burn-in -- pull worker burn-in window expired but no live rows; confirm worker status"
+          : "tickets table empty -- pull worker PARKED, awaiting burn-in",
+        "cypher-pull-worker-parked",
+      );
+    }
     // account_id is local-write integrity (must always be set).
     // cypher_id / cypher_url / synced_at are pull-worker dependent. While the
     // pull worker is PARKED (before 2026-05-19 burn-in), tickets created in
@@ -78,7 +87,7 @@ const cypherTicketsActivityTrace: Check = {
       .limit(5);
     if (tErr) return red({ error: tErr.message }, `tickets query failed: ${tErr.message}`);
     if (!tickets || tickets.length === 0)
-      return red({}, "no tickets to trace");
+      return yellow({}, "no tickets to trace (cascade from cypher.tickets-recent)", "cypher-pull-worker-parked");
     const ids = tickets.map((t) => t.id);
     const { data: events, error: eErr } = await sb
       .from("activity_events")
@@ -249,16 +258,29 @@ const activityLast24h: Check = {
   title: "activity_events received writes in the last 24h",
   run: async () => {
     const sb = getServiceClient();
-    const since = new Date(Date.now() - DAY_MS).toISOString();
-    const { count, error } = await sb
+    const since24 = new Date(Date.now() - DAY_MS).toISOString();
+    const since72 = new Date(Date.now() - 3 * DAY_MS).toISOString();
+    const sb24 = await sb
       .from("activity_events")
       .select("id", { count: "exact", head: true })
-      .gte("occurred_at", since)
+      .gte("occurred_at", since24)
       .is("deleted_at", null);
-    if (error) return red({ error: error.message }, `query failed: ${error.message}`);
-    if ((count ?? 0) === 0)
-      return red({ count: 0 }, "zero activity_events in last 24h -- ledger may be silent");
-    return ok({ count }, `${count} activity_events in last 24h`);
+    if (sb24.error) return red({ error: sb24.error.message }, `query failed: ${sb24.error.message}`);
+    const c24 = sb24.count ?? 0;
+    if (c24 > 0) return ok({ count24h: c24 }, `${c24} activity_events in last 24h`);
+    const sb72 = await sb
+      .from("activity_events")
+      .select("id", { count: "exact", head: true })
+      .gte("occurred_at", since72)
+      .is("deleted_at", null);
+    if (sb72.error) return red({ error: sb72.error.message }, `72h query failed: ${sb72.error.message}`);
+    const c72 = sb72.count ?? 0;
+    if (c72 === 0)
+      return red({ count24h: 0, count72h: 0 }, "zero activity_events in last 72h -- ledger silent, writeEvent likely broken");
+    return yellow(
+      { count24h: 0, count72h: c72 },
+      `zero activity_events in last 24h (${c72} in last 72h) -- quiet day plausible, watch trend`,
+    );
   },
 };
 
@@ -319,7 +341,10 @@ const activityMorningBriefCron: Check = {
       .limit(1);
     if (error) return red({ error: error.message }, `query failed: ${error.message}`);
     if (!data || data.length === 0)
-      return red({}, "morning_briefs table empty -- cron never produced output");
+      return yellow(
+        {},
+        "morning_briefs table empty -- verify cron wired in this Supabase env (vercel.json schedule + CRON_SECRET)",
+      );
     const last = new Date(data[0].generated_at).getTime();
     const ageH = Math.round((Date.now() - last) / HOUR_MS);
     if (ageH > 36)
@@ -442,6 +467,20 @@ const META_PATH_PATTERNS: RegExp[] = [
   /\/PROCEED-[^\/]+$/i,
   /\.audit\.md$/i,
   /draft-\d+-layout\.html$/i,
+  // Desktop top-level archive + system buckets
+  /\/\d{2}_ARCHIVE\//i,
+  /\/\d{2}_SYSTEM\//i,
+  /\/\d{2}_REFERENCE\//i,
+  /\/cleanup-\d{4}-\d{2}-\d{2}\//i,
+  /\/audit-reports?\//i,
+  // Planning, brief, audit, punchlist docs (meta, not rendered output)
+  /-(PLAN|BRIEF|AUDIT|PUNCHLIST|DEFECTS|OVERHAUL)\.(md|txt)$/i,
+  /_(Plan|Brief|Details|Plan_v\d+)\.(md|txt)$/i,
+  /CLAUDE-CODE-BRIEF\.(md|txt)$/i,
+  /CONSISTENCY-AUDIT-\d{4}-\d{2}-\d{2}\.md$/i,
+  /AUDIT-\d{4}-\d{2}-\d{2}\.md$/i,
+  /-handoff\.(md|txt)$/i,
+  /-HANDOFF\.(md|txt)$/i,
 ];
 
 function isMetaPath(p: string): boolean {
