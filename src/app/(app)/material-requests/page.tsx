@@ -321,7 +321,7 @@ export default function TicketsPage() {
     const { data, error } = await supabase
       .from("material_requests")
       .select(
-        "*, contacts(id, first_name, last_name, company, tier, phone, email, brand_colors, palette), items:ticket_items(*)"
+        "*, contacts(id, first_name, last_name, company, tier, phone, email, brand_colors, palette), items:material_request_items(*)"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false });

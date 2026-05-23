@@ -38,6 +38,10 @@ export async function resolveRecipientList(
     throw new Error(`Unknown recipient list slug: '${slug}'`);
   }
 
+  if (slug === "dry-run-alex" && process.env.NODE_ENV === "production") {
+    throw new Error("'dry-run-alex' is not available in production");
+  }
+
   if (slug === "dry-run-alex") {
     return {
       slug,

@@ -8,7 +8,16 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
 const RETRY_DELAYS_MS = [1000, 2000];
 
-export async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+export type RetryOptions = {
+  timeoutMs?: number;
+};
+
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+  options: RetryOptions = {},
+): Promise<T> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let lastErr: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -16,8 +25,8 @@ export async function withRetry<T>(fn: () => Promise<T>, label: string): Promise
         fn(),
         new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new Error(`${label} timed out after ${DEFAULT_TIMEOUT_MS}ms`)),
-            DEFAULT_TIMEOUT_MS,
+            () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+            timeoutMs,
           ),
         ),
       ]);
