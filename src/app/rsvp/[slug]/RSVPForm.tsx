@@ -50,7 +50,7 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
   const formId = useId();
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [submittedEmail, setSubmittedEmail] = useState<string>("");
+  const [submittedName, setSubmittedName] = useState<string>("");
   const [guestCount, setGuestCount] = useState<1 | 2>(1);
   const [honeypot, setHoneypot] = useState("");
 
@@ -62,14 +62,11 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
 
     const form = e.currentTarget;
     const data = new FormData(form);
+    const name = String(data.get("name") ?? "").trim();
     const payload = {
       slug,
-      name: String(data.get("name") ?? "").trim(),
-      brokerage: String(data.get("brokerage") ?? "").trim(),
-      email: String(data.get("email") ?? "").trim(),
-      phone: String(data.get("phone") ?? "").trim() || undefined,
+      name,
       guestCount,
-      notes: String(data.get("notes") ?? "").trim() || undefined,
       honeypot: honeypot || undefined,
     };
 
@@ -93,7 +90,7 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
         setStatus("error");
         return;
       }
-      setSubmittedEmail(payload.email);
+      setSubmittedName(name);
       setStatus("success");
     } catch {
       setErrorMessage(
@@ -134,19 +131,8 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
             color: "rgba(31,27,22,0.85)",
           }}
         >
-          A confirmation is on its way to{" "}
-          <strong style={{ color: ink }}>{submittedEmail}</strong>. {hostFirstName}{" "}
+          Thanks{submittedName ? `, ${submittedName}` : ""}. {hostFirstName}{" "}
           looks forward to seeing you.
-        </p>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 13,
-            color: "rgba(31,27,22,0.6)",
-          }}
-        >
-          If your plans change, reply to the confirmation email so we can
-          update the list.
         </p>
       </div>
     );
@@ -173,50 +159,6 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
           required
           autoComplete="name"
           maxLength={120}
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={fieldGroup}>
-        <label htmlFor={`${formId}-brokerage`} style={labelStyle}>
-          Brokerage <span style={{ color: accent }}>*</span>
-        </label>
-        <input
-          id={`${formId}-brokerage`}
-          name="brokerage"
-          type="text"
-          required
-          autoComplete="organization"
-          maxLength={120}
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={fieldGroup}>
-        <label htmlFor={`${formId}-email`} style={labelStyle}>
-          Email <span style={{ color: accent }}>*</span>
-        </label>
-        <input
-          id={`${formId}-email`}
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          maxLength={200}
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={fieldGroup}>
-        <label htmlFor={`${formId}-phone`} style={labelStyle}>
-          Phone <span style={{ color: "rgba(31,27,22,0.4)", fontWeight: 400 }}>optional</span>
-        </label>
-        <input
-          id={`${formId}-phone`}
-          name="phone"
-          type="tel"
-          autoComplete="tel"
-          maxLength={40}
           style={inputStyle}
         />
       </div>
@@ -262,20 +204,6 @@ export function RSVPForm({ slug, eventTitle, hostFirstName }: Props) {
             );
           })}
         </div>
-      </div>
-
-      <div style={fieldGroup}>
-        <label htmlFor={`${formId}-notes`} style={labelStyle}>
-          Anything we should know?{" "}
-          <span style={{ color: "rgba(31,27,22,0.4)", fontWeight: 400 }}>optional</span>
-        </label>
-        <textarea
-          id={`${formId}-notes`}
-          name="notes"
-          rows={3}
-          maxLength={2000}
-          style={{ ...inputStyle, resize: "vertical", minHeight: 80 }}
-        />
       </div>
 
       {/* Honeypot field, hidden from humans. */}

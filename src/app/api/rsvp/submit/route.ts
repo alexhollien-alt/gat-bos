@@ -10,12 +10,15 @@ import { logError } from "@/lib/error-log";
 
 // Public, unauthenticated RSVP submission endpoint.
 //
+// Form collects only Name + Guest count. Email/brokerage/phone are sourced
+// from a separate CSV upload via the contacts table -- after submit, we
+// look up the contact by name (case-insensitive) and, if matched, send a
+// confirmation email to that contact's address. If no match, we still
+// record the RSVP and surface success; the operator can reconcile later
+// when the CSV import completes.
+//
 // Rate limit: 5 submissions per IP per hour. Sized for a real person filling
 // the form once; well below normal use. Fails open on Supabase error.
-//
-// Confirmation email send is best-effort. The RSVP row + activity event
-// persist even if Resend fails -- mail provider flakiness must not bounce
-// the form on a brokerage's bad WiFi.
 
 const ROUTE = "api/rsvp/submit";
 const RSVP_RATE_LIMIT = 5;
@@ -29,6 +32,44 @@ interface HostContact {
   email: string | null;
   phone: string | null;
   brokerage: string | null;
+}
+
+interface MatchedContact {
+  id: string;
+  email: string | null;
+  brokerage: string | null;
+}
+
+// Best-effort contact lookup by submitted name. Case-insensitive match on
+// `full_name`. Falls back to first+last concat if full_name is null.
+// Returns the unique match or null if zero / multiple hits.
+async function findContactByName(name: string): Promise<MatchedContact | null> {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const { data, error } = await adminClient
+    .from("contacts")
+    .select("id, email, brokerage, full_name, first_name, last_name")
+    .ilike("full_name", trimmed)
+    .is("deleted_at", null)
+    .limit(2);
+  if (error || !data || data.length === 0) {
+    // Fall back to first+last concat match.
+    const parts = trimmed.split(/\s+/);
+    if (parts.length < 2) return null;
+    const first = parts[0];
+    const last = parts.slice(1).join(" ");
+    const { data: alt } = await adminClient
+      .from("contacts")
+      .select("id, email, brokerage, first_name, last_name")
+      .ilike("first_name", first)
+      .ilike("last_name", last)
+      .is("deleted_at", null)
+      .limit(2);
+    if (!alt || alt.length !== 1) return null;
+    return { id: alt[0].id, email: alt[0].email, brokerage: alt[0].brokerage };
+  }
+  if (data.length !== 1) return null;
+  return { id: data[0].id, email: data[0].email, brokerage: data[0].brokerage };
 }
 
 export async function POST(request: Request) {
@@ -110,18 +151,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
     }
 
-    // Persist RSVP.
+    // Best-effort contact lookup. Used to backfill email + brokerage on the
+    // event_rsvps row and to drive the confirmation send.
+    const matched = await findContactByName(payload.name);
+
+    // Persist RSVP. email/brokerage backfilled from matched contact when
+    // available; both columns are nullable after the rsvp form simplification
+    // migration.
     const userAgent = request.headers.get("user-agent")?.slice(0, 500) ?? null;
     const { data: rsvp, error: insertErr } = await adminClient
       .from("event_rsvps")
       .insert({
         event_id: event.id,
         name: payload.name,
-        brokerage: payload.brokerage,
-        email: payload.email,
-        phone: payload.phone ?? null,
+        brokerage: matched?.brokerage ?? null,
+        email: matched?.email ?? null,
+        phone: null,
         guest_count: payload.guestCount,
-        notes: payload.notes ?? null,
+        notes: null,
         ip_address: ip,
         user_agent: userAgent,
       })
@@ -130,7 +177,7 @@ export async function POST(request: Request) {
     if (insertErr || !rsvp) {
       await logError(ROUTE, `insert failed: ${insertErr?.message ?? "no row"}`, {
         slug: payload.slug,
-        email: payload.email,
+        name: payload.name,
       });
       return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
@@ -138,7 +185,8 @@ export async function POST(request: Request) {
     const host = (event as unknown as { host: HostContact | null }).host;
 
     // Ledger entry. Object points at the host contact so the agent timeline
-    // shows the RSVP under Denise's record, not under Alex's owner row.
+    // shows the RSVP under the host's record. If we matched the RSVP'er to a
+    // contact, surface that linkage in context for downstream reconciliation.
     await writeEvent({
       userId: ownerId,
       actorId: ownerId,
@@ -152,20 +200,22 @@ export async function POST(request: Request) {
         host_contact_id: host?.id ?? null,
         rsvp_id: rsvp.id,
         rsvp_name: payload.name,
-        rsvp_email: payload.email,
-        rsvp_brokerage: payload.brokerage,
+        rsvp_email: matched?.email ?? null,
+        rsvp_brokerage: matched?.brokerage ?? null,
+        matched_contact_id: matched?.id ?? null,
         guest_count: payload.guestCount,
       },
     });
 
-    // Confirmation email (best-effort).
-    if (host?.email) {
+    // Confirmation email (best-effort). Skipped if no contact matched the
+    // submitted name -- reconciliation happens after the CSV import.
+    if (host?.email && matched?.email) {
       const hostName =
         host.full_name?.trim() ||
         `${host.first_name} ${host.last_name}`.trim();
       const { messageId, error: sendErr } = await sendRsvpConfirmation({
         name: payload.name,
-        email: payload.email,
+        email: matched.email,
         eventTitle: event.title,
         eventStart: new Date(event.event_start),
         eventEnd: new Date(event.event_end),
@@ -184,15 +234,10 @@ export async function POST(request: Request) {
       } else if (sendErr) {
         await logError(ROUTE, `confirmation send failed: ${sendErr}`, {
           rsvp_id: rsvp.id,
-          email: payload.email,
+          email: matched.email,
           event_slug: event.slug,
         });
       }
-    } else {
-      await logError(ROUTE, "host contact missing or unbound", {
-        event_slug: event.slug,
-        host_contact_id: event.host_contact_id,
-      });
     }
 
     return NextResponse.json({ ok: true, id: rsvp.id }, { status: 201 });
