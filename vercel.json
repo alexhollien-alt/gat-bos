@@ -51,6 +51,10 @@
     {
       "path": "/api/captures/cleanup-audio",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/berneil-rsvp-summary",
+      "schedule": "0 15 * * *"
     }
   ]
 }
