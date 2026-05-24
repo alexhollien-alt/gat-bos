@@ -1474,11 +1474,11 @@ export type Database = {
       }
       event_rsvps: {
         Row: {
-          brokerage: string
+          brokerage: string | null
           confirmation_message_id: string | null
           created_at: string
           deleted_at: string | null
-          email: string
+          email: string | null
           event_id: string
           guest_count: number
           id: string
@@ -1489,11 +1489,11 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
-          brokerage: string
+          brokerage?: string | null
           confirmation_message_id?: string | null
           created_at?: string
           deleted_at?: string | null
-          email: string
+          email?: string | null
           event_id: string
           guest_count?: number
           id?: string
@@ -1504,11 +1504,11 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
-          brokerage?: string
+          brokerage?: string | null
           confirmation_message_id?: string | null
           created_at?: string
           deleted_at?: string | null
-          email?: string
+          email?: string | null
           event_id?: string
           guest_count?: number
           id?: string
