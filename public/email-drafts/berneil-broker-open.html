@@ -252,22 +252,14 @@
           <td align="center" style="padding: 56px 48px 8px 48px; background-color: #F5F0E8;">&nbsp;</td>
         </tr>
 
-        <!-- Dark band container: team portrait + lockup + 2-col + brand block + brand bar.
-             Background photo (pre-darkened) layered over a #1F1B16 fallback so clients
-             that strip background-image still render the dark band. Inner cells use
-             transparent bg so the photo shows through. -->
+        <!-- Dark band container: team portrait + lockup + 2-col + brand block + brand bar -->
         <tr>
-          <td style="padding: 0; background-image: url('https://gat-bos.vercel.app/email-assets/berneil/photo-2-3-sig-bg.jpg'); background-position: center center; background-size: cover; background-repeat: no-repeat;">
-            <!--[if gte mso 9]>
-            <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;">
-              <v:fill type="frame" src="https://gat-bos.vercel.app/email-assets/berneil/photo-2-3-sig-bg.jpg" color="#1F1B16" />
-              <v:textbox inset="0,0,0,0">
-            <![endif]-->
-            <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="100%">
+          <td style="padding: 0; background-color: #1F1B16;">
+            <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="100%" style="background-color: #1F1B16;">
 
               <!-- Team portrait, 480px max-width, opens the signature region -->
               <tr>
-                <td align="center" class="side-padding" style="padding: 32px 24px 0 24px;">
+                <td align="center" class="side-padding" style="padding: 32px 24px 0 24px; background-color: #1F1B16;">
                   <img src="https://gat-bos.vercel.app/email-assets/berneil/team-portrait.jpg"
                        width="480" alt="Denise van den Bossche and Norm Hampton"
                        style="display: block; width: 100%; max-width: 480px; height: auto; margin: 0 auto;">
@@ -276,7 +268,7 @@
 
               <!-- Text-only logo lockup, caption-style title under the photo -->
               <tr>
-                <td align="center" class="side-padding" style="padding: 24px 48px 32px 48px;">
+                <td align="center" class="side-padding" style="padding: 24px 48px 32px 48px; background-color: #1F1B16;">
                   <p class="exec-elite-lockup" style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 600; letter-spacing: 0.08em; color: #FFFFFF; text-align: center;">
                     Exec-Elite Partners
                   </p>
@@ -285,7 +277,7 @@
 
               <!-- Two-column contact (Norm | Denise) with vertical divider, parallel baselines via nested-table row heights -->
               <tr>
-                <td class="side-padding" style="padding: 8px 32px 0 32px;">
+                <td class="side-padding" style="padding: 8px 32px 0 32px; background-color: #1F1B16;">
                   <table role="presentation" border="0" cellspacing="0" cellpadding="0" width="100%">
                     <tr>
                       <!-- Left: Norm -->
@@ -355,7 +347,7 @@
 
               <!-- Centered brand block (URLs only) -->
               <tr>
-                <td align="center" class="side-padding" style="padding: 40px 48px 0 48px;">
+                <td align="center" class="side-padding" style="padding: 40px 48px 0 48px; background-color: #1F1B16;">
                   <p style="margin: 0 0 4px 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.06em; color: #FFFFFF; text-align: center;">
                     <a href="https://organic-luxe.com" class="rsvp-link" style="color: #FFFFFF; text-decoration: none;">ORGANIC-LUXE.COM</a>
                   </p>
@@ -367,7 +359,7 @@
 
               <!-- Brokerage credential, clean text on dark band, no wrapping container -->
               <tr>
-                <td align="center" style="padding: 16px 24px 0 24px;">
+                <td align="center" style="padding: 16px 24px 0 24px; background-color: #1F1B16;">
                   <div style="font-family: Helvetica, Arial, sans-serif; font-weight: 500; font-size: 9px; letter-spacing: 0.16em; line-height: 1.6; text-transform: uppercase; color: rgba(255,255,255,0.55); text-align: center;">
                     <span style="color: inherit; text-decoration: none;">Realty Executives Arizona Territory</span><br>
                     <span style="color: inherit; text-decoration: none;">Exec-Elite Team</span>
@@ -377,12 +369,12 @@
 
               <!-- 40px spacer before brand bar -->
               <tr>
-                <td style="padding: 0; font-size: 0; line-height: 0; height: 40px;" height="40">&nbsp;</td>
+                <td style="padding: 0; background-color: #1F1B16; font-size: 0; line-height: 0; height: 40px;" height="40">&nbsp;</td>
               </tr>
 
               <!-- Brand bar with smaller logos (20px), hairline divider above -->
               <tr>
-                <td align="center" class="side-padding" style="padding: 0 48px 24px 48px;">
+                <td align="center" class="side-padding" style="padding: 0 48px 24px 48px; background-color: #1F1B16;">
                   <table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" width="100%">
                     <tr>
                       <td align="center" style="padding: 0 0 16px 0;">
@@ -416,10 +408,6 @@
               </tr>
 
             </table>
-            <!--[if gte mso 9]>
-              </v:textbox>
-            </v:rect>
-            <![endif]-->
           </td>
         </tr>
 
