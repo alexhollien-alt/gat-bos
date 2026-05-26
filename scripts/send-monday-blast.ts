@@ -107,6 +107,7 @@ async function fetchAudience(): Promise<Recipient[]> {
     const email = String(c.email ?? "").trim();
     if (!email) continue; // drop empty-string emails
     const lower = email.toLowerCase();
+    if (lower.endsWith(".local")) continue; // drop seed/smoke-test records (e.g. *.test.local, *.gat-smoke.local)
     if (excludeSet.has(lower)) continue; // belt-and-suspenders id->email exclusion
     if (seen.has(lower)) continue; // dedupe
     seen.add(lower);
