@@ -32,7 +32,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
 
 const FROM = "Alex Hollien <alex@alexhollienco.com>";
-const SUBJECT = "Two invitations this week";
+const SUBJECT = "Don't Miss This Week: Content Day + Everything Condo Class";
 const HTML_PATH = join(REPO_ROOT, "public/email-drafts/monday-morning-blast.html");
 const THROTTLE_MS = 500; // 2/sec, Resend default rate limit
 const MIN_AUDIENCE = 10; // sanity floor; a smaller result means the query is wrong
