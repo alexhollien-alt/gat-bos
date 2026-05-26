@@ -11,9 +11,11 @@
  *              two opt-outs), shows a confirmation gate, and only proceeds on
  *              literal "SEND TO ALL".
  *
- * Audience: all contacts with deleted_at IS NULL and a non-empty email,
- * EXCEPT Denise van den Bossche and Norm Hampton (excluded by id, with an
- * email-match belt-and-suspenders pass after fetch).
+ * Audience: contacts in tier A, B, C, or P, with deleted_at IS NULL and a
+ * non-empty email, EXCEPT Denise van den Bossche and Norm Hampton (excluded
+ * by id, with an email-match belt-and-suspenders pass after fetch). Tier-null
+ * contacts (Berneil event imports, untriaged records) are deliberately out of
+ * audience -- this blast goes to the curated book only.
  *
  * Reads production credentials from .env.production.local at repo root
  * (pull first with: vercel env pull .env.production.local --environment=production).
@@ -21,7 +23,7 @@
  * Note: Resend's API sits behind Cloudflare, which 403s the default Node
  * User-Agent -- the resend SDK sets its own UA, so direct fetch is not used here.
  */
-import { readFileSync, existsSync, mkdirSync, appendFileSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, appendFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
@@ -32,7 +34,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
 
 const FROM = "Alex Hollien <alex@alexhollienco.com>";
-const SUBJECT = "Don't Miss This Week: Content Day + Everything Condo Class";
+const SUBJECT = "Two Invitations This Week: Lunch & Learn + Biltmore Coming Soon";
+// Curated book only -- tier A/B/C/P. Excludes tier-null event imports.
+const TIER_FILTER = ["A", "B", "C", "P"];
 const HTML_PATH = join(REPO_ROOT, "public/email-drafts/monday-morning-blast.html");
 const THROTTLE_MS = 500; // 2/sec, Resend default rate limit
 const MIN_AUDIENCE = 10; // sanity floor; a smaller result means the query is wrong
@@ -65,6 +69,7 @@ function loadEnvFile(path: string) {
 interface Recipient {
   email: string;
   name: string;
+  tier: string | null;
 }
 
 interface SendRecord {
@@ -93,9 +98,10 @@ async function fetchAudience(): Promise<Recipient[]> {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase
     .from("contacts")
-    .select("first_name, last_name, email")
+    .select("first_name, last_name, email, tier")
     .is("deleted_at", null)
     .not("email", "is", null)
+    .in("tier", TIER_FILTER)
     .not("id", "in", `(${EXCLUDE_IDS.join(",")})`)
     .order("last_name", { ascending: true });
   if (error) throw new Error(`Supabase query failed: ${error.message}`);
@@ -111,9 +117,39 @@ async function fetchAudience(): Promise<Recipient[]> {
     if (excludeSet.has(lower)) continue; // belt-and-suspenders id->email exclusion
     if (seen.has(lower)) continue; // dedupe
     seen.add(lower);
-    out.push({ email, name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() });
+    out.push({ email, name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(), tier: c.tier ?? null });
   }
   return out;
+}
+
+// Write the full filtered audience to a review file, grouped by tier.
+function writeAudienceFile(recipients: Recipient[]): string {
+  const reviewDir = join(REPO_ROOT, "scripts", "logs");
+  mkdirSync(reviewDir, { recursive: true });
+  const path = join(reviewDir, `monday-blast-audience-${timestampSlug(new Date())}.txt`);
+  const byTier = new Map<string, Recipient[]>();
+  for (const r of recipients) {
+    const t = r.tier ?? "(null)";
+    if (!byTier.has(t)) byTier.set(t, []);
+    byTier.get(t)!.push(r);
+  }
+  const lines: string[] = [];
+  lines.push(`MONDAY MORNING BLAST -- AUDIENCE REVIEW`);
+  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push(`Filter: tier in [${TIER_FILTER.join(", ")}], deleted_at null, real email, deduped`);
+  lines.push(`Excludes: Denise van den Bossche, Norm Hampton`);
+  lines.push(`Subject: ${SUBJECT}`);
+  lines.push(`From: ${FROM}`);
+  lines.push(`TOTAL RECIPIENTS: ${recipients.length}`);
+  lines.push("");
+  for (const t of ["A", "B", "C", "P"]) {
+    const group = byTier.get(t) ?? [];
+    lines.push(`## Tier ${t} (${group.length})`);
+    group.forEach((r, i) => lines.push(`  [${i + 1}] ${r.name || "(no name)"} <${r.email}>`));
+    lines.push("");
+  }
+  writeFileSync(path, lines.join("\n"));
+  return path;
 }
 
 async function confirmGate(count: number, phrase: string): Promise<boolean> {
@@ -209,15 +245,19 @@ async function main() {
   }
 
   const recipients = await fetchAudience();
-  console.log(`Audience query returned ${recipients.length} recipients (excludes Denise + Norm).`);
+  console.log(`Audience query returned ${recipients.length} recipients (tier A/B/C/P, excludes Denise + Norm).`);
   if (recipients.length < MIN_AUDIENCE) {
     throw new Error(`HALT: audience count ${recipients.length} is below the sanity floor (${MIN_AUDIENCE}). Investigate the query before sending.`);
   }
 
+  // Always write the full filtered audience to a review file (dry-run and live).
+  const audiencePath = writeAudienceFile(recipients);
+
   if (dryRun) {
     console.log("\n--dry-run -- the following would be sent (nothing sent):\n");
-    recipients.forEach((r, i) => console.log(`  [${i + 1}] ${r.name || "(no name)"} <${r.email}>`));
+    recipients.forEach((r, i) => console.log(`  [${i + 1}] [${r.tier}] ${r.name || "(no name)"} <${r.email}>`));
     console.log(`\nDRY RUN. ${recipients.length} recipients. From: ${FROM}. Subject: ${SUBJECT}. Sent: 0.`);
+    console.log(`Full audience review list written to: ${audiencePath}`);
     return;
   }
 
