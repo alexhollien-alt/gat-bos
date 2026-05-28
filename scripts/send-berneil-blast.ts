@@ -30,6 +30,14 @@ import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import {
+  partitionContacts,
+  buildPreflightReport,
+  checkImageUrls,
+  evaluatePreflight,
+  formatPreflightReport,
+  type RawContactRow,
+} from "../src/lib/messaging/preflight";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -124,7 +132,7 @@ function loadCsvRecipients(path: string): Recipient[] {
   return out;
 }
 
-async function fetchAudience(): Promise<Recipient[]> {
+async function fetchAudience(): Promise<RawContactRow[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing");
@@ -134,15 +142,10 @@ async function fetchAudience(): Promise<Recipient[]> {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase
     .from("contacts")
-    .select("first_name, last_name, email, brokerage")
-    .contains("tags", ["BerneilBlast"])
-    .not("email", "is", null);
+    .select("first_name, last_name, email, brokerage, deleted_at")
+    .contains("tags", ["BerneilBlast"]);
   if (error) throw new Error(`Supabase query failed: ${error.message}`);
-  return (data ?? []).map((c) => ({
-    email: c.email as string,
-    name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
-    brokerage: (c.brokerage as string) ?? null,
-  }));
+  return (data ?? []) as RawContactRow[];
 }
 
 async function confirmGate(count: number, phrase: string): Promise<boolean> {
@@ -230,6 +233,7 @@ async function main() {
   }
 
   // --test: hardcoded inboxes, bypass the contacts query entirely.
+  // NOTE: preflight gate intentionally skipped here; --test is a two-inbox smoke test, not a blast.
   if (testMode) {
     const recipients: Recipient[] = TEST_RECIPIENTS.map((e) => ({ email: e, name: "Test Recipient", brokerage: null }));
     const logDir = join(__dirname, "logs");
@@ -240,38 +244,69 @@ async function main() {
     return;
   }
 
-  // Recipient source: CSV (resend to a specific list) or the BerneilBlast tag query (full blast).
-  let recipients: Recipient[];
-  let gatePhrase: string;
+  // CSV path: resend to a specific list. Self-contained.
+  // NOTE: preflight gate intentionally skipped on the CSV resend path -- it reuses the
+  // already-vetted blast HTML, so image/token checks ran on the original full-blast send.
   if (csvPath) {
-    recipients = loadCsvRecipients(csvPath);
-    gatePhrase = "SEND TO UNDELIVERED";
+    const recipients = loadCsvRecipients(csvPath);
     console.log(`Loaded ${recipients.length} recipients from CSV: ${csvPath}`);
-  } else {
-    recipients = await fetchAudience();
-    gatePhrase = "SEND TO ALL";
-    console.log(`Audience query returned ${recipients.length} recipients (expected ${EXPECTED_COUNT}).`);
-    if (recipients.length !== EXPECTED_COUNT) {
-      throw new Error(`HALT: audience count ${recipients.length} != expected ${EXPECTED_COUNT}. Investigate before sending.`);
+    if (dryRun) {
+      console.log("\n--dry-run -- the following would be sent (nothing sent):\n");
+      recipients.forEach((r, i) => console.log(`  [${i + 1}] ${r.name} <${r.email}> -- ${r.brokerage ?? "(no brokerage)"}`));
+      console.log(`\nDRY RUN. ${recipients.length} recipients. From: ${FROM}. Subject: ${SUBJECT}. Sent: 0.`);
+      return;
     }
-  }
-
-  if (dryRun) {
-    console.log("\n--dry-run -- the following would be sent (nothing sent):\n");
-    recipients.forEach((r, i) => console.log(`  [${i + 1}] ${r.name} <${r.email}> -- ${r.brokerage ?? "(no brokerage)"}`));
-    console.log(`\nDRY RUN. ${recipients.length} recipients. From: ${FROM}. Subject: ${SUBJECT}. Sent: 0.`);
+    const ok = await confirmGate(recipients.length, "SEND TO UNDELIVERED");
+    if (!ok) {
+      console.log("Aborted -- confirmation phrase not matched. Nothing sent.");
+      return;
+    }
+    const logDir = join(__dirname, "logs");
+    mkdirSync(logDir, { recursive: true });
+    const logPath = join(logDir, `berneil-blast-${timestampSlug(new Date())}.jsonl`);
+    await runSend(recipients, logPath);
     return;
   }
 
-  const ok = await confirmGate(recipients.length, gatePhrase);
-  if (!ok) {
+  // Full-blast path: BerneilBlast tag query routed through the pre-send checklist gate.
+  const FILTER_DESCRIPTION = 'contacts.tags contains "BerneilBlast" (not soft-deleted, email present)';
+  const html = readFileSync(HTML_PATH, "utf8");
+
+  const rawRows = await fetchAudience();
+  const { included, excluded } = partitionContacts(rawRows);
+
+  const report = buildPreflightReport({
+    subject: SUBJECT,
+    html,
+    recipients: included,
+    excluded,
+    filterDescription: FILTER_DESCRIPTION,
+    expectedCount: EXPECTED_COUNT,
+  });
+  report.imageChecks = await checkImageUrls(report.imageUrls);
+
+  const evaluation = evaluatePreflight(report);
+  console.log(formatPreflightReport(report, evaluation));
+
+  if (dryRun) {
+    console.log("\n--dry-run -- nothing sent.\n");
+    return;
+  }
+
+  if (!evaluation.pass) {
+    throw new Error("HALT: pre-send checklist failed. See BLOCKED reasons above. Nothing sent.");
+  }
+
+  const confirmed = await confirmGate(report.recipientCount, "SEND TO ALL");
+  if (!confirmed) {
     console.log("Aborted -- confirmation phrase not matched. Nothing sent.");
     return;
   }
+
   const logDir = join(__dirname, "logs");
   mkdirSync(logDir, { recursive: true });
   const logPath = join(logDir, `berneil-blast-${timestampSlug(new Date())}.jsonl`);
-  await runSend(recipients, logPath);
+  await runSend(included, logPath);
 }
 
 main().catch((e) => {
