@@ -74,3 +74,22 @@ export function stripHtml(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function detectUnresolvedTokens(...parts: string[]): string[] {
+  const re = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+  const found = new Set<string>();
+  for (const part of parts) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(part)) !== null) found.add(m[1]);
+  }
+  return [...found];
+}
+
+export function findDuplicateEmails(recipients: PreflightRecipient[]): string[] {
+  const counts = new Map<string, number>();
+  for (const r of recipients) {
+    const key = r.email.trim().toLowerCase();
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()].filter(([, n]) => n > 1).map(([email]) => email);
+}
