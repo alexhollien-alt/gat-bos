@@ -69,3 +69,25 @@ describe("findDuplicateEmails", () => {
     expect(findDuplicateEmails(recipients)).toEqual(["a@x.com"]);
   });
 });
+
+import { partitionContacts } from "./preflight";
+
+describe("partitionContacts", () => {
+  it("includes live emailable rows; excludes soft-deleted and missing-email by name", () => {
+    const rows = [
+      { first_name: "Jane", last_name: "Doe", email: "jane@x.com", brokerage: "KW", deleted_at: null },
+      { first_name: "No", last_name: "Email", email: null, brokerage: null, deleted_at: null },
+      { first_name: "Gone", last_name: "Away", email: "gone@x.com", brokerage: null, deleted_at: "2026-01-01T00:00:00Z" },
+      { first_name: " ", last_name: " ", email: "blank@x.com", brokerage: null, deleted_at: null },
+    ];
+    const { included, excluded } = partitionContacts(rows);
+    expect(included).toEqual([
+      { email: "jane@x.com", name: "Jane Doe" },
+      { email: "blank@x.com", name: "(no name)" },
+    ]);
+    expect(excluded).toEqual([
+      { email: null, name: "No Email", reason: "missing email" },
+      { email: "gone@x.com", name: "Gone Away", reason: "soft-deleted" },
+    ]);
+  });
+});

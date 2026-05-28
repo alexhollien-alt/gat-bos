@@ -93,3 +93,32 @@ export function findDuplicateEmails(recipients: PreflightRecipient[]): string[] 
   }
   return [...counts.entries()].filter(([, n]) => n > 1).map(([email]) => email);
 }
+
+export interface RawContactRow {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  brokerage: string | null;
+  deleted_at: string | null;
+}
+
+export function partitionContacts(rows: RawContactRow[]): {
+  included: PreflightRecipient[];
+  excluded: ExcludedRecipient[];
+} {
+  const included: PreflightRecipient[] = [];
+  const excluded: ExcludedRecipient[] = [];
+  for (const r of rows) {
+    const name = `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "(no name)";
+    if (r.deleted_at) {
+      excluded.push({ email: r.email, name, reason: "soft-deleted" });
+      continue;
+    }
+    if (!r.email || !r.email.trim()) {
+      excluded.push({ email: r.email, name, reason: "missing email" });
+      continue;
+    }
+    included.push({ email: r.email.trim(), name });
+  }
+  return { included, excluded };
+}
