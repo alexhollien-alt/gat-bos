@@ -145,6 +145,40 @@ export async function checkImageUrls(
   return results;
 }
 
+export function evaluatePreflight(report: PreflightReport): PreflightEvaluation {
+  const hardFailures: string[] = [];
+  const warnings: string[] = [];
+
+  if (report.recipientCount === 0) {
+    hardFailures.push("Recipient list is empty.");
+  }
+  if (report.expectedCount !== undefined && report.recipientCount !== report.expectedCount) {
+    hardFailures.push(
+      `Recipient count ${report.recipientCount} does not match expected ${report.expectedCount}.`,
+    );
+  }
+  if (report.duplicateEmails.length > 0) {
+    hardFailures.push(`Duplicate recipient emails: ${report.duplicateEmails.join(", ")}.`);
+  }
+  if (report.unresolvedTokens.length > 0) {
+    hardFailures.push(`Unresolved template tokens: ${report.unresolvedTokens.join(", ")}.`);
+  }
+  const broken = report.imageChecks.filter((c) => !c.ok);
+  if (broken.length > 0) {
+    hardFailures.push(
+      `Images not returning 200: ${broken.map((c) => `${c.url} (${c.status ?? c.error})`).join("; ")}.`,
+    );
+  }
+  if (report.imageUrls.length > 0 && report.imageChecks.length === 0) {
+    hardFailures.push("Image checks not run -- cannot confirm images return 200.");
+  }
+  if (report.excluded.length === 0) {
+    warnings.push("No recipients were excluded -- confirm this is expected.");
+  }
+
+  return { pass: hardFailures.length === 0, hardFailures, warnings };
+}
+
 export function buildPreflightReport(input: PreflightInput): PreflightReport {
   return {
     filterDescription: input.filterDescription,

@@ -129,6 +129,82 @@ describe("checkImageUrls", () => {
   });
 });
 
+import { evaluatePreflight } from "./preflight";
+import type { PreflightReport } from "./preflight";
+
+function baseReport(overrides: Partial<PreflightReport> = {}): PreflightReport {
+  return {
+    filterDescription: "f",
+    recipientCount: 2,
+    expectedCount: 2,
+    recipients: [
+      { email: "a@x.com", name: "A" },
+      { email: "b@x.com", name: "B" },
+    ],
+    excluded: [{ email: null, name: "No Email", reason: "missing email" }],
+    duplicateEmails: [],
+    subject: "Subj",
+    bodyPreview: "Body",
+    unresolvedTokens: [],
+    imageUrls: ["https://cdn.example.com/x.jpg"],
+    imageChecks: [{ url: "https://cdn.example.com/x.jpg", ok: true, status: 200 }],
+    ...overrides,
+  };
+}
+
+describe("evaluatePreflight", () => {
+  it("passes when all hard checks clear", () => {
+    const evalResult = evaluatePreflight(baseReport());
+    expect(evalResult.pass).toBe(true);
+    expect(evalResult.hardFailures).toEqual([]);
+  });
+
+  it("blocks on count mismatch", () => {
+    const r = evaluatePreflight(baseReport({ recipientCount: 311, expectedCount: 2 }));
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("311");
+    expect(r.hardFailures.join(" ")).toContain("expected 2");
+  });
+
+  it("blocks on empty recipients", () => {
+    const r = evaluatePreflight(baseReport({ recipientCount: 0, recipients: [], expectedCount: undefined }));
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("empty");
+  });
+
+  it("blocks on duplicate emails", () => {
+    const r = evaluatePreflight(baseReport({ duplicateEmails: ["a@x.com"] }));
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("a@x.com");
+  });
+
+  it("blocks on unresolved tokens", () => {
+    const r = evaluatePreflight(baseReport({ unresolvedTokens: ["first_name"] }));
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("first_name");
+  });
+
+  it("blocks on broken images", () => {
+    const r = evaluatePreflight(
+      baseReport({ imageChecks: [{ url: "https://cdn.example.com/x.jpg", ok: false, status: 404 }] }),
+    );
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("404");
+  });
+
+  it("blocks when images exist but were never checked", () => {
+    const r = evaluatePreflight(baseReport({ imageChecks: [] }));
+    expect(r.pass).toBe(false);
+    expect(r.hardFailures.join(" ")).toContain("not run");
+  });
+
+  it("warns (does not block) when nothing was excluded", () => {
+    const r = evaluatePreflight(baseReport({ excluded: [] }));
+    expect(r.pass).toBe(true);
+    expect(r.warnings.join(" ")).toContain("excluded");
+  });
+});
+
 import { buildPreflightReport } from "./preflight";
 
 describe("buildPreflightReport", () => {
