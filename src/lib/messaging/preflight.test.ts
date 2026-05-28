@@ -92,6 +92,43 @@ describe("partitionContacts", () => {
   });
 });
 
+import { checkImageUrls } from "./preflight";
+
+describe("checkImageUrls", () => {
+  it("marks 200 as ok and non-200 as not ok, normalizing protocol-relative urls", async () => {
+    const calls: string[] = [];
+    const fakeFetch = (async (url: string) => {
+      calls.push(url);
+      return { status: url.includes("broken") ? 404 : 200 } as Response;
+    }) as unknown as typeof fetch;
+
+    const results = await checkImageUrls(
+      ["https://cdn.example.com/ok.jpg", "https://cdn.example.com/broken.jpg", "//cdn.example.com/proto.png"],
+      fakeFetch,
+    );
+
+    expect(results).toEqual([
+      { url: "https://cdn.example.com/ok.jpg", ok: true, status: 200 },
+      { url: "https://cdn.example.com/broken.jpg", ok: false, status: 404 },
+      { url: "//cdn.example.com/proto.png", ok: true, status: 200 },
+    ]);
+    expect(calls[2]).toBe("https://cdn.example.com/proto.png");
+  });
+
+  it("captures fetch errors as not ok with null status", async () => {
+    const fakeFetch = (async () => {
+      throw new Error("ECONNREFUSED");
+    }) as unknown as typeof fetch;
+    const results = await checkImageUrls(["https://cdn.example.com/x.jpg"], fakeFetch);
+    expect(results[0]).toEqual({
+      url: "https://cdn.example.com/x.jpg",
+      ok: false,
+      status: null,
+      error: "ECONNREFUSED",
+    });
+  });
+});
+
 import { buildPreflightReport } from "./preflight";
 
 describe("buildPreflightReport", () => {

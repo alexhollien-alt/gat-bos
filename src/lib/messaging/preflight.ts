@@ -123,6 +123,28 @@ export function partitionContacts(rows: RawContactRow[]): {
   return { included, excluded };
 }
 
+export async function checkImageUrls(
+  urls: string[],
+  fetchImpl: typeof fetch = fetch,
+): Promise<ImageCheckResult[]> {
+  const results: ImageCheckResult[] = [];
+  for (const url of urls) {
+    const target = url.startsWith("//") ? `https:${url}` : url;
+    try {
+      const res = await fetchImpl(target, { method: "GET", redirect: "follow" });
+      results.push({ url, ok: res.status === 200, status: res.status });
+    } catch (err) {
+      results.push({
+        url,
+        ok: false,
+        status: null,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  return results;
+}
+
 export function buildPreflightReport(input: PreflightInput): PreflightReport {
   return {
     filterDescription: input.filterDescription,
