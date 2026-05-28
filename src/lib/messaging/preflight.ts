@@ -194,3 +194,69 @@ export function buildPreflightReport(input: PreflightInput): PreflightReport {
     imageChecks: [],
   };
 }
+
+export function formatPreflightReport(
+  report: PreflightReport,
+  evaluation: PreflightEvaluation,
+): string {
+  const hr = "=".repeat(64);
+  const lines: string[] = [];
+  lines.push(hr);
+  lines.push("PRE-SEND CHECKLIST -- review all four sections before sending");
+  lines.push(hr);
+
+  lines.push("");
+  lines.push("[1] RECIPIENTS");
+  lines.push(`    Filter applied : ${report.filterDescription}`);
+  lines.push(
+    `    Final count    : ${report.recipientCount}` +
+      (report.expectedCount !== undefined ? ` (expected ${report.expectedCount})` : ""),
+  );
+  const sample = report.recipients.slice(0, 5);
+  for (const r of sample) lines.push(`      - ${r.name} <${r.email}>`);
+  if (report.recipients.length > sample.length) {
+    lines.push(`      ... and ${report.recipients.length - sample.length} more`);
+  }
+
+  lines.push("");
+  lines.push("[2] EXCLUSIONS (filtered out, by name)");
+  if (report.excluded.length === 0) {
+    lines.push("    (none)");
+  } else {
+    for (const e of report.excluded) {
+      lines.push(`    - ${e.name} <${e.email ?? "no-email"}> -- ${e.reason}`);
+    }
+  }
+
+  lines.push("");
+  lines.push("[3] IMAGE URLS (must all return 200)");
+  if (report.imageChecks.length === 0) {
+    lines.push(
+      report.imageUrls.length === 0
+        ? "    (no images found in body)"
+        : `    NOT CHECKED -- ${report.imageUrls.length} url(s) found`,
+    );
+  } else {
+    for (const c of report.imageChecks) {
+      lines.push(`    [${c.ok ? "200" : c.status ?? "ERR"}] ${c.url}`);
+    }
+  }
+
+  lines.push("");
+  lines.push("[4] SUBJECT vs CONTENTS");
+  lines.push(`    Subject : ${report.subject}`);
+  const preview = report.bodyPreview.slice(0, 600);
+  lines.push(`    Body    : ${preview}${report.bodyPreview.length > 600 ? " ..." : ""}`);
+
+  lines.push("");
+  lines.push(hr);
+  if (evaluation.pass) {
+    lines.push("VERDICT: PASS -- hard checks clear. Eyeball sections 1-4 above.");
+  } else {
+    lines.push("VERDICT: BLOCKED -- fix before sending:");
+    for (const f of evaluation.hardFailures) lines.push(`    x ${f}`);
+  }
+  for (const w of evaluation.warnings) lines.push(`    ! ${w}`);
+  lines.push(hr);
+  return lines.join("\n");
+}

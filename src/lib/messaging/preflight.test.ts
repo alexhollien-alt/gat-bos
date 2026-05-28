@@ -231,3 +231,47 @@ describe("buildPreflightReport", () => {
     expect(report.excluded).toHaveLength(1);
   });
 });
+
+import { formatPreflightReport } from "./preflight";
+
+describe("formatPreflightReport", () => {
+  it("renders all four sections plus a verdict", () => {
+    const report = buildPreflightReport({
+      subject: "Broker Open at 4901 East Berneil Drive",
+      html: `<h1>Broker Open</h1><img src="https://cdn.example.com/hero.jpg"><p>Tour the home.</p>`,
+      recipients: [{ email: "a@x.com", name: "Jane Doe" }],
+      excluded: [{ email: null, name: "No Email", reason: "missing email" }],
+      filterDescription: 'contacts.tags contains "BerneilBlast"',
+      expectedCount: 1,
+    });
+    report.imageChecks = [{ url: "https://cdn.example.com/hero.jpg", ok: true, status: 200 }];
+    const out = formatPreflightReport(report, evaluatePreflight(report));
+
+    expect(out).toContain("[1] RECIPIENTS");
+    expect(out).toContain('contacts.tags contains "BerneilBlast"');
+    expect(out).toContain("Jane Doe <a@x.com>");
+    expect(out).toContain("[2] EXCLUSIONS");
+    expect(out).toContain("No Email");
+    expect(out).toContain("missing email");
+    expect(out).toContain("[3] IMAGE URLS");
+    expect(out).toContain("https://cdn.example.com/hero.jpg");
+    expect(out).toContain("[4] SUBJECT vs CONTENTS");
+    expect(out).toContain("Broker Open at 4901 East Berneil Drive");
+    expect(out).toContain("Broker Open Tour the home.");
+    expect(out).toContain("VERDICT: PASS");
+  });
+
+  it("shows BLOCKED verdict with failure reasons", () => {
+    const report = buildPreflightReport({
+      subject: "Subj",
+      html: "<p>Body</p>",
+      recipients: [],
+      excluded: [],
+      filterDescription: "f",
+      expectedCount: 5,
+    });
+    const out = formatPreflightReport(report, evaluatePreflight(report));
+    expect(out).toContain("VERDICT: BLOCKED");
+    expect(out).toContain("empty");
+  });
+});
