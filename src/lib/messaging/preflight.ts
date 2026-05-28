@@ -122,3 +122,19 @@ export function partitionContacts(rows: RawContactRow[]): {
   }
   return { included, excluded };
 }
+
+export function buildPreflightReport(input: PreflightInput): PreflightReport {
+  return {
+    filterDescription: input.filterDescription,
+    recipientCount: input.recipients.length,
+    expectedCount: input.expectedCount,
+    recipients: input.recipients,
+    excluded: input.excluded,
+    duplicateEmails: findDuplicateEmails(input.recipients),
+    subject: input.subject,
+    bodyPreview: stripHtml(input.html),
+    unresolvedTokens: detectUnresolvedTokens(input.subject, input.html),
+    imageUrls: extractImageUrls(input.html),
+    imageChecks: [],
+  };
+}

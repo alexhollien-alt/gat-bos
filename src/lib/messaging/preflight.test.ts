@@ -91,3 +91,30 @@ describe("partitionContacts", () => {
     ]);
   });
 });
+
+import { buildPreflightReport } from "./preflight";
+
+describe("buildPreflightReport", () => {
+  it("assembles counts, duplicates, body preview, tokens, and image urls without network", () => {
+    const report = buildPreflightReport({
+      subject: "Broker Open at 4901 East Berneil Drive",
+      html: `<h1>Broker Open</h1><img src="https://cdn.example.com/hero.jpg"><p>{{first_name}}</p>`,
+      recipients: [
+        { email: "a@x.com", name: "A" },
+        { email: "a@x.com", name: "A dup" },
+      ],
+      excluded: [{ email: null, name: "No Email", reason: "missing email" }],
+      filterDescription: 'contacts.tags contains "BerneilBlast"',
+      expectedCount: 2,
+    });
+    expect(report.recipientCount).toBe(2);
+    expect(report.expectedCount).toBe(2);
+    expect(report.duplicateEmails).toEqual(["a@x.com"]);
+    expect(report.bodyPreview).toBe("Broker Open {{first_name}}");
+    expect(report.unresolvedTokens).toEqual(["first_name"]);
+    expect(report.imageUrls).toEqual(["https://cdn.example.com/hero.jpg"]);
+    expect(report.imageChecks).toEqual([]);
+    expect(report.filterDescription).toBe('contacts.tags contains "BerneilBlast"');
+    expect(report.excluded).toHaveLength(1);
+  });
+});
