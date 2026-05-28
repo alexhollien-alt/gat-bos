@@ -233,6 +233,7 @@ async function main() {
   }
 
   // --test: hardcoded inboxes, bypass the contacts query entirely.
+  // NOTE: preflight gate intentionally skipped here; --test is a two-inbox smoke test, not a blast.
   if (testMode) {
     const recipients: Recipient[] = TEST_RECIPIENTS.map((e) => ({ email: e, name: "Test Recipient", brokerage: null }));
     const logDir = join(__dirname, "logs");
@@ -243,7 +244,9 @@ async function main() {
     return;
   }
 
-  // CSV path: resend to a specific list. Unchanged behavior, self-contained.
+  // CSV path: resend to a specific list. Self-contained.
+  // NOTE: preflight gate intentionally skipped on the CSV resend path -- it reuses the
+  // already-vetted blast HTML, so image/token checks ran on the original full-blast send.
   if (csvPath) {
     const recipients = loadCsvRecipients(csvPath);
     console.log(`Loaded ${recipients.length} recipients from CSV: ${csvPath}`);
