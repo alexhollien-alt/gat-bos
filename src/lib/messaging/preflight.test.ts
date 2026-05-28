@@ -26,4 +26,9 @@ describe("extractImageUrls", () => {
     `;
     expect(extractImageUrls(html)).toEqual(["https://cdn.example.com/x.jpg"]);
   });
+
+  it("captures a quoted url containing an apostrophe without truncating", () => {
+    const html = `<img src="https://cdn.example.com/o'brien.jpg">`;
+    expect(extractImageUrls(html)).toEqual(["https://cdn.example.com/o'brien.jpg"]);
+  });
 });

@@ -52,10 +52,10 @@ function addUrl(set: Set<string>, raw: string): void {
 
 export function extractImageUrls(html: string): string[] {
   const urls = new Set<string>();
-  const attrRe = /(?:src|background)\s*=\s*["']([^"']+)["']/gi;
+  const attrRe = /(?:src|background)\s*=\s*(?:"([^"]+)"|'([^']+)')/gi;
   const cssRe = /url\(\s*['"]?([^'")\s]+)['"]?\s*\)/gi;
   let m: RegExpExecArray | null;
-  while ((m = attrRe.exec(html)) !== null) addUrl(urls, m[1]);
+  while ((m = attrRe.exec(html)) !== null) addUrl(urls, m[1] ?? m[2]);
   while ((m = cssRe.exec(html)) !== null) addUrl(urls, m[1]);
   return [...urls];
 }
