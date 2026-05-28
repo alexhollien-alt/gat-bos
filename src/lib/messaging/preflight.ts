@@ -57,7 +57,7 @@ export function extractImageUrls(html: string): string[] {
   let m: RegExpExecArray | null;
   while ((m = attrRe.exec(html)) !== null) addUrl(urls, m[1] ?? m[2]);
   while ((m = cssRe.exec(html)) !== null) addUrl(urls, m[1]);
-  return [...urls];
+  return Array.from(urls);
 }
 
 export function stripHtml(html: string): string {
@@ -82,7 +82,7 @@ export function detectUnresolvedTokens(...parts: string[]): string[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(part)) !== null) found.add(m[1]);
   }
-  return [...found];
+  return Array.from(found);
 }
 
 export function findDuplicateEmails(recipients: PreflightRecipient[]): string[] {
@@ -91,7 +91,7 @@ export function findDuplicateEmails(recipients: PreflightRecipient[]): string[] 
     const key = r.email.trim().toLowerCase();
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return [...counts.entries()].filter(([, n]) => n > 1).map(([email]) => email);
+  return Array.from(counts.entries()).filter(([, n]) => n > 1).map(([email]) => email);
 }
 
 export interface RawContactRow {
