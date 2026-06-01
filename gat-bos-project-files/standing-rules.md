@@ -127,56 +127,36 @@ Does NOT apply to email HTML or print HTML.
 
 ---
 
-## 12. COMPOUND TASK ROUTING
+## 12. COMPOUND TASK ROUTING  (SUPERSEDED -- see system/00-router.md)
 
-Before generating ANY output, identify the task type below and read ALL listed files in order. Do not skip any. If a task matches multiple rows, merge all required reads (deduplicate).
+This rule's task->reads table has moved into the classify-first router. **Do not route
+from this file.** Routing now runs in one place:
 
-### Design Outputs (Print + Digital)
+1. `system/00-router.md` -- classify every request into four fields (client, output,
+   channel, mode), disambiguate, then resolve a hat.
+2. `system/routing-table.md` -- the single map of classification -> hat -> rule packs +
+   skill + context reads. This absorbed the old table above and the keyword->skill table
+   that used to live in `CLAUDE.md`.
 
-| Task | Required Reads (in order) |
-|---|---|
-| Property flyer, brochure, door hanger, postcard, EDDM, one-sheet | `design-foundation.md` > `brand.md` > `re-print-design/SKILL.md` |
-| Property flyer/brochure WITH marketing copy | `design-foundation.md` > `brand.md` > `re-print-design/SKILL.md` > `re-marketing/SKILL.md` |
-| HTML email or newsletter | `design-foundation.md` > `brand.md` > `re-email-design/SKILL.md` |
-| HTML email WITH marketing copy | `design-foundation.md` > `brand.md` > `re-email-design/SKILL.md` > `re-marketing/SKILL.md` |
-| HTML email WITH market data sections | `design-foundation.md` > `brand.md` > `re-email-design/SKILL.md` > `market-intelligence/SKILL.md` |
-| Listing landing page | `design-foundation.md` > `brand.md` > `re-landing-page/SKILL.md` > `re-marketing/SKILL.md` |
-| Listing presentation (PPTX) | `design-foundation.md` > `brand.md` > `re-listing-presentation/SKILL.md` > `re-marketing/SKILL.md` |
-| Social media graphic | `design-foundation.md` > `brand.md` > `re-print-design/SKILL.md` > `re-marketing/SKILL.md` |
-| Slide deck (non-listing) | `design-foundation.md` > `brand.md` > `slide-deck-generator/SKILL.md` |
+### Rule Scope Map (which pack each rule below belongs to)
 
-### Agent-Facing Outputs
+The router loads rules as **packs**, not as this whole file. Every request loads the
+`always-on` pack; conditional packs load only when their classification triggers.
 
-| Task | Required Reads (in order) |
-|---|---|
-| Agent creative brief / onboarding | `brand.md` > `agent-creative-brief/SKILL.md` |
-| Agent outreach, scripts, follow-up | `agent-bd/SKILL.md` |
-| Agent meeting prep or debrief | `agent-strategy-session/SKILL.md` |
-| Agent outreach WITH designed collateral | `agent-bd/SKILL.md` > `design-foundation.md` > `brand.md` > (relevant design skill) |
+| Rule(s) | Pack (`system/rules/...`) | Loads when |
+|---|---|---|
+| R1, R2, R3, R4, R5 | `always-on` | every request |
+| R7 | `packs/copy-standards` | mode = creative-copywriting / brand-positioning |
+| R6, R13, R14, R15 | `packs/design-process` | mode = design-direction |
+| R8 | `packs/co-brand-gat` | print design output only |
+| R9 | `packs/lender-scoping` | client = agent/listing AND co-branded |
+| R10 | `packs/positioning` | client = me AND BD/positioning output |
+| R11 | `packs/web-seo` | channel = web |
 
-### Intelligence + Research Outputs
+This file remains the **canonical text** for each rule. The packs reference these rules;
+they do not replace them.
 
-| Task | Required Reads (in order) |
-|---|---|
-| Market update or data interpretation | `market-intelligence/SKILL.md` |
-| Market update formatted for email | `market-intelligence/SKILL.md` > `design-foundation.md` > `brand.md` > `re-email-design/SKILL.md` |
-| Market update formatted for print | `market-intelligence/SKILL.md` > `design-foundation.md` > `brand.md` > `re-print-design/SKILL.md` |
-| Deep dive / research report | `research-assistant/SKILL.md` |
-| Morning or EOD briefing | `morning-briefing/SKILL.md` or `end-of-day-briefing/SKILL.md` |
-
-### Canva Handoff
-
-| Task | Required Reads (in order) |
-|---|---|
-| Any design destined for Canva team | (relevant design skill first) > `canva-handoff/SKILL.md` |
-
-### Production Tickets
-
-| Task | Required Reads (in order) |
-|---|---|
-| Cypher ticket from agent commitments / "ticket this up" / "Cypher this" / "build a Cypher ticket" | `client-universe.md` > `cypher-ticket-builder/SKILL.md` |
-
-**Applies to:** Every skill that produces output. Read before building, not after.
+**Applies to:** Every skill that produces output. Classify before building, not after.
 
 ---
 

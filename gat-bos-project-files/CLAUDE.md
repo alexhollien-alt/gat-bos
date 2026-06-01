@@ -9,7 +9,8 @@ Not a realtor. My clients are realtors. I am their one-person marketing departme
 
 | File | What It Contains |
 |------|-----------------|
-| standing-rules.md | Fill-and-flag, no em dashes, no hard deletes, no scraping, approval gates, copy standards, co-brand rules, lender scoping, referral handle |
+| system/00-router.md | **Read first, every request.** Classify-first router: 4-field classification, disambiguation, hat resolution, declare-hat gate. Routes to skills + rule packs. |
+| standing-rules.md | Fill-and-flag, no em dashes, no hard deletes, no scraping, approval gates, copy standards, co-brand rules, lender scoping, referral handle (canonical rule text; loaded as packs via the router) |
 | brand.md | Colors (#b31a35, #003087, full palette), font kits, voice tokens, agent palettes, co-brand rules |
 | design-foundation.md | Shared design logic, components, image audit, price tiers, brokerage adaptation, validation checks |
 | digital-aesthetic.md | Screen aesthetic v2: showcase/workspace tiers, Syne+Inter+Space Mono, motion budgets, headshot gradient masks |
@@ -31,48 +32,24 @@ Not a realtor. My clients are realtors. I am their one-person marketing departme
 
 ---
 
-## Skill Routing
+## Routing -- classify first, then build
 
-Match every request to a skill before producing output.
+**Do not match keywords straight to skills.** Every request goes through the
+classify-first router before any output:
 
-### Design and Production
-| Trigger | Skill |
-|---------|-------|
-| flyer, postcard, brochure, door hanger, EDDM | re-print-design |
-| email, newsletter, drip, weekly edge | re-email-design |
-| website, landing page, property page | re-landing-page |
-| listing presentation, pitch deck, CMA | re-listing-presentation |
-| copy, headline, tagline, MLS remarks | re-marketing |
-| send to designer, Canva, brief | canva-handoff |
-| listing pipeline, full package | listing-pipeline |
+1. `system/00-router.md` -- classify into four fields (client, output, channel, mode),
+   disambiguate overloaded words, declare the hat, then build.
+2. `system/classification.md` -- the controlled vocabularies + disambiguation table.
+3. `system/routing-table.md` -- the **single** map of classification -> hat -> rule
+   packs + skill. This is where the old keyword->skill table moved (re-print-design,
+   re-email-design, re-landing-page, re-listing-presentation, re-marketing,
+   canva-handoff, listing-pipeline, agent-bd, agent-strategy-session,
+   cypher-ticket-builder, agent-creative-brief, morning/end-of-day-briefing,
+   research-assistant, and the quality/review skills).
 
-### Quality and Review
-| Trigger | Skill |
-|---------|-------|
-| score copy, copy check | copy-check |
-| brand audit, token drift | brand-audit |
-| format check, pre/post-flight | output-enforcement |
-| visual QA, screenshot check | visual-qa |
-| before any build | pre-flight |
-| after QC passes | deliverable-retro |
-| red-team review | opponent-review |
-
-### Operations
-| Trigger | Skill |
-|---------|-------|
-| cold call, BNI pitch, outreach | agent-bd |
-| meeting prep, I met with, follow up | agent-strategy-session |
-| cypher ticket, ticket this up, build a Cypher ticket | cypher-ticket-builder |
-| creative brief, onboard agent | agent-creative-brief |
-| morning briefing, start my day | morning-briefing |
-| EOD, brain dump, end of day | end-of-day-briefing |
-| weekly audit, Friday audit | weekly-audit |
-| research, deep dive, intel | research-assistant |
-| meeting notes, transcript | meeting-notes |
-| consolidate memory, update memory | consolidate-memory |
-| scout, what's new, scan for changes | research-scout |
-| log this, find that flyer, search outputs | media-memory |
-| compile, audit wiki, what do I know about | knowledge-base |
+Why: "marketing" and "flyer" do not identify a route by themselves -- the same skill
+serves an agent and serves Alex under different rules. The router resolves *who/what/
+where/how* first so only the matching rule packs load.
 
 ---
 
