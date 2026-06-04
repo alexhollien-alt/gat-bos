@@ -58,13 +58,15 @@ interface BlastFull {
   status: string;
   auto_send: boolean;
   daily_send_cap: number | null;
+  recipient_count: number | null;
+  sent_at: string | null;
   agent: AgentJoin | null;
 }
 
 const ALREADY_SENT = new Set(["sent", "delivered", "opened", "clicked", "bounced", "complained"]);
 
 const SELECT =
-  "id, user_id, account_id, agent_contact_id, slug, address, city, state, price, open_house_date, open_house_start, open_house_end, details, beds, baths, sqft, photos, hero_image_url, email_subject, status, auto_send, daily_send_cap, agent:contacts!agent_contact_id(first_name, last_name, full_name, email, phone, brokerage, headshot_url)";
+  "id, user_id, account_id, agent_contact_id, slug, address, city, state, price, open_house_date, open_house_start, open_house_end, details, beds, baths, sqft, photos, hero_image_url, email_subject, status, auto_send, daily_send_cap, recipient_count, sent_at, agent:contacts!agent_contact_id(first_name, last_name, full_name, email, phone, brokerage, headshot_url)";
 
 export async function loadBlast(blastId: string): Promise<BlastFull | null> {
   const { data, error } = await adminClient
