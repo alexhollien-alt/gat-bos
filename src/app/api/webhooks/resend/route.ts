@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { logError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
+import { suppressByEmail } from "@/lib/open-house/suppress";
 
 // NO RATE LIMIT (Slice 3A intentional decision).
 //
@@ -215,6 +216,73 @@ export async function POST(req: NextRequest) {
         console.warn(
           `[resend-webhook] no messages_log row for provider_message_id=${providerMessageId} (event=${type})`,
         );
+      }
+    }
+
+    // --- Open house blast: engagement sync + bounce/complaint suppression ---
+    // Runs for ALL mapped events (including bounced/complained, which the
+    // legacy early-return below skips). Matches a blast_sends row by the Resend
+    // message id; updates its status/timestamps for the dashboard and, on a
+    // bounce or complaint, flips the contact's email_status so it is never
+    // mailed again.
+    if (eventType && providerMessageId) {
+      const { data: send } = await supabase
+        .from("blast_sends")
+        .select("id, recipient_email, contact_id, status, blast:open_house_blasts!blast_id(user_id)")
+        .eq("provider_message_id", providerMessageId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (send?.id) {
+        const nowIso = new Date().toISOString();
+        const RANK: Record<string, number> = {
+          queued: 0, sent: 1, delivered: 2, opened: 3, clicked: 4, bounced: 5, complained: 6,
+        };
+        const TS_COL: Record<string, string> = {
+          "email.delivered": "delivered_at",
+          "email.opened": "opened_at",
+          "email.clicked": "clicked_at",
+          "email.bounced": "bounced_at",
+          "email.complained": "complained_at",
+        };
+        const patch: Record<string, unknown> = {};
+        if (TS_COL[type]) patch[TS_COL[type]] = nowIso;
+        // Never downgrade a higher-rank state (e.g. clicked -> delivered on
+        // out-of-order webhooks). Bounce/complaint are highest rank and win.
+        if ((RANK[eventType] ?? 0) >= (RANK[String(send.status)] ?? 0)) {
+          patch.status = eventType;
+        }
+        if (Object.keys(patch).length > 0) {
+          await supabase.from("blast_sends").update(patch).eq("id", send.id);
+        }
+
+        // Supabase may type a to-one embed as an array; normalize both shapes.
+        const blastJoin = send.blast as unknown as
+          | { user_id?: string }
+          | { user_id?: string }[]
+          | null;
+        const ownerId = Array.isArray(blastJoin) ? blastJoin[0]?.user_id : blastJoin?.user_id;
+        const OH_VERB = {
+          "email.delivered": "open_house.email.delivered",
+          "email.opened": "open_house.email.opened",
+          "email.clicked": "open_house.email.clicked",
+        } as const;
+        if (ownerId && (type === "email.delivered" || type === "email.opened" || type === "email.clicked")) {
+          void writeEvent({
+            userId: ownerId,
+            actorId: (send.contact_id as string) ?? ownerId,
+            verb: OH_VERB[type as keyof typeof OH_VERB],
+            object: { table: "blast_sends", id: send.id as string },
+            context: { email: send.recipient_email, subject: data?.subject },
+          });
+        }
+
+        if (type === "email.bounced") {
+          await suppressByEmail(String(send.recipient_email), "bounced", "bounce via Resend webhook");
+        }
+        if (type === "email.complained") {
+          await suppressByEmail(String(send.recipient_email), "complained", "complaint via Resend webhook");
+        }
       }
     }
 
