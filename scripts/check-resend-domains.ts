@@ -6,11 +6,14 @@ import { readFileSync, existsSync } from "node:fs";
 import { Resend } from "resend";
 
 function loadKey(): string | null {
-  for (const f of [".env.production.local", ".env.local"]) {
-    if (!existsSync(f)) continue;
-    const m = readFileSync(f, "utf8").match(/^RESEND_API_KEY=(.+)$/m);
-    const k = m?.[1]?.replace(/^["']|["']$/g, "").trim();
-    if (k && k.length > 8) return k;
+  // Prefer a read-scoped key (can list domains); fall back to the send key.
+  for (const name of ["RESEND_READ_API_KEY", "RESEND_API_KEY"]) {
+    for (const f of [".env.production.local", ".env.prod-probe.local", ".env.local"]) {
+      if (!existsSync(f)) continue;
+      const m = readFileSync(f, "utf8").match(new RegExp(`^${name}=(.+)$`, "m"));
+      const k = m?.[1]?.replace(/^["']|["']$/g, "").trim();
+      if (k && k.length > 8) return k;
+    }
   }
   return null;
 }
