@@ -6,6 +6,21 @@ Follow-ups deferred out of the current slice. Each entry: date logged, source sl
 
 ## Open
 
+### [2026-06-04] (dashboard rebuild) `tasks.status` value inconsistency: "completed" vs "done"
+- **Where:** `src/components/dashboard/task-list.tsx:391` (writes `status:"completed"`), `src/app/(app)/tasks/tasks-client.tsx:43,45` (filters `.neq/.eq("status","completed")`).
+- **What:** The live `tasks_status_check` constraint allows only `open | done | snoozed | cancelled`. Writing `"completed"` violates the constraint (insert/update rejected); filtering on `"completed"` never matches the real done-state `"done"`, so completed tasks are not excluded from those views. The new `/dashboard` uses `"done"` correctly. Sweep the legacy surfaces to `"done"` (or migrate the constraint to add `"completed"` if that is the intended canonical value -- but `"done"` is what the DB currently enforces).
+- **Why deferred:** Out of scope for the dashboard build (Build-vs-Plumbing protocol). Pre-existing in other surfaces; needs its own plumbing pass to avoid touching unrelated code mid-build.
+
+### [2026-06-04] (dashboard rebuild) Orphaned old dashboard widgets
+- **Where:** `src/components/dashboard/` (tiles, health-*, pipeline-snapshot, campaign-timeline, quick-actions, recent-interactions, relationship-stats, task-list, print-tickets-panel, etc.).
+- **What:** The `/dashboard` rebuild stopped importing these (the old `dashboard-client.tsx` was rewritten). They are now unused by `/dashboard` but were NOT deleted (Rule 3). Grep each for other importers; remove the truly-dead ones in a follow-up. `task-list.tsx` and `print-tickets-panel.tsx` are the most likely to be referenced elsewhere -- verify before removing.
+- **Why deferred:** Keeps the rebuild diff reviewable and the build green; deletion is a separate cleanup.
+
+### [2026-06-04] (dashboard rebuild) Activity tab goals + BNI source are placeholders
+- **Where:** `src/app/(app)/dashboard/_components/activity-tab.tsx` (`GOALS` const), `src/app/(app)/dashboard/_data.ts` (`fetchWeekly`, BNI proxy).
+- **What:** Weekly goals are hardcoded placeholders (50 calls / 2 open houses / 5 meetings / 10 BNI); BNI follow-ups have no dedicated activity verb and use `interaction.note` as a stand-in. Replace with Alex's real weekly targets and a proper BNI tracking source/verb when defined.
+- **Why deferred:** Alex chose "ship with placeholder goals" for v1.
+
 ### [2026-05-03] (Slice 8 Phase 5) Generalize dry-run-alex recipient list
 - **Where:** `src/lib/campaigns/recipients.ts` (`KNOWN_LISTS` set + `dry-run-alex` branch).
 - **What:** v1 hardcodes a single dry-run recipient for the Phase 5 first-send verification. Generalize into a `single-recipient` mechanism that accepts `?recipient=<email>` on the send route or reads from a `dry_run_recipients` config table when subscriber preferences ship. Until then, `dry-run-alex` stays as a simple, surgical resolver for ad-hoc dry-runs.

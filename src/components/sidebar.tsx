@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  LayoutDashboard,
   Sun,
   Users,
   CheckSquare,
@@ -23,10 +22,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { href: "/today-v2", label: "Today", icon: Sun },
+  { href: "/dashboard", label: "Today", icon: Sun },
   { href: "/captures", label: "Captures", icon: Sparkles },
   { href: "/inbox", label: "Inbox", icon: Inbox },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/actions", label: "Actions", icon: Zap },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/contacts", label: "Contacts", icon: Users },
