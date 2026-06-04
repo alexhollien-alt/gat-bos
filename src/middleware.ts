@@ -50,6 +50,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/agents/") ||
     pathname.startsWith("/agent/") ||
     pathname.startsWith("/rsvp/") ||
+    pathname.startsWith("/open-house/") ||
+    pathname.startsWith("/u/") ||
     isPortalPublic;
 
   if (isPublicRoute) {
