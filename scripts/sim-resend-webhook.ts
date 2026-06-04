@@ -26,7 +26,8 @@ const signed = `${svixId}.${ts}.${payload}`;
 const sig = createHmac("sha256", key).update(signed).digest("base64");
 
 (async () => {
-  const res = await fetch("http://localhost:3001/api/webhooks/resend", {
+  const target = process.env.WEBHOOK_URL || "http://localhost:3001/api/webhooks/resend";
+  const res = await fetch(target, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

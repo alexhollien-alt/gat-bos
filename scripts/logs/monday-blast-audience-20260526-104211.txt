@@ -1,0 +1,127 @@
+MONDAY MORNING BLAST -- AUDIENCE REVIEW
+Generated: 2026-05-26T17:42:11.812Z
+Filter: tier in [A, B, C, P], deleted_at null, real email, deduped
+Excludes: Denise van den Bossche, Norm Hampton
+Subject: On your radar this week: the Everything Condo class and a Biltmore coming-soon
+From: Alex Hollien <alex@alexhollienco.com>
+TOTAL RECIPIENTS: 112
+
+## Tier A (46)
+  [1] Daniel Barnard <Danielmarkbarnard@me.com>
+  [2] Joe Brimley <Joe@schottdev.com>
+  [3] Doug Brown <doug.brown@junkluggers.com>
+  [4] Cody Campbell <Cody@campbellsCarpetcareaz.com>
+  [5] Heath Carlson <Heath@mycomputer.pro>
+  [6] Jeff Chabot <Scottsdaleauto.owner@glassdoctor.com>
+  [7] Donna Cilley <thecilleys@gmail.com>
+  [8] Riley Cilley <rileycilley@gmail.com>
+  [9] Rigby Cilley <rigbycilley@gmail.com>
+  [10] Kirk Dahlke <kirkdahlke225@gmail.com>
+  [11] Bruce Dahlke <bdahlke2025@gmail.com>
+  [12] Jesse Dean <Jesse@flowstaterestoration.com>
+  [13] Greg DeAvila <greg.deavila@pillartopost.com>
+  [14] Allison Gloss <Allison@libbybanks.com>
+  [15] Amber Hollien <amber@amberhollien.com>
+  [16] Dawn Hudgins <dlhudgins@dreamvacations.com>
+  [17] Eric Jackson <BNI@JacksonIFA.com>
+  [18] Dr. Jake Quesada <drjake@ethosscottsdale.com>
+  [19] Julie Jarmiolowski <julie@kay-grant.com>
+  [20] Andrew Kish <Andrewkish@Cleaneatz.com>
+  [21] Amy Koch <amy@amykoch.com>
+  [22] Eric Labourdette <elabourdette@groovyhues.com>
+  [23] Nate Leidigh <nate@browsearizonahomes.com>
+  [24] Caleb Mack <Caleb.S.Mack@mwarep.org>
+  [25] Colleen Malley Schwartz <colleenmalley33@yahoo.com>
+  [26] Emma Mastre <ecmastre@gmail.com>
+  [27] Chloee Miekle <ChloeetRealty@gmail.com>
+  [28] David Mikhail <david@kicbac.com>
+  [29] Greg Miller <Gmillerdc@gmail.com>
+  [30] Kristin Nelson <ListinKristin@gmail.com>
+  [31] Carmen Osborne <Carmen.osborne@bbsi.com>
+  [32] Chase Reynolds <chase.c.reynolds@gmail.com>
+  [33] Ed Ribadeneira <ed@rlawoffices.com>
+  [34] Dustin Rush <dustinrush90@gmail>
+  [35] Danny Saint <Danny@irishroofingcompany.com>
+  [36] Jennifer Schilling <jenniferl.schilling@gmail.com>
+  [37] Anne Schilling <schillingsellingscottsdale@gmail.com>
+  [38] Bruce Schwartz <drbruceschwartz@yahoo.com>
+  [39] Daniel Shabilla <dshabilla@gmail.com>
+  [40] Carrie Smith <Carrie@sdephx.com>
+  [41] Anthony Stallone <stallonerealty@yahoo.com>
+  [42] Allery Stuart <allery@infinitebeaconhomes.com>
+  [43] JR Szabo <DesertNightair@outlook.com>
+  [44] Nick Wojtysiak <nick@simplyluxerealty.com>
+  [45] Vince Zerilli <realtorvz@gmail.com>
+  [46] Nate Zeune <zeune.nate@gmail.com>
+
+## Tier B (27)
+  [1] Gregory Anderson <greand03@gmail.com>
+  [2] Rui Barros <ruibarrosaz@gmail.com>
+  [3] Laura Bastien <10bastienL@gmail.com>
+  [4] Alexandra Best <bestalexandra3@gmail.com>
+  [5] Chris Bianco <cbiancodtc@gmail.com>
+  [6] Fiona Bigbee <fiona.bigbee@gmail.com>
+  [7] Virginia Braden <vbraden@barrettre.com>
+  [8] Sady Flynn <sadyf443@gmail.com>
+  [9] Anna Gurczak <AnnaSellsArizona@gmail.com>
+  [10] Joey Gutierrez <Homeprosreco@gmail.com>
+  [11] Lavonda Hardy <Lavonda.hardy@cbrealty.com>
+  [12] Lexx Hatch <home@calledtoclose.co>
+  [13] Adely Hunt <hunt@homesearchpro.net>
+  [14] Eli Khazoom <eli@khazoomrealestate.com>
+  [15] Nick Lawor <nick@lawlorrealestategroup.com>
+  [16] Jeff Li <Jeff.integritygroup@gmail.com>
+  [17] Charles Martinet <cmartinet@gcanyonrealty.com>
+  [18] Rick Nichols <ricknicholsrealtor@gmail.com>
+  [19] Jenn Phipps <jennphipps@icloud.com>
+  [20] Brianna Rael <keysbybrianna@gmail.com>
+  [21] Destany Ramirez <desramirez08@gmail.com>
+  [22] Karine Richards <karine.azrealtor@gmail.com>
+  [23] Michelle Roden <MICHELLE@BARRETTRE.COM>
+  [24] Michael Stanton <az.mike@yahoo.com>
+  [25] Lisa Tessler <Lisa@TackettTeam.com>
+  [26] Kiersten Tessler <kiersten@TackettTeam.com>
+  [27] Rick Wells <rickwells101@live.com>
+
+## Tier C (28)
+  [1] Wendy Anderson <wanderson@hsmove.com>
+  [2] Waliece Anderson <waliece@msn.com>
+  [3] Brandon Austin <brandonaustin290@gmail.com>
+  [4] Nancy Badani <realtorarbaugh@gmail.com>
+  [5] Lucia Burns <soldbylucia@msn.com>
+  [6] Courtney Cagle <courtbcagle21@gmail.com>
+  [7] Alym Dhalla <adhalla@gmail.com>
+  [8] Hend Faraj <homehuntersaz@gmail.com>
+  [9] Brandon Gaston <bgaston@kw.com>
+  [10] Tyler Johnston <yourrealtortylerjohnston@gmail.com>
+  [11] Dahee Kim <dahee@thealdergroupaz.com>
+  [12] Carrie Lehrman <Carrie@TheSRLGroup.com>
+  [13] Becca Linnig <becca@imbeccablerealestate.com>
+  [14] Meghan Magana <meg@mamgroupaz.com>
+  [15] Alexis Marlow <a.marlow0120@gmail.com>
+  [16] Nissa Mazariegos <nissasellsaz@gmail.com>
+  [17] Kay Moore <kmoore491@yahoo.com>
+  [18] Lizbeth Munoz <youragentlizbeth@gmail.com>
+  [19] Jeffrey Otero <jeffotero@yahoo.com>
+  [20] Tara Riley <tara.riley@bhhsaz.com>
+  [21] Chris Ringhofer <christopher.ringhofer@gmail.com>
+  [22] Danielle Rufenacht <realtordaniisellsaz@gmail.com>
+  [23] Shannon Seidl <shannon@reallyre.com>
+  [24] Doug Summers <realtorsumms@gmail.com>
+  [25] Stephanie Taylor <keyswithstephanie@gmail.com>
+  [26] Aaron Tena <at3homes@gmail.com>
+  [27] Gary Vieth <gviethassoc@cox.net>
+  [28] Angel Villa <AngelVillare2023@gmail.com>
+
+## Tier P (11)
+  [1] Teresa Capista <teresa@nelsongroupsw.com>
+  [2] Kathy Cohodas <kathy.cohodas@gmail.com>
+  [3] Monica Coker <Info@monicacoker.com>
+  [4] Chasen Dobranski <Chasen.dobranski@desertfinancial.com>
+  [5] Mayra Garcia <mayragvrealtor@gmail.com>
+  [6] Lori Gray <LoriZeeGray@kw.com>
+  [7] Lisa Groth <Lgrmxprofessionals@gmail.com>
+  [8] Hema Patel <hemaazrealtor@gmail.com>
+  [9] Sherri Plotke <Sherri@AzGolfandSunProperties.com>
+  [10] Vicki Potolicchio <vickiazrealestate@gmail.com>
+  [11] Sherrie Travers <sherrie@karlisenburg.com>
