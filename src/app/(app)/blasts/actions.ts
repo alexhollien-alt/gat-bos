@@ -40,6 +40,20 @@ async function primaryAccountId(userId: string): Promise<string | null> {
   return data?.[0]?.id ?? null;
 }
 
+export async function setAutoSend(blastId: string, value: boolean): Promise<{ ok: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false };
+  const { error } = await supabase
+    .from("open_house_blasts")
+    .update({ auto_send: value })
+    .eq("id", blastId)
+    .eq("user_id", user.id);
+  return { ok: !error };
+}
+
 export async function createBlast(input: unknown): Promise<CreateBlastResult> {
   const supabase = await createClient();
   const {

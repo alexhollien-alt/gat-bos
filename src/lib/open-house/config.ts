@@ -21,6 +21,16 @@ export const BLAST_FROM_ADDRESS =
 export const BLAST_REPLY_TO =
   process.env.BLAST_REPLY_TO?.trim() || "alex@alexhollienco.com";
 
+// Optional mailto unsubscribe (RFC 8058 fallback alongside the https one-click).
+export const UNSUBSCRIBE_MAILTO =
+  process.env.BLAST_UNSUBSCRIBE_MAILTO?.trim() || `unsubscribe@${SENDING_DOMAIN}`;
+
+// CAN-SPAM requires a physical postal address in every commercial email.
+// [PLACEHOLDER: confirm the correct postal address for the footer.]
+export const FOOTER_ADDRESS =
+  process.env.BLAST_FOOTER_ADDRESS?.trim() ||
+  "Great American Title Agency, 2425 E Camelback Rd, Phoenix, AZ 85016";
+
 // Public base URL for landing pages + unsubscribe links. MUST match the From
 // domain so the click target aligns with the sending subdomain (Primary signal).
 export const PUBLIC_BASE_URL = (
@@ -73,3 +83,7 @@ export const MAILABLE_STATUS = "active";
 
 // Recipient contact types eligible for an agent-to-agent open house blast.
 export const RECIPIENT_TYPES = ["realtor", "agent"] as const;
+
+// Remaining placeholders (Rule 1):
+//   [PLACEHOLDER: confirm FOOTER_ADDRESS postal address for CAN-SPAM footer]
+//     -> override with env BLAST_FOOTER_ADDRESS when confirmed.
