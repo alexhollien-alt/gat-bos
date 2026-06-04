@@ -102,7 +102,7 @@
   gap: 18px;
   padding: 0 18px;
   height: 100%;
-  overflow: hidden;
+  overflow-x: auto;
   min-width: 0;
 }
 .stat {
@@ -1009,7 +1009,7 @@
   gap: 0;
   background: var(--bg-2);
   z-index: 2;
-  overflow: hidden;
+  overflow-y: auto;
 }
 .dayStrip {
   display: grid;
