@@ -3,6 +3,9 @@
    route via an inline :root block so the page is self-contained. This is the
    click target for the blast email button. */
 /* eslint-disable @next/next/no-page-custom-font, @next/next/no-img-element */
+/* eslint-disable no-restricted-syntax -- the inline :root block is the canonical
+   palette source block (design-tokens permits hex only in :root); values are
+   scoped to this self-contained public route. */
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { adminClient } from "@/lib/supabase/admin";

@@ -14,7 +14,7 @@ import {
   BATCH_SIZE,
   THROTTLE_MS,
 } from "./config";
-import { getMatchedAudience, getSendRecipients, type SendRecipient } from "./recipients";
+import { getMatchedAudience, getSendRecipients } from "./recipients";
 import { buildOpenHouseEmail, type OpenHouseEmailAgent, type OpenHouseEmailBlast } from "./email";
 import { sendBlastEmail } from "./resend-blast";
 import {

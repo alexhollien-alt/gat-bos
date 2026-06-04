@@ -3,6 +3,8 @@
 // (POST, returns 200). Flips contacts.email_status to 'unsubscribed' instantly.
 import { suppressByToken } from "@/lib/open-house/suppress";
 
+/* eslint-disable no-restricted-syntax -- standalone HTML response (not an app
+   component); canonical palette inlined as the source block, like email. */
 function confirmationHtml(success: boolean): string {
   const ground = "#FCFBFB";
   const structure = "#192A56";

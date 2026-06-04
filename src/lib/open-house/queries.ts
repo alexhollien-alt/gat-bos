@@ -33,7 +33,6 @@ export async function getBlastStats(blastId: string): Promise<BlastStats> {
   const c = (s: string) => rows.filter((r) => r.status === s).length;
   const queued = c("queued");
   const failed = c("failed");
-  const sent = c("sent");
   const deliveredOnly = c("delivered");
   const openedOnly = c("opened");
   const clicked = c("clicked");
