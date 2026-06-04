@@ -471,6 +471,101 @@ export type Database = {
           },
         ]
       }
+      blast_sends: {
+        Row: {
+          account_id: string
+          batch_number: number | null
+          blast_id: string
+          bounced_at: string | null
+          clicked_at: string | null
+          complained_at: string | null
+          contact_id: string | null
+          created_at: string
+          deleted_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          opened_at: string | null
+          provider_message_id: string | null
+          queued_at: string
+          recipient_email: string
+          recipient_name: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          account_id: string
+          batch_number?: number | null
+          blast_id: string
+          bounced_at?: string | null
+          clicked_at?: string | null
+          complained_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          provider_message_id?: string | null
+          queued_at?: string
+          recipient_email: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          batch_number?: number | null
+          blast_id?: string
+          bounced_at?: string | null
+          clicked_at?: string | null
+          complained_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          provider_message_id?: string | null
+          queued_at?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blast_sends_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blast_sends_blast_id_fkey"
+            columns: ["blast_id"]
+            isOneToOne: false
+            referencedRelation: "open_house_blasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blast_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blast_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadences: {
         Row: {
           contact_id: string
@@ -911,10 +1006,14 @@ export type Database = {
           brand_colors: Json | null
           brokerage: string | null
           brokerage_logo_url: string | null
+          city: string | null
           contact_md_path: string | null
           created_at: string
           deleted_at: string | null
           email: string | null
+          email_status: string
+          email_status_at: string | null
+          email_status_reason: string | null
           escrow_officer: string | null
           farm_area: string | null
           farm_zips: string[] | null
@@ -950,6 +1049,7 @@ export type Database = {
           tier: string | null
           title: string | null
           type: string
+          unsubscribe_token: string
           updated_at: string
           user_id: string
           website_url: string | null
@@ -960,10 +1060,14 @@ export type Database = {
           brand_colors?: Json | null
           brokerage?: string | null
           brokerage_logo_url?: string | null
+          city?: string | null
           contact_md_path?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_status?: string
+          email_status_at?: string | null
+          email_status_reason?: string | null
           escrow_officer?: string | null
           farm_area?: string | null
           farm_zips?: string[] | null
@@ -999,6 +1103,7 @@ export type Database = {
           tier?: string | null
           title?: string | null
           type?: string
+          unsubscribe_token?: string
           updated_at?: string
           user_id?: string
           website_url?: string | null
@@ -1009,10 +1114,14 @@ export type Database = {
           brand_colors?: Json | null
           brokerage?: string | null
           brokerage_logo_url?: string | null
+          city?: string | null
           contact_md_path?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_status?: string
+          email_status_at?: string | null
+          email_status_reason?: string | null
           escrow_officer?: string | null
           farm_area?: string | null
           farm_zips?: string[] | null
@@ -1048,6 +1157,7 @@ export type Database = {
           tier?: string | null
           title?: string | null
           type?: string
+          unsubscribe_token?: string
           updated_at?: string
           user_id?: string
           website_url?: string | null
@@ -2407,6 +2517,127 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      open_house_blasts: {
+        Row: {
+          account_id: string
+          address: string
+          agent_contact_id: string
+          approved_at: string | null
+          auto_send: boolean
+          baths: number | null
+          beds: number | null
+          city: string
+          created_at: string
+          daily_send_cap: number | null
+          deleted_at: string | null
+          details: string | null
+          email_preheader: string | null
+          email_subject: string | null
+          hero_image_url: string | null
+          id: string
+          open_house_date: string
+          open_house_end: string | null
+          open_house_start: string | null
+          photos: string[] | null
+          price: string | null
+          recipient_count: number | null
+          sending_started_at: string | null
+          sent_at: string | null
+          slug: string
+          sqft: number | null
+          state: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          address: string
+          agent_contact_id: string
+          approved_at?: string | null
+          auto_send?: boolean
+          baths?: number | null
+          beds?: number | null
+          city: string
+          created_at?: string
+          daily_send_cap?: number | null
+          deleted_at?: string | null
+          details?: string | null
+          email_preheader?: string | null
+          email_subject?: string | null
+          hero_image_url?: string | null
+          id?: string
+          open_house_date: string
+          open_house_end?: string | null
+          open_house_start?: string | null
+          photos?: string[] | null
+          price?: string | null
+          recipient_count?: number | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          slug: string
+          sqft?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          account_id?: string
+          address?: string
+          agent_contact_id?: string
+          approved_at?: string | null
+          auto_send?: boolean
+          baths?: number | null
+          beds?: number | null
+          city?: string
+          created_at?: string
+          daily_send_cap?: number | null
+          deleted_at?: string | null
+          details?: string | null
+          email_preheader?: string | null
+          email_subject?: string | null
+          hero_image_url?: string | null
+          id?: string
+          open_house_date?: string
+          open_house_end?: string | null
+          open_house_start?: string | null
+          photos?: string[] | null
+          price?: string | null
+          recipient_count?: number | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          slug?: string
+          sqft?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_house_blasts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_house_blasts_agent_contact_id_fkey"
+            columns: ["agent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_house_blasts_agent_contact_id_fkey"
+            columns: ["agent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_spec_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       opportunities: {
         Row: {
