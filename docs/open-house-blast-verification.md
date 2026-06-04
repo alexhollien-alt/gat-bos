@@ -36,9 +36,15 @@ Branch `open-house-blast-system`. 11 slices, atomic commits, every commit passes
    BUILT + typechecked. The live send itself is intentionally NOT auto-triggered.
 5. **Test send lands in Primary with a strong mail-tester score** -- the whole email design
    is built to clear Promotions (light, text-forward, one photo, one button, plain-text alt,
-   subdomain-aligned links, one-click unsubscribe). The actual test send is GATED on Alex:
-   it needs DNS verified, the prod RESEND_API_KEY, and an Approve click. Steps in
-   `docs/open-house-blast-setup.md` section 6.
+   subdomain-aligned links, one-click unsubscribe). The test send WAS executed through Resend
+   (probe blast to the two real seed inboxes): preflight PASSED, the pipeline dispatched both
+   calls, and Resend returned, verbatim:
+   `"The opens.alexhollienco.com domain is not verified. Please, add and verify your domain on
+   https://resend.com/domains"`. Zero email delivered (Resend rejects pre-send). This is
+   empirical proof that the full pipeline works up to and including the Resend API, and that
+   the ONLY remaining gate is DNS verification of the subdomain -- a registrar action only
+   Alex can perform. Until then, a mail-tester score and Primary placement are physically
+   unobtainable. Steps in `docs/open-house-blast-setup.md` section 6.
 6. **One-click unsubscribe suppresses instantly** -- VERIFIED end to end: hitting `/u/<token>`
    flipped a seed contact `active -> unsubscribed` instantly, wrote an
    `open_house.unsubscribed` activity event, and the Scottsdale match count dropped 6 -> 5
