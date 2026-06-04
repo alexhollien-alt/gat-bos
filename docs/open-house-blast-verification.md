@@ -49,11 +49,13 @@ Branch `open-house-blast-system`. 11 slices, atomic commits, every commit passes
    flipped a seed contact `active -> unsubscribed` instantly, wrote an
    `open_house.unsubscribed` activity event, and the Scottsdale match count dropped 6 -> 5
    (suppressed contact no longer matched). Restored after the test.
-7. **Webhook auto-suppresses bounces and complaints** -- the Resend webhook now matches
-   `blast_sends` by message id, syncs status/timestamps, and on bounce/complaint flips the
-   contact's `email_status` (suppressByEmail). Suppressed contacts are never matched again
-   (matching requires `email_status = active`). BUILT + typechecked; live verification needs
-   the prod webhook endpoint.
+7. **Webhook auto-suppresses bounces and complaints** -- VERIFIED end to end through the real
+   signed HTTP path. Posted a properly Svix-signed `email.bounced` event: the contact flipped
+   `active -> bounced`, its `blast_sends` row synced to `bounced`, and an
+   `open_house.email.bounced` activity event was written. Repeated with `email.complained`:
+   contact `-> complained`, send `-> complained`, `open_house.email.complained` logged. Since
+   matching requires `email_status = active`, suppressed contacts are never matched again.
+   (Harness: `scripts/sim-resend-webhook.ts`.)
 8. **Dashboard shows real numbers** -- VERIFIED (screenshot): from a seeded send, the
    dashboard read Recipients 6, Delivered 5 (83.3%), Opens 3 (60%), Clicks 2 (40%),
    Bounce 16.7% shown in RED over the 4% wall, Complaint 0% within the 0.08% wall, with a
