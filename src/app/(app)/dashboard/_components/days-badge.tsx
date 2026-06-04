@@ -1,3 +1,4 @@
+import { Check, Clock, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Color-coded recency badge. Tone is driven by drift (days past the contact's
@@ -23,13 +24,29 @@ export function DaysBadge({
     success: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
   }[tone];
 
+  // Non-color tone channel so red/green color-blind users can still read status
+  // (WCAG 1.4.1). The leading icon shape differs by tone, and the status word is
+  // carried in the aria-label for screen readers. Color stays as reinforcement.
+  const Icon = {
+    danger: TriangleAlert,
+    warning: Clock,
+    success: Check,
+  }[tone];
+  const statusWord = {
+    danger: "overdue",
+    warning: "due soon",
+    success: "on track",
+  }[tone];
+
   return (
     <span
+      aria-label={`${label}, ${statusWord}`}
       className={cn(
-        "inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums ring-1 ring-inset",
+        "inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums ring-1 ring-inset",
         cls,
       )}
     >
+      <Icon aria-hidden className="h-3 w-3" />
       {label}
     </span>
   );

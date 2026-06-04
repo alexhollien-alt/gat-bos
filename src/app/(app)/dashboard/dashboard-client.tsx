@@ -6,12 +6,22 @@
 // from the prefetch cache set in page.tsx (matching query keys).
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TopbarCounters } from "./_components/topbar-counters";
 import { TodayTab } from "./_components/today-tab";
 import { AgentsTab } from "./_components/agents-tab";
 import { ActivityTab } from "./_components/activity-tab";
+
+// Format in Phoenix wall-clock so the UTC server and the Phoenix client render
+// the same string. Plain date-fns format() uses the runtime local TZ, which
+// drifts a calendar day between server and browser for the evening hours and
+// triggers a hydration mismatch.
+const dateFmt = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  timeZone: "America/Phoenix",
+});
 
 export function DashboardClient() {
   const [tab, setTab] = useState("today");
@@ -27,7 +37,7 @@ export function DashboardClient() {
             Dashboard
           </h1>
           <p className="font-mono text-xs text-muted-foreground">
-            {format(new Date(), "EEEE, MMMM d")}
+            {dateFmt.format(new Date())}
           </p>
         </div>
         <TopbarCounters />

@@ -59,7 +59,12 @@ export async function logTouch({
     context: { contact_id, type: "call", source: "dashboard-v3" },
   });
 
-  return { ok: true, event_id: id ?? undefined };
+  // writeEvent never throws -- on an insert/RLS failure it returns a null id.
+  // A null id means the touch was not written, so surface it as a failure
+  // (ok:false) and let the optimistic mutation roll back.
+  if (!id) return { ok: false, error: "Couldn't log touch" };
+
+  return { ok: true, event_id: id };
 }
 
 export async function undoLogTouch({
