@@ -103,7 +103,7 @@ Task(
 
 **b. Run tests:**
 ```bash
-npm test 2>&1 | tail -20
+pnpm test 2>&1 | tail -20
 ```
 
 **c. If tests pass** — commit atomically:
