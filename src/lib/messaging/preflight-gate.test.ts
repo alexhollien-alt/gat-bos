@@ -5,6 +5,10 @@ import { runPreflightGate } from "./preflight-gate";
 const ok200: typeof fetch = (async () =>
   ({ status: 200 }) as Response) as unknown as typeof fetch;
 
+// A fetch stub that always 404s, for the broken-image path.
+const fail404: typeof fetch = (async () =>
+  ({ status: 404 }) as Response) as unknown as typeof fetch;
+
 describe("runPreflightGate", () => {
   it("passes a clean multi-recipient render", async () => {
     const result = await runPreflightGate(
@@ -35,5 +39,19 @@ describe("runPreflightGate", () => {
     );
     expect(result.pass).toBe(false);
     expect(result.failures.join(" ")).toMatch(/Unresolved template tokens/);
+  });
+
+  it("blocks a render whose image does not return 200", async () => {
+    const result = await runPreflightGate(
+      {
+        subject: "Weekly Edge -- June",
+        html: '<p>Market update.</p><img src="https://example.com/broken.png">',
+        recipients: [{ email: "a@example.com", name: "A" }],
+        filterDescription: "weekly-edge approved list",
+      },
+      fail404,
+    );
+    expect(result.pass).toBe(false);
+    expect(result.failures.join(" ")).toMatch(/Images not returning 200/);
   });
 });

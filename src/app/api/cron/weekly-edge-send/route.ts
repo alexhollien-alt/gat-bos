@@ -125,6 +125,7 @@ async function handleRun(request: NextRequest) {
   const gate = await runPreflightGate({
     subject: sampleSubject,
     html: sampleHtml,
+    // name is a placeholder: the sample renders from draft.variables, not recipient fields, so per-recipient name is irrelevant to this gate.
     recipients: list.recipients.map((r) => ({ email: r.email, name: r.email })),
     filterDescription: `weekly-edge list '${draft.recipient_list_slug}'`,
   });
