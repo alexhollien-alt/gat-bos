@@ -9,7 +9,7 @@ Not a realtor. My clients are realtors. I am their one-person marketing departme
 
 | File | What It Contains |
 |------|-----------------|
-| system/routing.md | **Read first, every request.** Classify-first router: 4-field classification, disambiguation, hat resolution, declare-hat gate. Routes to skills + rule packs. |
+| ~/.claude/rules/routing.md | **Read first, every request.** Classify-first router: 4-field classification, disambiguation, hat resolution. Routes to skills + rule packs. Classification is internal -- HAT block recited only on request. |
 | standing-rules.md | Fill-and-flag, no em dashes, no hard deletes, no scraping, approval gates, copy standards, co-brand rules, lender scoping, referral handle (canonical rule text; loaded as packs via the router) |
 | brand.md | Colors (#b31a35, #003087, full palette), font kits, voice tokens, agent palettes, co-brand rules |
 | design-foundation.md | Shared design logic, components, image audit, price tiers, brokerage adaptation, validation checks |
@@ -37,8 +37,9 @@ Not a realtor. My clients are realtors. I am their one-person marketing departme
 **Do not match keywords straight to skills.** Every request goes through the
 classify-first router before any output:
 
-1. `system/routing.md` -- classify into four fields (client, output, channel, mode),
-   disambiguate overloaded words, declare the hat, then build. It also carries the
+1. `~/.claude/rules/routing.md` -- classify into four fields (client, output, channel,
+   mode), disambiguate overloaded words, resolve the hat, then build (classification is
+   internal; the HAT block is recited only on request). It also carries the
    controlled vocabularies + disambiguation table and the **single** map of
    classification -> hat -> rule packs + skill. This is where the old keyword->skill table moved (re-print-design,
    re-email-design, re-landing-page, re-listing-presentation, re-marketing,
