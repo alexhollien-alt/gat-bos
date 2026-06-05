@@ -17,10 +17,14 @@ export function ReachoutList() {
     .slice(0, 30);
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-lg border border-border bg-card">
+    <section
+      role="region"
+      aria-labelledby="reachout-heading"
+      className="flex h-full min-h-0 flex-col rounded-lg border border-border bg-card"
+    >
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2.5">
-        <h2 className="text-sm font-semibold text-foreground">Reach out</h2>
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <h2 id="reachout-heading" className="text-sm font-semibold text-foreground">Reach out</h2>
+        <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
           {rows.length}
         </span>
       </header>
