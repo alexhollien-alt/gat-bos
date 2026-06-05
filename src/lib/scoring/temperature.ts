@@ -39,7 +39,7 @@ const IMMINENT_CLOSE_BONUS = 5;
 const IMMINENT_CLOSE_WINDOW_DAYS = 7;
 const ACTIVE_STAGES = ["under_contract", "in_escrow"] as const;
 const TERMINAL_STAGES = ["closed", "fell_through"] as const;
-const SCORED_TIERS = ["A", "B", "C"] as const;
+export const SCORED_TIERS = ["A", "B", "C"] as const;
 
 export type Tier = (typeof SCORED_TIERS)[number];
 
