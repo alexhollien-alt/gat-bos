@@ -30,7 +30,7 @@ Legend: packs are beyond `always-on` (which always loads).
 
 ## Adversarial rows -- expected: ASK, do not build
 
-| # | Prompt | Why it must stop | Field(s) missing | Expected question (from classification.md) |
+| # | Prompt | Why it must stop | Field(s) missing | Expected question (from routing.md) |
 |---|---|---|---|---|
 | A1 | "Do some marketing for me" | "marketing" + no piece | output, channel | "Who is this for, and what piece -- flyer, email, social, postcard?" |
 | A2 | "Make me a flyer" | client genuinely ambiguous (me/agent/listing) | client | "Is this for you, an agent, or a specific listing?" |
