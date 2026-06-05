@@ -1,3 +1,5 @@
+// DORMANT (Scope 2, 2026-06-04): unmounted. Canonical cold count now lives in the
+// Today-tab Reach-out list via scoreContacts. Re-mount only if rewired to overdueCount().
 "use client";
 
 import Link from "next/link";

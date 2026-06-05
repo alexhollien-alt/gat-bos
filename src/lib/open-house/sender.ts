@@ -24,6 +24,7 @@ import {
   formatPreflightReport,
   type PreflightEvaluation,
 } from "@/lib/messaging/preflight";
+import { evaluateSendCap, GLOBAL_DAILY_SEND_CAP } from "@/lib/messaging/send-cap";
 
 interface AgentJoin {
   first_name: string | null;
@@ -180,6 +181,20 @@ export interface SendSummary {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Counts blast emails actually mailed (or further along) since UTC midnight,
+// across all blasts. Feeds the global daily send cap. Excludes queued/failed/
+// suppressed rows -- only counts mail that actually went out.
+async function countBlastSendsToday(): Promise<number> {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const { count } = await adminClient
+    .from("blast_sends")
+    .select("id", { count: "exact", head: true })
+    .gte("sent_at", startOfDay.toISOString())
+    .in("status", ["sent", "delivered", "opened", "clicked", "bounced", "complained"]);
+  return count ?? 0;
+}
+
 // Executes the send. Idempotent: recipients already sent are skipped. Honors
 // the warmup cap (daily_send_cap): recipients beyond the cap are recorded as
 // queued and not mailed this run.
@@ -234,6 +249,25 @@ export async function sendBlast(params: {
     };
   }
 
+  // Global hard daily send cap -- backstop above the per-blast warmup cap.
+  const sentToday = await countBlastSendsToday();
+  const globalRemaining = evaluateSendCap({
+    sentToday,
+    requested: recipients.length,
+    cap: GLOBAL_DAILY_SEND_CAP,
+  }).remaining;
+  if (globalRemaining === 0) {
+    return {
+      ok: false,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      held: recipients.length,
+      total: recipients.length,
+      error: `Daily send cap of ${GLOBAL_DAILY_SEND_CAP} reached (${sentToday} already sent today). Run again tomorrow.`,
+    };
+  }
+
   // Mark sending.
   await adminClient
     .from("open_house_blasts")
@@ -251,8 +285,10 @@ export async function sendBlast(params: {
     existing.set(String(r.recipient_email).toLowerCase(), { id: r.id as string, status: r.status as string });
   }
 
-  // Warmup cap.
-  const cap = blast.daily_send_cap ?? recipients.length;
+  // Effective cap = the tighter of the per-blast warmup cap and the global daily
+  // remaining. Recipients beyond it are held (queued), not mailed this run.
+  const warmupCap = blast.daily_send_cap ?? recipients.length;
+  const cap = Math.min(warmupCap, globalRemaining);
   const toSend = recipients.slice(0, cap);
   const held = recipients.slice(cap);
 

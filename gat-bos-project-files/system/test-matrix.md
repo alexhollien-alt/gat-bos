@@ -3,14 +3,15 @@ layer: system
 scope: global
 type: test-matrix
 description: Labeled example prompts with their expected classification and route. The harness for verifying the router behaves -- including adversarial cases that must trigger a clarifying question instead of a guess.
-depends_on: [00-router.md, routing-table.md, classification.md]
+depends_on: [routing.md]
 ---
 
 # ROUTING TEST MATRIX
 
 How to run: for each row, open a fresh session with the system loaded, paste the
-**Prompt**, and confirm the router's **declaration** (Step 5 of `00-router.md`) matches
-the expected columns. Adversarial rows must produce **a question**, not a build.
+**Prompt**, and confirm the router's resolution matches the expected columns. The
+declaration (the HAT block in `routing.md`) is recited on request. Adversarial rows must
+produce **a question**, not a build.
 
 Legend: packs are beyond `always-on` (which always loads).
 
@@ -29,7 +30,7 @@ Legend: packs are beyond `always-on` (which always loads).
 
 ## Adversarial rows -- expected: ASK, do not build
 
-| # | Prompt | Why it must stop | Field(s) missing | Expected question (from classification.md) |
+| # | Prompt | Why it must stop | Field(s) missing | Expected question (from routing.md) |
 |---|---|---|---|---|
 | A1 | "Do some marketing for me" | "marketing" + no piece | output, channel | "Who is this for, and what piece -- flyer, email, social, postcard?" |
 | A2 | "Make me a flyer" | client genuinely ambiguous (me/agent/listing) | client | "Is this for you, an agent, or a specific listing?" |
@@ -46,7 +47,7 @@ Rows **1 vs 2** and **5 vs (same email for me)**: identical output word, differe
 (positioning, no lender-scoping). If both resolve the same, the router is broken.
 
 ## Self-consistency checks (static, greppable)
-- [ ] Every HAT in this file and in `routing-table.md` has a file in `modes/`.
+- [ ] Every HAT in this file has a **row in `routing.md`'s Master route table**.
 - [ ] Every pack named here exists in `rules/packs/` or is `always-on`.
-- [ ] Every disambiguation word in `classification.md` appears in an A-row above.
+- [ ] Every disambiguation word in `routing.md` appears in an A-row above.
 - [ ] No row loads a pack that its EXCLUDED column also lists.

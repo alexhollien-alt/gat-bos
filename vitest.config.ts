@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: false,
     environment: "node",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.ts"],
     // Dummy env vars so transitively-loaded modules (supabase admin client,
     // resend client, etc.) don't crash at import time. These never connect
     // -- pure helpers under test do not exercise the clients.

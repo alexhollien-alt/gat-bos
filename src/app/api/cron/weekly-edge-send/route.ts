@@ -19,7 +19,9 @@ import { adminClient } from "@/lib/supabase/admin";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { logError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
-import { sendMessage } from "@/lib/messaging/send";
+import { sendMessage, resolveTemplate } from "@/lib/messaging/send";
+import { renderTemplate } from "@/lib/messaging/render";
+import { runPreflightGate } from "@/lib/messaging/preflight-gate";
 import { resolveRecipientList } from "@/lib/campaigns/recipients";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +111,30 @@ async function handleRun(request: NextRequest) {
     });
     return NextResponse.json(
       { error: "Recipient list empty", draft_id: draft.id },
+      { status: 412 },
+    );
+  }
+
+  // Pre-send gate: render the approved template once with the draft variables and
+  // run the full preflight checklist against the resolved list. A broken image or
+  // an unresolved token blocks the entire blast instead of shipping to everyone.
+  const gateVariables: Record<string, string> = draft.variables ?? {};
+  const tpl = await resolveTemplate(draft.template_slug, draft.template_version ?? undefined);
+  const sampleSubject = renderTemplate(tpl.subject, gateVariables).output;
+  const sampleHtml = renderTemplate(tpl.body_html, gateVariables).output;
+  const gate = await runPreflightGate({
+    subject: sampleSubject,
+    html: sampleHtml,
+    // name is a placeholder: the sample renders from draft.variables, not recipient fields, so per-recipient name is irrelevant to this gate.
+    recipients: list.recipients.map((r) => ({ email: r.email, name: r.email })),
+    filterDescription: `weekly-edge list '${draft.recipient_list_slug}'`,
+  });
+  if (!gate.pass) {
+    await logError(ROUTE, `weekly-edge preflight blocked send: ${gate.failures.join(" ")}`, {
+      draft_id: draft.id,
+    });
+    return NextResponse.json(
+      { error: "Preflight failed", draft_id: draft.id, failures: gate.failures },
       { status: 412 },
     );
   }

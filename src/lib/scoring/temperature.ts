@@ -39,7 +39,7 @@ const IMMINENT_CLOSE_BONUS = 5;
 const IMMINENT_CLOSE_WINDOW_DAYS = 7;
 const ACTIVE_STAGES = ["under_contract", "in_escrow"] as const;
 const TERMINAL_STAGES = ["closed", "fell_through"] as const;
-const SCORED_TIERS = ["A", "B", "C"] as const;
+export const SCORED_TIERS = ["A", "B", "C"] as const;
 
 export type Tier = (typeof SCORED_TIERS)[number];
 
@@ -269,6 +269,18 @@ export async function scoreContacts(
 
   rows.sort((a, b) => b.effective_drift - a.effective_drift);
   return rows;
+}
+
+/**
+ * Canonical "overdue" count for the dashboard tiles. Overdue == effective_drift > 0
+ * (strictly past cadence; due-today at drift == 0 is excluded).
+ * The Reach-out list uses effective_drift > -1 (due-today inclusive) -- these are
+ * intentionally different semantics. Replaces the legacy hardcoded 21-day query.
+ */
+export function overdueCount(rows: TemperatureRow[], tier?: Tier): number {
+  return rows.filter(
+    (r) => r.effective_drift > 0 && (tier === undefined || r.tier === tier),
+  ).length;
 }
 
 export const __TEST__ = {

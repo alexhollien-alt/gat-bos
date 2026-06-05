@@ -127,16 +127,16 @@ Does NOT apply to email HTML or print HTML.
 
 ---
 
-## 12. COMPOUND TASK ROUTING  (SUPERSEDED -- see system/00-router.md)
+## 12. COMPOUND TASK ROUTING  (SUPERSEDED -- see ~/.claude/rules/routing.md)
 
 This rule's task->reads table has moved into the classify-first router. **Do not route
 from this file.** Routing now runs in one place:
 
-1. `system/00-router.md` -- classify every request into four fields (client, output,
-   channel, mode), disambiguate, then resolve a hat.
-2. `system/routing-table.md` -- the single map of classification -> hat -> rule packs +
-   skill + context reads. This absorbed the old table above and the keyword->skill table
-   that used to live in `CLAUDE.md`.
+1. `~/.claude/rules/routing.md` -- the single routing authority (flattened 2026-06-04,
+   Scope 5). Classify every request into four fields (client, output, channel, mode),
+   disambiguate, resolve a hat, and load only matching packs. It carries the single map of
+   classification -> hat -> rule packs + skill + context reads, plus the trigger index and
+   required reads. Classification is internal; the HAT block is recited only on request.
 
 ### Rule Scope Map (which pack each rule below belongs to)
 

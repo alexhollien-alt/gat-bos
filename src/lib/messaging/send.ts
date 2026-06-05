@@ -33,7 +33,7 @@ import type {
   TemplateSendMode,
 } from "./types";
 
-async function resolveTemplate(
+export async function resolveTemplate(
   slug: string,
   pinnedVersion?: number,
 ): Promise<TemplateRow> {
