@@ -271,6 +271,18 @@ export async function scoreContacts(
   return rows;
 }
 
+/**
+ * Canonical "overdue" count for the dashboard tiles. Overdue == effective_drift > 0
+ * (strictly past cadence; due-today at drift == 0 is excluded).
+ * The Reach-out list uses effective_drift > -1 (due-today inclusive) -- these are
+ * intentionally different semantics. Replaces the legacy hardcoded 21-day query.
+ */
+export function overdueCount(rows: TemperatureRow[], tier?: Tier): number {
+  return rows.filter(
+    (r) => r.effective_drift > 0 && (tier === undefined || r.tier === tier),
+  ).length;
+}
+
 export const __TEST__ = {
   ACTIVE_STAGES,
   TERMINAL_STAGES,
