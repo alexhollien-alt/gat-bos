@@ -45,7 +45,7 @@ own only creative + list?
 ## Decision
 
 [ALEX TO CONFIRM AT TASK 1 GATE]
-- [ ] KEEP custom -- proceed to harden (Tasks K1-K4).
+- [x] KEEP custom -- proceed to harden (Tasks K1-K4).
 - [ ] BUY -- proceed to migrate (BUY branch; re-expand via /superpowers:writing-plans).
 
 ## Rationale
