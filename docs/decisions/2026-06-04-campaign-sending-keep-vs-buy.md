@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-04
 **Scope:** System Consolidation Gameplan, Scope 6
-**Status:** PROPOSED (awaiting Alex's confirmation)
+**Status:** DECIDED -- KEEP CUSTOM
 
 ## The question
 
@@ -69,6 +69,41 @@ custom stack is a liability, not an asset:
   (YAGNI / Rule 25). Logged here so a future session knows they were considered
   and declined, not missed.
 
+### Recorded tradeoffs in the KEEP hardening (surfaced in code review, accepted as backstop-grade)
+
+These are deliberate altitude choices in the three fail-safes, not defects. Recorded so a
+future session knows they were weighed, not missed:
+
+- **Send-cap count-then-send is not transactional (TOCTOU).** `countBlastSendsToday()`
+  reads the day's total, then `sendBlast()` sends; two concurrent sends (cron overlapping a
+  manual blast) could both read the same total and collectively overshoot
+  `GLOBAL_DAILY_SEND_CAP`. Acceptable for a reputation *backstop* against a runaway/fat-finger;
+  a transactional counter would be over-engineering for a soft guard.
+- **Deliverability alerting runs three serial count queries per bounce/complaint event.**
+  Fine at current volume (fires only on bounce/complaint, not the high-volume delivered/opened
+  path). Candidate to collapse into one query if blast volume grows.
+- **No alert dedup.** Once a blast is over a WALL ceiling, every subsequent bounce re-fires the
+  logError + activity event. Acceptable because both sinks are low-cost (log + feed, not
+  pager/email/SMS). First-crossing-only dedup is a clean follow-up if the noise becomes a problem.
+- **The alert activity event is fire-and-forget (`void writeEvent`).** Matches the existing
+  webhook handler pattern; the durable `logError` IS awaited, so the breach record is never lost
+  even if the feed event is dropped under a serverless freeze.
+
 ## Closure of the not-chosen path
 
-[Filled in at Task K4 once KEEP lands, or at BUY-branch close-out.]
+DECISION: KEEP CUSTOM. The bought-tool migration is explicitly closed and will
+not draw maintenance. Re-open only if a future blast actually damages domain
+reputation despite the three fail-safes below, OR Alex's time cost on
+deliverability ops exceeds the re-tooling cost.
+
+The KEEP path is now hardened (shipped 2026-06-04):
+- Global hard daily send cap (`src/lib/messaging/send-cap.ts`,
+  `GLOBAL_DAILY_SEND_CAP`, default 5000, env `BLAST_DAILY_HARD_CAP`), enforced in
+  `sendBlast()`.
+- Preflight gate on every multi-recipient send (`src/lib/messaging/preflight-gate.ts`),
+  wired into the Weekly Edge cron; open-house blasts already enforced it.
+- Bounce/complaint WALL-breach alerting (`src/lib/messaging/deliverability-health.ts`),
+  wired into the Resend webhook; emits `open_house.deliverability.alert` + error log.
+
+No bought-tool account was provisioned. No list was exported to a vendor. The
+custom stack remains the single sending path.
