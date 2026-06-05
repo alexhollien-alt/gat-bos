@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { logError } from "@/lib/error-log";
 import { writeEvent } from "@/lib/activity/writeEvent";
 import { suppressByEmail } from "@/lib/open-house/suppress";
+import { evaluateDeliverabilityHealth } from "@/lib/messaging/deliverability-health";
 
 // NO RATE LIMIT (Slice 3A intentional decision).
 //
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
     if (eventType && providerMessageId) {
       const { data: send } = await supabase
         .from("blast_sends")
-        .select("id, recipient_email, contact_id, status, blast:open_house_blasts!blast_id(user_id)")
+        .select("id, blast_id, recipient_email, contact_id, status, blast:open_house_blasts!blast_id(user_id)")
         .eq("provider_message_id", providerMessageId)
         .is("deleted_at", null)
         .maybeSingle();
@@ -282,6 +283,52 @@ export async function POST(req: NextRequest) {
         }
         if (type === "email.complained") {
           await suppressByEmail(String(send.recipient_email), "complained", "complaint via Resend webhook");
+        }
+
+        // Deliverability alerting: a bounce/complaint just landed -- recompute
+        // this blast's live rates and alert if a WALL ceiling is breached.
+        // Without this the WALL limits are dashboard-only and a spike is invisible.
+        if (type === "email.bounced" || type === "email.complained") {
+          const sentQ = await supabase
+            .from("blast_sends")
+            .select("id", { count: "exact", head: true })
+            .eq("blast_id", send.blast_id)
+            .in("status", ["sent", "delivered", "opened", "clicked", "bounced", "complained"]);
+          const bouncedQ = await supabase
+            .from("blast_sends")
+            .select("id", { count: "exact", head: true })
+            .eq("blast_id", send.blast_id)
+            .eq("status", "bounced");
+          const complainedQ = await supabase
+            .from("blast_sends")
+            .select("id", { count: "exact", head: true })
+            .eq("blast_id", send.blast_id)
+            .eq("status", "complained");
+          const health = evaluateDeliverabilityHealth({
+            sent: sentQ.count ?? 0,
+            bounced: bouncedQ.count ?? 0,
+            complained: complainedQ.count ?? 0,
+          });
+          if (health.alerts.length > 0) {
+            await logError(
+              ROUTE,
+              `Deliverability WALL breach on blast ${send.blast_id}: ${health.alerts.join(" ")}`,
+              { blast_id: send.blast_id },
+            );
+            if (ownerId) {
+              void writeEvent({
+                userId: ownerId,
+                actorId: ownerId,
+                verb: "open_house.deliverability.alert",
+                object: { table: "open_house_blasts", id: String(send.blast_id) },
+                context: {
+                  alerts: health.alerts,
+                  bounce_rate: health.bounceRate,
+                  complaint_rate: health.complaintRate,
+                },
+              });
+            }
+          }
         }
       }
     }

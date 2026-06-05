@@ -71,6 +71,7 @@ export type ActivityVerb =
   | 'open_house.email.bounced'
   | 'open_house.email.complained'
   | 'open_house.unsubscribed'
+  | 'open_house.deliverability.alert'
   | 'deliverable.shipped'
   | 'deliverable.briefed'
   | 'transaction.opened'
