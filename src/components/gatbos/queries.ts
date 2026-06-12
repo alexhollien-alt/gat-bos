@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { toggleTask } from "@/app/(app)/dashboard/actions";
+import { toggleTask } from "./actions";
 import type { WarmthKey } from "./ui";
 import {
   daysSince,

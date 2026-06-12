@@ -1,8 +1,7 @@
 "use client";
 
-// GAT-BOS redesign sidebar. Port of .prototype app.jsx Sidebar: 4 primary tabs
-// + a collapsible "More" group carrying every legacy route (decision locked
-// 2026-06-11: nothing becomes unreachable; legacy entries retire at cutover).
+// GAT-BOS sidebar. 4 primary tabs; legacy "More" group retired at cutover
+// 2026-06-11 (old (app) route group deleted, old URLs redirect in next.config).
 
 import * as React from "react";
 import Link from "next/link";
@@ -12,32 +11,15 @@ import { C, Icon, Avatar } from "./ui";
 import { useGatbosCaptures, useGatbosTasks } from "./queries";
 
 const NAV = [
-  { id: "today", href: "/new/today", label: "Today", icon: "today", sub: "Command Center" },
-  { id: "tasks", href: "/new/tasks", label: "Tasks", icon: "tasks", sub: "Projects & to-dos" },
-  { id: "people", href: "/new/people", label: "People", icon: "people", sub: "Relationship nurture" },
-  { id: "marketing", href: "/new/marketing", label: "Marketing", icon: "marketing", sub: "Campaigns & materials" },
-];
-
-// Legacy routes (mirrors src/components/sidebar.tsx navItems). Retire rows as
-// screens are absorbed.
-const LEGACY = [
-  { href: "/dashboard", label: "Daily Brief" },
-  { href: "/captures", label: "Captures" },
-  { href: "/inbox", label: "Inbox" },
-  { href: "/actions", label: "Actions" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/contacts", label: "Contacts" },
-  { href: "/opportunities", label: "Pipeline" },
-  { href: "/tasks", label: "Tasks (classic)" },
-  { href: "/campaigns", label: "Campaigns (classic)" },
-  { href: "/material-requests", label: "Material Requests" },
-  { href: "/tickets", label: "Tickets" },
+  { id: "today", href: "/today", label: "Today", icon: "today", sub: "Command Center" },
+  { id: "tasks", href: "/tasks", label: "Tasks", icon: "tasks", sub: "Projects & to-dos" },
+  { id: "people", href: "/people", label: "People", icon: "people", sub: "Relationship nurture" },
+  { id: "marketing", href: "/marketing", label: "Marketing", icon: "marketing", sub: "Campaigns & materials" },
 ];
 
 export function GatbosSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [moreOpen, setMoreOpen] = React.useState(false);
   const { data: taskData } = useGatbosTasks();
   const { data: captures } = useGatbosCaptures();
 
@@ -102,38 +84,6 @@ export function GatbosSidebar() {
             </Link>
           );
         })}
-
-        {/* More: legacy routes, untouched until each screen is absorbed */}
-        <div className="pt-2">
-          <button
-            onClick={() => setMoreOpen((o) => !o)}
-            className="w-full text-left rounded-xl px-3 py-2 flex items-center gap-2"
-          >
-            <span
-              className={"inline-block transition-transform " + (moreOpen ? "rotate-90" : "")}
-              style={{ color: "rgba(251,246,240,0.45)" }}
-            >
-              <Icon name="chevron" size={14} />
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "rgba(251,246,240,0.45)" }}>
-              More
-            </span>
-          </button>
-          {moreOpen && (
-            <div className="space-y-0.5 pb-2">
-              {LEGACY.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="block rounded-lg px-3 py-1.5 ml-6 text-[12.5px] font-medium transition hover:bg-[rgba(251,246,240,0.08)]"
-                  style={{ color: "rgba(251,246,240,0.62)" }}
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
       </nav>
 
       <div className="px-3 pb-3">
