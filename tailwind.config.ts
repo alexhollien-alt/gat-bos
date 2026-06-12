@@ -10,6 +10,13 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
+  			/* GAT-BOS redesign palette (prototype: .prototype/new-face-gat-bos).
+  			   Scoped to /new/* screens; legacy theme untouched. */
+  			forest: '#0D3A35',
+  			pine: '#276152',
+  			sage: '#B1B7AB',
+  			cream: '#FBF6F0',
+  			mint: '#9FE6CE',
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
@@ -62,6 +69,9 @@ const config: Config = {
   			sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
   			display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
   			mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
+  			/* GAT-BOS redesign type kit (scoped to /new/*) */
+  			hanken: ['var(--font-hanken)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			newsreader: ['var(--font-newsreader)', 'ui-serif', 'Georgia', 'serif'],
   		},
   		fontSize: {
   			eyebrow: ['10px', { lineHeight: '1.2', letterSpacing: '0.25em' }],

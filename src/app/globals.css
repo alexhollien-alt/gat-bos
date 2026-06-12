@@ -18,6 +18,23 @@
     --color-signal: #F7D794;
     --color-atmosphere: #EDA6A3;
 
+    /* GAT-BOS redesign palette (prototype: .prototype/new-face-gat-bos).
+       Consumed only by /new/* screens + src/components/gatbos/. */
+    --gatbos-forest: #0D3A35;
+    --gatbos-pine: #276152;
+    --gatbos-sage: #B1B7AB;
+    --gatbos-cream: #FBF6F0;
+    --gatbos-mint: #9FE6CE;
+    --gatbos-mint-soft: #C8F2E2;
+    --gatbos-moss: #7E9A66;
+    --gatbos-ash: #C9CDC3;
+    --gatbos-ink-1: #4A5249;
+    --gatbos-ink-2: #5A6157;
+    --gatbos-ink-3: #6B7167;
+    --gatbos-ink-4: #7A8076;
+    --gatbos-ink-5: #8A8F84;
+    --gatbos-ink-6: #9AA093;
+
     /* shadcn semantic tokens, mapped to the system palette.
        HSL space-separated form because consumers wrap in hsl(var(--token)). */
     --background: 0 14% 99%;            /* Ground */
